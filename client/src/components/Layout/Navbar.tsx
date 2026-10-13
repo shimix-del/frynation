@@ -239,13 +239,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Logout */}
+        {/* Privacy Logout Button */}
         <button
           onClick={logout}
-          className="p-1.5 sm:p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-xl transition active:scale-95"
-          title="Sign Out"
+          className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-600 border border-red-500/30 transition active:scale-95 shadow-sm"
+          title="Sign Out & Lock POS (Privacy)"
         >
-          <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <LogOut className="w-3.5 h-3.5 text-red-400 group-hover:text-white shrink-0" />
+          <span className="hidden min-[480px]:inline">Log Out</span>
         </button>
       </div>
     </header>

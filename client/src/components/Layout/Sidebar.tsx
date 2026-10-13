@@ -11,6 +11,7 @@ import {
   Menu as MenuIcon,
   X,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import naniLogo from '../../assets/logo.jpg';
@@ -89,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileDrawerOpen = false,
   onCloseMobileDrawer,
 }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const userNavItems = navItems.filter(item =>
     item.roles.includes(user?.role || 'CASHIER')
@@ -129,16 +130,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        {/* Bottom info banner */}
-        <div className="px-3.5 py-3 mx-2.5 bg-zinc-800/60 rounded-xl border border-zinc-800/80 flex items-center space-x-2.5">
-          <img
-            src={naniLogo}
-            alt="Logo"
-            className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 bg-black shrink-0"
-          />
-          <div className="truncate">
-            <div className="font-extrabold text-xs text-zinc-100 truncate">NANI'S FRY NATION</div>
-            <div className="text-[10px] text-zinc-400 font-medium truncate">Crispy • Golden</div>
+        {/* Bottom info banner & Log Out for Privacy */}
+        <div className="px-2.5 pt-2 border-t border-zinc-800/80 space-y-2">
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center space-x-2 py-2 px-3 rounded-xl text-xs font-extrabold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-600 border border-red-500/30 transition active:scale-95 shadow-sm"
+            title="Log Out & Lock POS"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Log Out / Lock POS</span>
+          </button>
+
+          <div className="px-3 py-2 bg-zinc-800/60 rounded-xl border border-zinc-800/80 flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <div className="truncate text-xs">
+              <span className="text-zinc-200 font-bold">{user?.name}</span>
+              <span className="text-brand-400 text-[10px] block font-semibold">{user?.role}</span>
+            </div>
           </div>
         </div>
       </aside>
@@ -201,9 +209,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </nav>
             </div>
 
-            <div className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/60 text-xs text-zinc-400">
-              <div className="font-bold text-zinc-200">Logged in as: {user?.name}</div>
-              <div className="text-[10px] text-brand-400 font-semibold">{user?.role}</div>
+            <div className="pt-3 border-t border-zinc-800 space-y-2.5">
+              <div className="p-2.5 bg-zinc-800/80 rounded-xl border border-zinc-750 text-xs text-zinc-400 flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-zinc-100">{user?.name}</div>
+                  <div className="text-[10px] text-brand-400 font-semibold">{user?.role}</div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              </div>
+
+              <button
+                onClick={() => {
+                  if (onCloseMobileDrawer) onCloseMobileDrawer();
+                  logout();
+                }}
+                className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 transition flex items-center justify-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out / Lock POS</span>
+              </button>
             </div>
           </div>
 

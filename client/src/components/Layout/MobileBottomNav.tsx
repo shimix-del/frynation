@@ -5,6 +5,7 @@ import {
   Utensils,
   BarChart3,
   Menu,
+  LogOut,
 } from 'lucide-react';
 import { NavTab } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -20,7 +21,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onSelectTab,
   onOpenMore,
 }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isOwnerOrManager = user?.role === 'OWNER' || user?.role === 'MANAGER';
 
   return (
@@ -88,6 +89,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       >
         <Menu className="w-5 h-5" />
         <span className="text-[10px] mt-0.5 font-medium">More</span>
+      </button>
+
+      {/* 6. Privacy Lock / Logout */}
+      <button
+        onClick={logout}
+        className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-red-400 hover:text-red-300 active:scale-95 transition"
+        title="Log Out & Lock POS"
+      >
+        <LogOut className="w-4 h-4 text-red-400" />
+        <span className="text-[10px] mt-0.5 font-bold">Lock</span>
       </button>
     </div>
   );
