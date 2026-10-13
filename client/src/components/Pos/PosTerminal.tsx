@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight, Smartphone } from 'lucide-react';
 import { MenuCategoryBar } from './MenuCategoryBar';
 import { MenuItemCard } from './MenuItemCard';
 import { VariantModal } from './VariantModal';
@@ -197,26 +197,33 @@ export const PosTerminal: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Floating Bottom Cart Bar (Visible on phones when cart has items and cart view is closed) */}
+      {/* Mobile Floating Bottom Bar with Direct Pay on Phone Option */}
       {!isMobileCartOpen && cartItems.length > 0 && (
-        <div className="lg:hidden fixed bottom-14 left-0 right-0 p-3 z-30 pointer-events-none">
-          <button
-            onClick={() => setIsMobileCartOpen(true)}
-            className="pointer-events-auto w-full py-3 px-4 bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-500 hover:to-amber-500 text-white font-extrabold rounded-2xl shadow-2xl shadow-brand-500/40 flex items-center justify-between active:scale-[0.98] transition border border-amber-400/30"
-          >
-            <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center text-xs font-black">
+        <div className="lg:hidden fixed bottom-14 left-0 right-0 p-2.5 z-30 pointer-events-none">
+          <div className="pointer-events-auto w-full bg-zinc-900/95 backdrop-blur-xl border border-zinc-750 p-2 rounded-2xl shadow-2xl flex items-center justify-between space-x-2">
+            {/* View / Edit Cart items */}
+            <button
+              onClick={() => setIsMobileCartOpen(true)}
+              className="flex-1 py-2.5 px-3 bg-zinc-800 hover:bg-zinc-750 active:scale-95 text-zinc-200 font-bold rounded-xl text-xs flex items-center space-x-2 transition border border-zinc-700"
+            >
+              <div className="w-6 h-6 rounded-lg bg-brand-500 text-white flex items-center justify-center text-xs font-black shrink-0">
                 {totalCartItemCount}
               </div>
-              <span className="text-xs font-bold">Cart Items</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-black">{formatKES(totalAmount)}</span>
-              <span className="text-[11px] bg-white text-zinc-900 font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow">
-                <span>Pay &gt;</span>
-              </span>
-            </div>
-          </button>
+              <div className="text-left truncate">
+                <div className="text-[10px] text-zinc-400">View Items</div>
+                <div className="text-xs font-black text-white">{formatKES(totalAmount)}</div>
+              </div>
+            </button>
+
+            {/* Direct Pay on Phone */}
+            <button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-safari-mpesa hover:from-emerald-500 hover:to-safari-mpesaDark active:scale-95 text-white font-black rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-emerald-600/30 transition border border-emerald-400/30"
+            >
+              <Smartphone className="w-4 h-4 shrink-0" />
+              <span>Pay Now ({formatKES(totalAmount)})</span>
+            </button>
+          </div>
         </div>
       )}
 

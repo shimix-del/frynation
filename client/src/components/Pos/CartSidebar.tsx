@@ -14,6 +14,7 @@ import {
   Phone,
   Layers,
   X,
+  Smartphone,
 } from 'lucide-react';
 import { usePosCart } from '../../context/PosCartContext';
 import { formatKES } from '../../utils/currency';
@@ -80,16 +81,25 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
 
   return (
     <div className="w-full lg:w-96 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full select-none justify-between">
-      {/* Mobile Back to Menu Bar */}
+      {/* Mobile Back to Menu Bar with Instant Pay Button */}
       {onClose && (
         <div className="lg:hidden p-2.5 bg-zinc-850 border-b border-zinc-750 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="flex items-center space-x-1.5 text-xs font-bold text-brand-400 hover:text-brand-300 py-1 px-2.5 rounded-lg bg-zinc-800"
+            className="flex items-center space-x-1.5 text-xs font-bold text-brand-400 hover:text-brand-300 py-1.5 px-2.5 rounded-xl bg-zinc-800 border border-zinc-700"
           >
-            <span>← Back to Food Menu</span>
+            <span>← Back to Menu</span>
           </button>
-          <span className="text-xs font-extrabold text-white">Cart ({cartItems.length})</span>
+          
+          <button
+            type="button"
+            onClick={onOpenPaymentModal}
+            disabled={cartItems.length === 0}
+            className="flex items-center space-x-1.5 text-xs font-black text-white bg-safari-mpesa hover:bg-safari-mpesaDark active:scale-95 py-1.5 px-3 rounded-xl shadow-md transition disabled:opacity-50"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Pay ({formatKES(totalAmount)})</span>
+          </button>
         </div>
       )}
 
@@ -274,7 +284,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
       </div>
 
       {/* Cart Summary & Action Buttons */}
-      <div className="p-3 border-t border-zinc-800 bg-zinc-900/95 space-y-2.5">
+      <div className="p-3 border-t border-zinc-800 bg-zinc-900 sticky bottom-0 z-20 shadow-2xl space-y-2.5">
         {/* Subtotal, Discount & Total */}
         <div className="space-y-1 text-xs">
           <div className="flex items-center justify-between text-zinc-400">

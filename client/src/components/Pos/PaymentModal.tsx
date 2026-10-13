@@ -58,6 +58,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [mpesaCode, setMpesaCode] = useState<string>('');
   const [mpesaPhone, setMpesaPhone] = useState<string>(customerPhone || '');
   const [isSimulatingStk, setIsSimulatingStk] = useState<boolean>(false);
+  const [stkStatus, setStkStatus] = useState<string | null>(null);
 
   // Split details
   const [splitCash, setSplitCash] = useState<number>(Math.floor(totalAmount / 2));
@@ -89,10 +90,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const handleSimulateStkPush = () => {
+    const targetPhone = mpesaPhone.trim() || '0712345678';
+    if (!mpesaPhone.trim()) {
+      setMpesaPhone('0712345678');
+    }
+    setError(null);
     setIsSimulatingStk(true);
+    setStkStatus(`Sending payment prompt of ${formatKES(paymentMethod === 'SPLIT' ? splitMpesa : totalAmount)} to ${targetPhone}...`);
     setTimeout(() => {
       generateMpesaDemoCode();
       setIsSimulatingStk(false);
+      setStkStatus(`✓ Prompt delivered to ${targetPhone}! Customer approved transaction.`);
     }, 1200);
   };
 
@@ -394,9 +402,45 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
+              {/* Customer Phone for Mobile Payment / STK Push */}
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                  M-Pesa Transaction Confirmation Code
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                  <span>Customer Phone Number</span>
+                  <span className="text-[10px] text-safari-mpesa font-normal">For M-Pesa STK push prompt</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={mpesaPhone}
+                    onChange={e => setMpesaPhone(e.target.value)}
+                    placeholder="e.g. 0712345678 or 2547..."
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl py-2.5 px-4 text-sm font-semibold text-white placeholder-zinc-500 focus:outline-none focus:border-safari-mpesa"
+                  />
+                </div>
+              </div>
+
+              {/* STK Push Action Button */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleSimulateStkPush}
+                  disabled={isSimulatingStk}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-lg shadow-emerald-950/40"
+                >
+                  <Sparkles className={`w-4 h-4 ${isSimulatingStk ? 'animate-spin' : ''}`} />
+                  <span>{isSimulatingStk ? 'Prompting Customer Phone...' : '📱 Request Payment on Phone (STK Push)'}</span>
+                </button>
+                {stkStatus && (
+                  <div className="mt-2 text-xs font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-2.5 text-center">
+                    {stkStatus}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                  <span>M-Pesa Transaction Confirmation Code</span>
+                  <span className="text-[10px] text-zinc-400">Auto-filled or manual</span>
                 </label>
                 <div className="relative">
                   <input
@@ -411,22 +455,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     onClick={generateMpesaDemoCode}
                     className="absolute right-2 top-2 px-2.5 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-[10px] font-bold rounded-lg"
                   >
-                    Generate Code
+                    Auto Code
                   </button>
                 </div>
-              </div>
-
-              {/* STK Push Simulator */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={handleSimulateStkPush}
-                  disabled={isSimulatingStk}
-                  className="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-750 border border-safari-mpesa/40 text-safari-mpesa rounded-2xl text-xs font-bold flex items-center justify-center space-x-2 transition"
-                >
-                  <Sparkles className={`w-3.5 h-3.5 ${isSimulatingStk ? 'animate-spin' : ''}`} />
-                  <span>{isSimulatingStk ? 'Prompting Customer Phone...' : 'Send STK Push Prompt'}</span>
-                </button>
               </div>
             </div>
           )}
@@ -468,16 +499,38 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1">
-                  M-Pesa Ref Code (for split part)
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-300">
+                  M-Pesa STK Push & Confirmation Code
                 </label>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={mpesaPhone}
+                    onChange={e => setMpesaPhone(e.target.value)}
+                    placeholder="Phone (0712345678)"
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl py-2 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-safari-mpesa"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSimulateStkPush}
+                    disabled={isSimulatingStk || splitMpesa <= 0}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-[11px] font-bold rounded-xl whitespace-nowrap"
+                  >
+                    {isSimulatingStk ? 'Sending...' : '📱 STK Push'}
+                  </button>
+                </div>
+                {stkStatus && (
+                  <div className="text-[11px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/30 rounded-lg p-1.5 text-center">
+                    {stkStatus}
+                  </div>
+                )}
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     value={splitMpesaCode}
                     onChange={e => setSplitMpesaCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. QHK8921XLA"
+                    placeholder="Ref code (e.g. QHK8921XLA)"
                     className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl py-2 px-3 text-xs font-mono font-bold uppercase text-safari-mpesa"
                   />
                   <button
