@@ -35,7 +35,7 @@ netstat -ano | findstr /R ":5000 " >nul
 if %ERRORLEVEL% NEQ 0 (
     echo [!] Starting Node.js API server...
     cd /d "%~dp0server"
-    start "Nani Frys API Server" cmd /c "npm run dev"
+    start /min "Nani Frys API Server" cmd /c "npm run dev"
     timeout /t 3 /nobreak >nul
     echo [+] POS API server started.
 ) else (

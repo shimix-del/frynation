@@ -14,7 +14,16 @@ export const LoginScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
 
+  const isLocalHost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
   React.useEffect(() => {
+    if (!isLocalHost) {
+      // On GitHub Pages or remote URL, POS runs in cloud standalone mode
+      setServerOnline(true);
+      return;
+    }
+
     const checkServer = async () => {
       try {
         const res = await fetch('http://localhost:5000/api/health');
@@ -26,7 +35,7 @@ export const LoginScreen: React.FC = () => {
     checkServer();
     const interval = setInterval(checkServer, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isLocalHost]);
 
   const handlePinInput = (num: string) => {
     if (pin.length < 6) {
@@ -134,11 +143,21 @@ export const LoginScreen: React.FC = () => {
           </button>
         </div>
 
-        {serverOnline === false && (
+        {!isLocalHost && (
+          <div className="mb-4 p-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold">Live Cloud POS (Offline-Ready)</span>
+            </div>
+            <span className="text-[11px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-medium">Online</span>
+          </div>
+        )}
+
+        {isLocalHost && serverOnline === false && (
           <div className="mb-4 p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-700 text-xs font-bold flex items-start space-x-2">
             <span className="text-base shrink-0">⚠️</span>
             <div>
-              <div className="font-extrabold text-amber-800">POS Server is Offline</div>
+              <div className="font-extrabold text-amber-800">Local POS Backend (Port 5000) is Offline</div>
               <div className="text-[11px] font-medium text-amber-700 mt-0.5">
                 Double-click <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono font-bold text-amber-900">run_pos.bat</code> in the project folder to start the database &amp; server.
               </div>
