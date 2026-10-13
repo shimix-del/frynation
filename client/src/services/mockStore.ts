@@ -15,17 +15,6 @@ const initialBranches: Branch[] = [
     isActive: true,
     createdAt: new Date().toISOString(),
   },
-  {
-    id: 'branch-exp2',
-    name: 'Branch 2 - Express',
-    code: 'EXP02',
-    address: 'Express Outlet',
-    phone: '+254 722 987 654',
-    tillNumber: '5428902',
-    paybillNumber: '247247',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
 ];
 
 const initialUsers: any[] = [
@@ -62,24 +51,6 @@ const initialUsers: any[] = [
     email: 'cashier2@nanifrys.co.ke',
     role: 'CASHIER',
     pinCode: '2345',
-    branchId: 'branch-migadini',
-    isActive: true,
-  },
-  {
-    id: 'user-cashier3',
-    name: 'Cashier 3',
-    email: 'cashier3@nanifrys.co.ke',
-    role: 'CASHIER',
-    pinCode: '3456',
-    branchId: 'branch-migadini',
-    isActive: true,
-  },
-  {
-    id: 'user-cashier4',
-    name: 'Cashier 4',
-    email: 'cashier4@nanifrys.co.ke',
-    role: 'CASHIER',
-    pinCode: '4567',
     branchId: 'branch-migadini',
     isActive: true,
   },
@@ -470,6 +441,24 @@ export const mockStore = {
     return newItem;
   },
 
+  updateStockItem: (id: string, itemData: any) => {
+    const list = getStored<StockItem[]>('inventory', []);
+    const idx = list.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...itemData };
+      setStored('inventory', list);
+      return list[idx];
+    }
+    return itemData;
+  },
+
+  deleteStockItem: (id: string) => {
+    let list = getStored<StockItem[]>('inventory', []);
+    list = list.filter(i => i.id !== id);
+    setStored('inventory', list);
+    return { success: true };
+  },
+
   restock: (data: any) => {
     const list = getStored<StockItem[]>('inventory', []);
     const item = list.find(i => i.id === data.stockItemId);
@@ -751,7 +740,7 @@ export const mockStore = {
     };
   },
 
-  getSalesByCategory: () => [
+  getSalesByCategory: (_params?: any) => [
     { name: 'Fast Foods & Chips', revenue: 14200, quantity: 48 },
     { name: 'Kuku & Meat Dishes', revenue: 18400, quantity: 28 },
     { name: 'Swahili Cooked Meals', revenue: 12600, quantity: 35 },
@@ -779,14 +768,11 @@ export const mockStore = {
 
   getBranchComparison: () => [
     { branchId: 'branch-migadini', branchName: 'Migadini Main Shop', branchCode: 'MGD01', totalOrders: 65, totalSales: 28500, totalExpenses: 4200, totalCOGS: 11970, netProfit: 12330 },
-    { branchId: 'branch-exp2', branchName: 'Branch 2 - Express', branchCode: 'EXP02', totalOrders: 28, totalSales: 12400, totalExpenses: 1800, totalCOGS: 5200, netProfit: 5400 },
   ],
 
   getCashierPerformance: () => [
     { cashierId: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER', branchName: 'Migadini Main Shop', orderCount: 24, totalSales: 11200, avgTicket: 466 },
     { cashierId: 'user-cashier2', name: 'Cashier 2', role: 'CASHIER', branchName: 'Migadini Main Shop', orderCount: 20, totalSales: 8900, avgTicket: 445 },
-    { cashierId: 'user-cashier3', name: 'Cashier 3', role: 'CASHIER', branchName: 'Migadini Main Shop', orderCount: 14, totalSales: 6100, avgTicket: 435 },
-    { cashierId: 'user-cashier4', name: 'Cashier 4', role: 'CASHIER', branchName: 'Migadini Main Shop', orderCount: 7, totalSales: 2300, avgTicket: 328 },
   ],
 
   getProfitLoss: () => ({

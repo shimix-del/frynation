@@ -328,4 +328,70 @@ router.get('/audits', authenticateToken, async (req: AuthenticatedRequest, res: 
   }
 });
 
+// Update stock item
+router.put('/:id', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const {
+      name,
+      sku,
+      type,
+      unit,
+      currentStock,
+      minStockAlert,
+      unitCost,
+      supplierName,
+      branchId,
+    } = req.body;
+
+    const item = await prisma.stockItem.findUnique({ where: { id } });
+    if (!item) {
+      res.status(404).json({ error: 'Stock item not found' });
+      return;
+    }
+
+    const updated = await prisma.stockItem.update({
+      where: { id },
+      data: {
+        name: name !== undefined ? name : undefined,
+        sku: sku !== undefined ? sku : undefined,
+        type: type !== undefined ? type : undefined,
+        unit: unit !== undefined ? unit : undefined,
+        currentStock: currentStock !== undefined ? parseFloat(currentStock) : undefined,
+        minStockAlert: minStockAlert !== undefined ? parseFloat(minStockAlert) : undefined,
+        unitCost: unitCost !== undefined ? parseFloat(unitCost) : undefined,
+        supplierName: supplierName !== undefined ? supplierName : undefined,
+        branchId: branchId !== undefined ? branchId : undefined,
+      },
+      include: { branch: true },
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete stock item
+router.delete('/:id', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const item = await prisma.stockItem.findUnique({ where: { id } });
+    if (!item) {
+      res.status(404).json({ error: 'Stock item not found' });
+      return;
+    }
+
+    // Clean up associated recipes, transfers, and audits before deleting
+    await prisma.menuItemRecipe.deleteMany({ where: { stockItemId: id } });
+    await prisma.stockTransfer.deleteMany({ where: { stockItemId: id } });
+    await prisma.stockAudit.deleteMany({ where: { stockItemId: id } });
+
+    await prisma.stockItem.delete({ where: { id } });
+    res.json({ message: `Stock item "${item.name}" deleted successfully`, id });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

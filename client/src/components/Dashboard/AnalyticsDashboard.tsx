@@ -127,7 +127,7 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/60 p-3.5 sm:p-4 rounded-2xl border border-zinc-800">
         <div>
-          <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center space-x-2">
+          <h2 className="text-lg sm:text-2xl font-black tracking-tight text-zinc-100 flex items-center space-x-2">
             <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-brand-500 shrink-0" />
             <span className="truncate">Sales Analytics & P&L</span>
           </h2>

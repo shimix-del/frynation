@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import branchRoutes from './routes/branches.js';
 import categoryRoutes from './routes/categories.js';
@@ -14,12 +16,27 @@ import reportRoutes from './routes/reports.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost',
+    'http://localhost:80',
+    'http://localhost:3000',
+    'http://127.0.0.1',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-branch-id'],
+}));
 app.use(express.json());
+
 
 // Request logger for development
 app.use((req, res, next) => {
@@ -48,6 +65,17 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
+
+// Static files for client
+app.use(express.static(clientDistPath));
+
+// Fallback for SPA routing on port 5000
+app.get('*', (req, res, next) => {
+  if (req.originalUrl.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import naniLogo from '../../assets/logo.jpg';
 
 export type NavTab = 'pos' | 'inventory' | 'menu' | 'shifts' | 'expenses' | 'analytics' | 'staff';
 
@@ -129,9 +130,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Bottom info banner */}
-        <div className="px-4 py-3 mx-2.5 bg-zinc-800/60 rounded-xl border border-zinc-800/80 text-[11px] text-zinc-400">
-          <div className="font-bold text-zinc-200">🍟 NANI FRYS POS</div>
-          <div className="text-[10px] text-zinc-400 font-medium">Hotel & Fast Food System</div>
+        <div className="px-3.5 py-3 mx-2.5 bg-zinc-800/60 rounded-xl border border-zinc-800/80 flex items-center space-x-2.5">
+          <img
+            src={naniLogo}
+            alt="Logo"
+            className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 bg-black shrink-0"
+          />
+          <div className="truncate">
+            <div className="font-extrabold text-xs text-zinc-100 truncate">NANI'S FRY NATION</div>
+            <div className="text-[10px] text-zinc-400 font-medium truncate">Crispy • Golden</div>
+          </div>
         </div>
       </aside>
 
@@ -141,13 +149,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-4/5 max-w-xs bg-zinc-900 h-full border-r border-zinc-800 p-4 flex flex-col justify-between animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 mb-3 border-b border-zinc-800">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-lg">
-                    🍟
-                  </div>
+                <div className="flex items-center space-x-2.5">
+                  <img
+                    src={naniLogo}
+                    alt="Logo"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 bg-black shrink-0"
+                  />
                   <div>
-                    <h3 className="font-black text-sm text-white">NANI FRYS</h3>
-                    <p className="text-[10px] text-zinc-400">Main Menu Navigation</p>
+                    <h3 className="font-black text-sm text-zinc-100">NANI'S FRY NATION</h3>
+                    <p className="text-[10px] text-zinc-400">Crispy • Golden • Irresistible</p>
                   </div>
                 </div>
                 <button

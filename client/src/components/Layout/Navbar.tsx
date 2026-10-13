@@ -9,12 +9,15 @@ import {
   LogOut,
   ShieldCheck,
   Menu as MenuIcon,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
 import { api } from '../../services/api';
 import { offlineSync, OfflineOrder } from '../../services/offlineSync';
 import { Shift } from '../../types';
+import naniLogo from '../../assets/logo.jpg';
 
 interface NavbarProps {
   onOpenPinModal: () => void;
@@ -33,6 +36,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [offlineQueue, setOfflineQueue] = useState<OfflineOrder[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('nanifrys_theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark', 'theme-dark');
+    } else {
+      document.documentElement.classList.remove('dark', 'theme-dark');
+    }
+    localStorage.setItem('nanifrys_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const fetchShiftStatus = async () => {
     try {
@@ -93,19 +112,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-500 to-amber-600 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white font-extrabold text-base sm:text-xl shrink-0">
-          🍟
-        </div>
+        <img
+          src={naniLogo}
+          alt="Nani's Fry Nation"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-amber-400 shadow-md bg-black shrink-0"
+        />
         <div className="shrink-0">
           <div className="flex items-center space-x-1 sm:space-x-1.5">
-            <span className="text-base sm:text-lg font-black tracking-tight text-white">
-              NANI <span className="text-brand-500">FRYS</span>
+            <span className="text-base sm:text-lg font-black tracking-tight text-zinc-100">
+              NANI'S <span className="text-brand-500">FRY NATION</span>
             </span>
             <span className="text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">
               POS
             </span>
           </div>
-          <p className="text-[10px] text-zinc-400 font-medium hidden lg:block">Hotel & Fast Food Management</p>
+          <p className="text-[10px] text-zinc-400 font-medium hidden lg:block">Crispy • Golden • Irresistible</p>
         </div>
       </div>
 
@@ -121,9 +142,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             disabled={user?.role === 'CASHIER'}
             className="bg-transparent text-[11px] sm:text-xs font-semibold text-zinc-200 outline-none cursor-pointer pr-1 max-w-[85px] sm:max-w-[160px] md:max-w-[200px] truncate"
           >
-            {user?.role === 'OWNER' && <option value="all" className="bg-zinc-900 text-white">All Branches (HQ)</option>}
+            {branches.length > 1 && user?.role === 'OWNER' && (
+              <option value="all" className="bg-zinc-900 text-zinc-100">All Branches (HQ)</option>
+            )}
             {branches.map(b => (
-              <option key={b.id} value={b.id} className="bg-zinc-900 text-white">
+              <option key={b.id} value={b.id} className="bg-zinc-900 text-zinc-100">
                 {b.name} ({b.code})
               </option>
             ))}
@@ -168,8 +191,27 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* Right Controls: Quick PIN Switch, User Info & Logout */}
+      {/* Right Controls: Theme Toggle, Quick PIN Switch, User Info & Logout */}
       <div className="flex items-center space-x-1.5 sm:space-x-2">
+        {/* Theme Toggle (White / Dark) */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
+          title={theme === 'light' ? 'Switch to Dark Background' : 'Switch to White Background'}
+        >
+          {theme === 'light' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden md:inline">White Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden md:inline">Dark Mode</span>
+            </>
+          )}
+        </button>
+
         {/* Switch Cashier via 4-Digit PIN */}
         <button
           onClick={onOpenPinModal}

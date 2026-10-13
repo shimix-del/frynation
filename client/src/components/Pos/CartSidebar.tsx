@@ -256,7 +256,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="text-xs font-black text-white w-6 text-center">
+                  <span className="text-xs font-black text-zinc-100 w-6 text-center">
                     {item.quantity}
                   </span>
                   <button
@@ -291,9 +291,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-1 border-t border-zinc-800 text-sm font-black text-white">
+          <div className="flex items-center justify-between pt-1.5 border-t border-zinc-750 text-sm font-black text-zinc-100">
             <span>Total to Pay</span>
-            <span className="text-brand-400 text-base">{formatKES(totalAmount)}</span>
+            <span className="text-brand-500 dark:text-brand-400 text-lg font-black tracking-tight">{formatKES(totalAmount)}</span>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Printer, Share2, Check, MessageSquare } from 'lucide-react';
 import { Order } from '../../types';
 import { formatKES, formatKenyaDateTime } from '../../utils/currency';
+import naniLogo from '../../assets/logo.jpg';
 
 interface ThermalReceiptProps {
   order: Order | null;
@@ -114,8 +115,14 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             style={{ fontFamily: '"JetBrains Mono", Courier, monospace' }}
           >
             {/* Header */}
-            <div className="text-center space-y-0.5 pb-2 border-b border-dashed border-zinc-400">
-              <div className="font-extrabold text-sm tracking-wider">🍟 NANI FRYS HOTEL & FOODS</div>
+            <div className="text-center space-y-1 pb-2 border-b border-dashed border-zinc-400 flex flex-col items-center">
+              <img
+                src={naniLogo}
+                alt="Nani's Fry Nation"
+                className="w-20 h-20 rounded-full object-cover border-2 border-black mx-auto mb-1 block"
+              />
+              <div className="font-black text-sm tracking-wider">NANI'S FRY NATION</div>
+              <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-wide">Crispy • Golden • Irresistible</div>
               <div className="text-[11px] font-semibold">{order.branch?.name || 'Migadini Main Shop'}</div>
               {order.branch?.address && (
                 <div className="text-[10px] text-zinc-600">{order.branch.address}</div>

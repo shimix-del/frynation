@@ -247,7 +247,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className="bg-gradient-to-r from-zinc-900 via-zinc-850 to-zinc-900 p-4 border-b border-zinc-800 flex items-center justify-between">
           <div>
             <span className="text-xs text-zinc-400 font-semibold">Total Amount Due</span>
-            <div className="text-2xl sm:text-3xl font-black text-brand-400">
+            <div className="text-2xl sm:text-3xl font-black text-brand-500 dark:text-brand-400">
               {formatKES(totalAmount)}
             </div>
           </div>

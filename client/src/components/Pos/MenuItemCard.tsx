@@ -36,8 +36,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
           </div>
         )}
 
-        {/* Price Tag Overlay */}
-        <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-zinc-700/60 text-white font-extrabold text-xs shadow-md">
+        {/* High-Contrast Price Badge Overlay */}
+        <div className="absolute bottom-2 left-2 bg-zinc-950/90 dark:bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-zinc-700/70 text-white font-black text-xs shadow-lg tracking-tight">
           {item.hasVariants ? (
             <span>From {formatKES(item.basePrice)}</span>
           ) : (
@@ -89,15 +89,20 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
           )}
         </div>
 
-        <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-zinc-800/80">
-          <span className="text-[10px] font-semibold text-zinc-400 truncate max-w-[100px]">
-            {item.category?.name || 'Dish'}
-          </span>
+        <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-zinc-750">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-semibold text-zinc-400 truncate max-w-[85px]">
+              {item.category?.name || 'Dish'}
+            </span>
+            <span className="text-xs font-black text-brand-500 dark:text-brand-400">
+              {formatKES(item.basePrice)}
+            </span>
+          </div>
           <div
             className={`w-7 h-7 rounded-xl flex items-center justify-center transition shadow-sm ${
               isAvailable
-                ? 'bg-brand-500/15 group-hover:bg-brand-500 text-brand-400 group-hover:text-white'
-                : 'bg-zinc-800 text-zinc-600'
+                ? 'bg-brand-500/15 group-hover:bg-brand-500 text-brand-500 dark:text-brand-400 group-hover:text-white'
+                : 'bg-zinc-800 text-zinc-500'
             }`}
           >
             <Plus className="w-4 h-4" />

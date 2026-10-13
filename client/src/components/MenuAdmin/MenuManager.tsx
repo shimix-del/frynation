@@ -159,7 +159,7 @@ export const MenuManager: React.FC = () => {
     <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 bg-zinc-950">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center space-x-2.5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-100 flex items-center space-x-2.5">
             <Utensils className="w-6 h-6 text-brand-500" />
             <span>Menu & Product Management</span>
           </h2>
@@ -220,8 +220,8 @@ export const MenuManager: React.FC = () => {
                     : 0;
 
                 return (
-                  <tr key={item.id} className="hover:bg-zinc-800/40">
-                    <td className="py-3 px-4 font-bold text-white flex items-center space-x-3">
+                  <tr key={item.id} className="hover:bg-zinc-850/60 transition">
+                    <td className="py-3 px-4 font-bold text-zinc-100 flex items-center space-x-3">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
@@ -253,13 +253,13 @@ export const MenuManager: React.FC = () => {
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleToggleStock(item)}
-                        className={`text-[10px] px-2.5 py-1 rounded-xl font-bold flex items-center space-x-1 transition ${
+                        className={`text-xs px-3 py-1.5 rounded-xl font-extrabold flex items-center space-x-1.5 transition border shadow-sm ${
                           item.isAvailable
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-400 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
+                            : 'bg-red-100 text-red-800 border-red-400 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40'
                         }`}
                       >
-                        {item.isAvailable ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        {item.isAvailable ? <Eye className="w-3.5 h-3.5 stroke-[2.5]" /> : <EyeOff className="w-3.5 h-3.5 stroke-[2.5]" />}
                         <span>{item.isAvailable ? 'In Stock' : 'Out of Stock'}</span>
                       </button>
                     </td>

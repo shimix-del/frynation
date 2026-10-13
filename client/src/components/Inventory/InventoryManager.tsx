@@ -12,6 +12,8 @@ import {
   Layers,
   History,
   TrendingDown,
+  Trash2,
+  Edit2,
 } from 'lucide-react';
 import { StockItem, Branch, MenuItem, StockTransfer, StockAudit } from '../../types';
 import { api } from '../../services/api';
@@ -21,6 +23,7 @@ import { RestockModal } from './RestockModal';
 import { StockTransferModal } from './StockTransferModal';
 import { StockAuditModal } from './StockAuditModal';
 import { RecipeManager } from './RecipeManager';
+import { AddEditStockModal } from './AddEditStockModal';
 
 export const InventoryManager: React.FC = () => {
   const { currentBranchId, branches } = useBranch();
@@ -41,6 +44,17 @@ export const InventoryManager: React.FC = () => {
   const [selectedStockForTransfer, setSelectedStockForTransfer] = useState<StockItem | null>(null);
   const [selectedStockForAudit, setSelectedStockForAudit] = useState<StockItem | null>(null);
   const [showAddStockModal, setShowAddStockModal] = useState<boolean>(false);
+  const [stockItemToEdit, setStockItemToEdit] = useState<StockItem | null>(null);
+
+  const handleDeleteStock = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${name}" from stock?`)) return;
+    try {
+      await api.deleteStockItem(id);
+      fetchInventoryData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete stock item');
+    }
+  };
 
   const fetchInventoryData = async () => {
     setIsLoading(true);
@@ -90,7 +104,7 @@ export const InventoryManager: React.FC = () => {
       {/* Top Header & Metrics */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center space-x-2.5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-100 flex items-center space-x-2.5">
             <Boxes className="w-6 h-6 text-brand-500" />
             <span>Stock & Inventory Engine</span>
           </h2>
@@ -99,40 +113,54 @@ export const InventoryManager: React.FC = () => {
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-800 self-start">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Add Stock Button */}
           <button
-            onClick={() => setActiveTab('STOCK')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'STOCK' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
+            onClick={() => {
+              setStockItemToEdit(null);
+              setShowAddStockModal(true);
+            }}
+            className="px-4 py-2 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-brand-500/25"
           >
-            Stock Levels
+            <Plus className="w-4 h-4" />
+            <span>Add Stock Item</span>
           </button>
-          <button
-            onClick={() => setActiveTab('RECIPES')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'RECIPES' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Recipes (BOM)
-          </button>
-          <button
-            onClick={() => setActiveTab('TRANSFERS')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'TRANSFERS' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Transfers
-          </button>
-          <button
-            onClick={() => setActiveTab('AUDITS')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              activeTab === 'AUDITS' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Audits & Shrinkage
-          </button>
+
+          {/* Tab Switcher */}
+          <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-800">
+            <button
+              onClick={() => setActiveTab('STOCK')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                activeTab === 'STOCK' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Stock Levels
+            </button>
+            <button
+              onClick={() => setActiveTab('RECIPES')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                activeTab === 'RECIPES' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Recipes (BOM)
+            </button>
+            <button
+              onClick={() => setActiveTab('TRANSFERS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                activeTab === 'TRANSFERS' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Transfers
+            </button>
+            <button
+              onClick={() => setActiveTab('AUDITS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                activeTab === 'AUDITS' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Audits & Shrinkage
+            </button>
+          </div>
         </div>
       </div>
 
@@ -240,35 +268,45 @@ export const InventoryManager: React.FC = () => {
                     <td className="py-3 px-4 text-zinc-400">{item.branch?.name}</td>
                     <td className="py-3 px-4">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        className={`text-[11px] px-2.5 py-1 rounded-full font-bold border ${
                           item.type === 'RAW_INGREDIENT'
-                            ? 'bg-amber-500/15 text-amber-300'
-                            : 'bg-blue-500/15 text-blue-300'
+                            ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40'
+                            : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40'
                         }`}
                       >
                         {item.type === 'RAW_INGREDIENT' ? 'Raw Ingredient' : 'Packaged Unit'}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-black text-sm">
-                      <span className={item.isLowStock ? 'text-red-400' : 'text-emerald-400'}>
+                      <span className={item.isLowStock ? 'text-red-600 dark:text-red-400 font-extrabold' : 'text-emerald-700 dark:text-emerald-400 font-extrabold'}>
                         {item.currentStock} {item.unit}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-zinc-400">
+                    <td className="py-3 px-4 text-zinc-400 font-semibold">
                       {item.minStockAlert} {item.unit}
                     </td>
-                    <td className="py-3 px-4">{formatKES(item.unitCost)}</td>
-                    <td className="py-3 px-4 font-bold text-zinc-200">
+                    <td className="py-3 px-4 font-semibold text-zinc-300">{formatKES(item.unitCost)}</td>
+                    <td className="py-3 px-4 font-bold text-zinc-100">
                       {formatKES(item.stockValue)}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
                         <button
                           onClick={() => setSelectedStockForRestock(item)}
-                          className="px-2.5 py-1.5 bg-brand-500/15 hover:bg-brand-500 text-brand-300 hover:text-white border border-brand-500/30 rounded-xl text-[11px] font-bold transition"
+                          className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-extrabold rounded-xl text-xs transition shadow-sm"
                           title="Restock Intake"
                         >
                           + Restock
+                        </button>
+                        <button
+                          onClick={() => {
+                            setStockItemToEdit(item);
+                            setShowAddStockModal(true);
+                          }}
+                          className="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-brand-400 rounded-xl border border-zinc-700 transition"
+                          title="Edit Stock Details"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setSelectedStockForTransfer(item)}
@@ -283,6 +321,13 @@ export const InventoryManager: React.FC = () => {
                           title="Stock Audit & Reconciliation"
                         >
                           <ClipboardCheck className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStock(item.id, item.name)}
+                          className="p-1.5 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-xl border border-zinc-700 hover:border-red-500/30 transition"
+                          title="Delete Stock Item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -406,6 +451,18 @@ export const InventoryManager: React.FC = () => {
         isOpen={!!selectedStockForAudit}
         onClose={() => setSelectedStockForAudit(null)}
         onAudited={fetchInventoryData}
+      />
+
+      <AddEditStockModal
+        isOpen={showAddStockModal}
+        itemToEdit={stockItemToEdit}
+        branches={branches}
+        currentBranchId={currentBranchId}
+        onClose={() => {
+          setShowAddStockModal(false);
+          setStockItemToEdit(null);
+        }}
+        onSaved={fetchInventoryData}
       />
     </div>
   );

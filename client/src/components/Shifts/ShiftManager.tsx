@@ -65,7 +65,7 @@ export const ShiftManager: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center space-x-2.5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-100 flex items-center space-x-2.5">
             <WalletCards className="w-6 h-6 text-brand-500" />
             <span>Shift & Cash Float Management</span>
           </h2>

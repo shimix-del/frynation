@@ -110,7 +110,7 @@ export const PinKeypadModal: React.FC<PinKeypadModalProps> = ({ isOpen, onClose 
         </div>
 
         <div className="text-[11px] text-zinc-500 text-center mt-3">
-          Quick PINs: Robina: <span className="font-mono text-zinc-300">9999</span> | Manager: <span className="font-mono text-zinc-300">1111</span> | Cashiers: <span className="font-mono text-zinc-300">1234 / 2345 / 3456 / 4567</span>
+          Quick PINs: Robina: <span className="font-mono text-zinc-300">9999</span> | Manager: <span className="font-mono text-zinc-300">1111</span> | Cashiers: <span className="font-mono text-zinc-300">1234 / 2345</span>
         </div>
       </div>
     </div>

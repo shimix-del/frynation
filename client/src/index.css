@@ -3,26 +3,152 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-zinc-950 text-zinc-100 selection:bg-orange-500 selection:text-white font-sans;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  /* ==========================================================
+     LIGHT / WHITE MODE (Default :root)
+     Clean, crisp white background, high contrast dark charcoal
+     and slate texts, solid borders.
+     ========================================================== */
+  :root {
+    --color-zinc-50: 2 6 23;       /* #020617 deepest black text */
+    --color-zinc-100: 15 23 42;    /* #0f172a primary high-contrast headings */
+    --color-zinc-200: 30 41 59;    /* #1e293b secondary subheadings */
+    --color-zinc-300: 51 65 85;    /* #334155 strong body text */
+    --color-zinc-400: 71 85 105;   /* #475569 readable descriptions */
+    --color-zinc-500: 100 116 139; /* #64748b secondary text / icons */
+    --color-zinc-600: 148 163 184; /* #94a3b8 borders & icons */
+    --color-zinc-700: 203 213 225; /* #cbd5e1 input borders */
+    --color-zinc-750: 226 232 240; /* #e2e8f0 dividers */
+    --color-zinc-800: 226 232 240; /* #e2e8f0 surface borders */
+    --color-zinc-850: 241 245 249; /* #f1f5f9 card hovers / controls */
+    --color-zinc-900: 255 255 255; /* #ffffff clean white cards & panels */
+    --color-zinc-950: 248 250 252; /* #f8fafc crisp white body canvas */
   }
 
-  /* Custom sleek scrollbar for touch tablets & desktop */
+  /* ==========================================================
+     DARK MODE (.dark)
+     Premium dark slate & pitch black surfaces, bright crisp text
+     ========================================================== */
+  .dark {
+    --color-zinc-50: 248 250 252;  /* #f8fafc bright highlight text */
+    --color-zinc-100: 241 245 249; /* #f1f5f9 clean white headings */
+    --color-zinc-200: 226 232 240; /* #e2e8f0 crisp subheadings */
+    --color-zinc-300: 203 213 225; /* #cbd5e1 body text */
+    --color-zinc-400: 148 163 184; /* #94a3b8 secondary labels */
+    --color-zinc-500: 100 116 139; /* #64748b muted labels */
+    --color-zinc-600: 71 85 105;   /* #475569 inactive icons */
+    --color-zinc-700: 51 65 85;    /* #334155 dark input borders */
+    --color-zinc-750: 39 48 64;    /* dividers */
+    --color-zinc-800: 30 41 59;    /* #1e293b dark borders */
+    --color-zinc-850: 24 33 47;    /* elevated hover surfaces */
+    --color-zinc-900: 15 23 42;    /* #0f172a dark cards & panels */
+    --color-zinc-950: 2 6 23;      /* #020617 deep black canvas */
+  }
+
+  html {
+    font-size: 18px; /* Scales whole rem-based UI up by 2px for enhanced POS readability */
+  }
+
+  body {
+    background-color: rgb(var(--color-zinc-950));
+    color: rgb(var(--color-zinc-100));
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    letter-spacing: -0.011em;
+  }
+
+  /* Modern scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #18181b;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #3f3f46;
+    background: rgb(var(--color-zinc-600) / 0.5);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #71717a;
+    background: rgb(var(--color-zinc-500));
   }
+}
+
+/* ==========================================================
+   HIGH CONTRAST & LEGIBILITY RULES FOR LIGHT / WHITE MODE
+   In light mode, make sure all details, headings, table cells,
+   labels, numbers, and inputs are bold, crisp, and high-contrast.
+   ========================================================== */
+html:not(.dark) {
+  /* All headings and titles in light mode */
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+  }
+
+  /* Headings & table elements that use text-white */
+  .text-white:not(button):not(button *):not(.badge *):not([class*="bg-brand"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-safari"]):not([class*="bg-blue"]):not([class*="bg-purple"]):not([class*="bg-zinc-950"]):not([class*="bg-black"]) {
+    color: #0f172a !important;
+  }
+
+  /* Make muted secondary text high contrast and readable */
+  .text-zinc-400 {
+    color: #475569 !important; /* Deep readable slate instead of faint gray */
+  }
+  .text-zinc-500 {
+    color: #64748b !important;
+  }
+
+  /* Table headers should be crisp and distinct */
+  thead th {
+    color: #1e293b !important;
+    font-weight: 800 !important;
+    background-color: #f1f5f9 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+  }
+
+  /* Table cell borders and text */
+  tbody td {
+    color: #0f172a !important;
+  }
+
+  /* Input fields and select dropdowns in light mode */
+  input, select, textarea {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+  }
+  select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  /* Card and panel borders and subtle elevation */
+  .bg-zinc-900 {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    border-color: #cbd5e1 !important;
+  }
+  .bg-zinc-850 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+  .bg-zinc-800 {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+  }
+}
+
+/* Tabular nums for all financial & price numbers */
+.font-price, .font-mono {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interactive card & input borders transition smoothly */
+.border-zinc-800 {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 /* Thermal Receipt Print Styles for 58mm / 80mm ESC/POS Printers */
