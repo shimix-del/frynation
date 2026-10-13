@@ -100,18 +100,18 @@ export const LoginScreen: React.FC = () => {
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl backdrop-blur-xl relative z-10 my-auto">
+      <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-7 shadow-2xl backdrop-blur-xl relative z-10 my-auto">
         {/* Brand Header & Prominent Center Logo */}
-        <div className="text-center mb-6 flex flex-col items-center">
-          <div className="relative mb-3 group">
-            <div className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-amber-400 via-brand-500 to-yellow-400 blur-md opacity-80 group-hover:opacity-100 transition duration-300"></div>
+        <div className="text-center mb-4 sm:mb-6 flex flex-col items-center">
+          <div className="relative mb-2.5 sm:mb-3 group">
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-400 via-brand-500 to-yellow-400 blur-md opacity-80 group-hover:opacity-100 transition duration-300"></div>
             <img
               src={naniLogo}
               alt="Nani's Fry Nation Logo"
-              className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full object-cover shadow-2xl border-4 border-amber-400 bg-black block mx-auto"
+              className="relative w-28 h-28 sm:w-40 sm:h-40 rounded-full object-cover shadow-2xl border-4 border-amber-400 bg-black block mx-auto"
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center space-x-1.5">
+          <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center space-x-1.5">
             <span className="text-yellow-400">NANI'S</span>
             <span className="text-brand-500">FRY NATION</span>
           </h1>

@@ -244,29 +244,31 @@ export const InventoryManager: React.FC = () => {
             <table className="w-full text-left text-xs text-zinc-300">
               <thead className="bg-zinc-950/70 text-zinc-400 font-bold uppercase tracking-wider text-[10px] border-b border-zinc-800">
                 <tr>
-                  <th className="py-3 px-4">Item Name</th>
-                  <th className="py-3 px-4">Branch</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Current Stock</th>
-                  <th className="py-3 px-4">Min Alert</th>
-                  <th className="py-3 px-4">Unit Cost</th>
-                  <th className="py-3 px-4">Total Value</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4">Item Name</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Branch</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Type</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4">Current Stock</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">Min Alert</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Unit Cost</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Total Value</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-medium">
                 {filteredStock.map(item => (
                   <tr key={item.id} className="hover:bg-zinc-800/40 transition">
-                    <td className="py-3 px-4 font-bold text-zinc-100 flex items-center space-x-2">
-                      <span>{item.name}</span>
-                      {item.isLowStock && (
-                        <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full">
-                          LOW
-                        </span>
-                      )}
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-zinc-100">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="truncate max-w-[120px] sm:max-w-none">{item.name}</span>
+                        {item.isLowStock && (
+                          <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-extrabold px-1 py-0.2 rounded-full shrink-0">
+                            LOW
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 text-zinc-400">{item.branch?.name}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden sm:table-cell">{item.branch?.name}</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
                       <span
                         className={`text-[11px] px-2.5 py-1 rounded-full font-bold border ${
                           item.type === 'RAW_INGREDIENT'
@@ -277,19 +279,19 @@ export const InventoryManager: React.FC = () => {
                         {item.type === 'RAW_INGREDIENT' ? 'Raw Ingredient' : 'Packaged Unit'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-black text-sm">
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-black text-xs sm:text-sm">
                       <span className={item.isLowStock ? 'text-red-600 dark:text-red-400 font-extrabold' : 'text-emerald-700 dark:text-emerald-400 font-extrabold'}>
                         {item.currentStock} {item.unit}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-zinc-400 font-semibold">
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 font-semibold hidden lg:table-cell">
                       {item.minStockAlert} {item.unit}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-zinc-300">{formatKES(item.unitCost)}</td>
-                    <td className="py-3 px-4 font-bold text-zinc-100">
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-zinc-300 hidden sm:table-cell">{formatKES(item.unitCost)}</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-zinc-100 hidden md:table-cell">
                       {formatKES(item.stockValue)}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
                         <button
                           onClick={() => setSelectedStockForRestock(item)}

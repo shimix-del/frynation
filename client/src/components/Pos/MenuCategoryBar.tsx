@@ -42,7 +42,7 @@ export const MenuCategoryBar: React.FC<MenuCategoryBarProps> = ({
     <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar select-none">
       <button
         onClick={() => onSelectCategory('all')}
-        className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
+        className={`flex items-center space-x-1.5 sm:space-x-2 px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
           selectedCategoryId === 'all'
             ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/25 scale-[1.02]'
             : 'bg-zinc-800/80 hover:bg-zinc-800 border-zinc-700/70 text-zinc-300'
@@ -60,7 +60,7 @@ export const MenuCategoryBar: React.FC<MenuCategoryBarProps> = ({
           <button
             key={cat.id}
             onClick={() => onSelectCategory(cat.id)}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
+            className={`flex items-center space-x-1.5 sm:space-x-2 px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
               isSelected
                 ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/25 scale-[1.02]'
                 : 'bg-zinc-800/80 hover:bg-zinc-800 border-zinc-700/70 text-zinc-300'

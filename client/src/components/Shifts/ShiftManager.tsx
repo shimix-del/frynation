@@ -223,36 +223,38 @@ export const ShiftManager: React.FC = () => {
           <table className="w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950/70 text-zinc-400 font-bold uppercase tracking-wider text-[10px] border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-4">Opened Date</th>
-                <th className="py-3 px-4">Branch</th>
-                <th className="py-3 px-4">Cashier</th>
-                <th className="py-3 px-4">Float</th>
-                <th className="py-3 px-4">Cash Sales</th>
-                <th className="py-3 px-4">M-Pesa Sales</th>
-                <th className="py-3 px-4">Variance</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Z-Report</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Date</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Branch</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Cashier</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Float</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">Cash Sales</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">M-Pesa</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Variance</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Status</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-right">Z-Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {shiftHistory.map(shift => (
                 <tr key={shift.id} className="hover:bg-zinc-800/40">
-                  <td className="py-3 px-4 text-zinc-400">{formatKenyaDateTime(shift.openedAt)}</td>
-                  <td className="py-3 px-4 font-semibold text-white">{shift.branch?.name}</td>
-                  <td className="py-3 px-4">{shift.cashier?.name}</td>
-                  <td className="py-3 px-4">{formatKES(shift.openingFloat)}</td>
-                  <td className="py-3 px-4 font-bold text-emerald-400">{formatKES(shift.totalCashSales)}</td>
-                  <td className="py-3 px-4 font-bold text-safari-mpesa">{formatKES(shift.totalMpesaSales)}</td>
-                  <td className="py-3 px-4 font-black">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 text-[11px]">
+                    {formatKenyaDateTime(shift.openedAt).split(' ')[0]}
+                  </td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-white hidden sm:table-cell">{shift.branch?.name}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-zinc-100">{shift.cashier?.name.split(' ')[0]}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">{formatKES(shift.openingFloat)}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-emerald-400 hidden lg:table-cell">{formatKES(shift.totalCashSales)}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-safari-mpesa hidden lg:table-cell">{formatKES(shift.totalMpesaSales)}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-black text-xs">
                     {shift.variance !== null && shift.variance !== undefined ? (
                       <span className={shift.variance === 0 ? 'text-emerald-400' : shift.variance < 0 ? 'text-red-400' : 'text-blue-400'}>
-                        {shift.variance === 0 ? '✓ Balanced' : `${shift.variance > 0 ? '+' : ''}${formatKES(shift.variance)}`}
+                        {shift.variance === 0 ? '✓' : `${shift.variance > 0 ? '+' : ''}${formatKES(shift.variance)}`}
                       </span>
                     ) : (
                       '-'
                     )}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         shift.status === 'OPEN'

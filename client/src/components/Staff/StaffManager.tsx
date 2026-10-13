@@ -181,25 +181,25 @@ export const StaffManager: React.FC = () => {
           <table className="w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950/70 text-zinc-400 font-bold uppercase tracking-wider text-[10px] border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-4">Staff Name</th>
-                <th className="py-3 px-4">Role</th>
-                <th className="py-3 px-4">Assigned Branch</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4">4-Digit PIN</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Staff Name</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Role</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Branch</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Email</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">Phone</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">PIN</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {users.map(u => (
                 <tr key={u.id} className="hover:bg-zinc-800/40">
-                  <td className="py-3 px-4 font-bold text-white flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-xl bg-brand-500/10 text-brand-400 font-black flex items-center justify-center text-xs">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-white flex items-center space-x-2">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-brand-500/10 text-brand-400 font-black flex items-center justify-center text-[10px] sm:text-xs shrink-0">
                       {u.name.slice(0, 2).toUpperCase()}
                     </div>
-                    <span>{u.name}</span>
+                    <span className="truncate max-w-[110px] sm:max-w-none">{u.name}</span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         u.role === 'OWNER'
@@ -212,15 +212,15 @@ export const StaffManager: React.FC = () => {
                       {u.role}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-semibold text-zinc-300">{u.branchName || 'All Branches'}</td>
-                  <td className="py-3 px-4 text-zinc-400">{u.email}</td>
-                  <td className="py-3 px-4 text-zinc-400">{u.phone || '-'}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-brand-400">
-                    <span className="bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-700">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-zinc-300 hidden sm:table-cell">{u.branchName || 'All Branches'}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden md:table-cell">{u.email}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden lg:table-cell">{u.phone || '-'}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-mono font-bold text-brand-400">
+                    <span className="bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-700 text-xs">
                       {u.pinCode}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
                       Active
                     </span>

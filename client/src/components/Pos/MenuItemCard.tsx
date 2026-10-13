@@ -22,7 +22,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
       }`}
     >
       {/* Food Image / Header Banner */}
-      <div className="relative h-28 sm:h-32 w-full bg-zinc-800 overflow-hidden">
+      <div className="relative h-24 sm:h-32 w-full bg-zinc-800 overflow-hidden">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
@@ -37,7 +37,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
         )}
 
         {/* High-Contrast Price Badge Overlay */}
-        <div className="absolute bottom-2 left-2 bg-zinc-950/90 dark:bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-zinc-700/70 text-white font-black text-xs shadow-lg tracking-tight">
+        <div className="absolute bottom-2 left-2 bg-zinc-950/90 dark:bg-black/85 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl border border-zinc-700/70 text-white font-black text-[11px] sm:text-xs shadow-lg tracking-tight">
           {item.hasVariants ? (
             <span>From {formatKES(item.basePrice)}</span>
           ) : (
@@ -47,17 +47,17 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
 
         {/* Variants Badge */}
         {item.hasVariants && item.variants && item.variants.length > 0 && (
-          <div className="absolute top-2 right-2 bg-brand-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 shadow-md">
-            <Layers className="w-3 h-3" />
-            <span>{item.variants.length} Options</span>
+          <div className="absolute top-2 right-2 bg-brand-500/90 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 rounded-full flex items-center space-x-1 shadow-md">
+            <Layers className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            <span>{item.variants.length} Opt</span>
           </div>
         )}
 
         {/* Out of stock banner */}
         {!isAvailable && (
           <div className="absolute inset-0 bg-black/75 flex items-center justify-center p-2 text-center">
-            <div className="text-red-400 text-xs font-black uppercase tracking-wider flex items-center space-x-1 bg-red-950/80 px-2.5 py-1 rounded-lg border border-red-800/80">
-              <AlertCircle className="w-3.5 h-3.5" />
+            <div className="text-red-400 text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center space-x-1 bg-red-950/80 px-2 py-0.5 rounded-lg border border-red-800/80">
+              <AlertCircle className="w-3 h-3" />
               <span>Out of Stock</span>
             </div>
           </div>
@@ -68,22 +68,22 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
           <button
             type="button"
             onClick={e => onToggleStock(item, e)}
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/90 text-zinc-300 hover:text-white backdrop-blur-sm transition border border-white/10"
+            className="absolute top-2 left-2 p-1 sm:p-1.5 rounded-lg bg-black/60 hover:bg-black/90 text-zinc-300 hover:text-white backdrop-blur-sm transition border border-white/10"
             title={isAvailable ? 'Mark Out of Stock' : 'Mark In Stock'}
           >
-            {isAvailable ? <Eye className="w-3.5 h-3.5 text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
+            {isAvailable ? <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" /> : <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400" />}
           </button>
         )}
       </div>
 
       {/* Item Details */}
-      <div className="p-3 flex flex-col justify-between flex-1">
+      <div className="p-2.5 sm:p-3 flex flex-col justify-between flex-1">
         <div>
           <h4 className="font-bold text-zinc-100 text-xs sm:text-sm line-clamp-1 group-hover:text-brand-400 transition">
             {item.name}
           </h4>
           {item.description && (
-            <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5 font-normal">
+            <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5 font-normal hidden sm:block">
               {item.description}
             </p>
           )}

@@ -101,49 +101,52 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="bg-zinc-900 border-b border-zinc-800 text-zinc-100 px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
       {/* Brand & Logo + Mobile Menu Button */}
-      <div className="flex items-center space-x-2 sm:space-x-3">
+      <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
-            className="md:hidden p-1.5 text-zinc-400 hover:text-white bg-zinc-800/80 rounded-xl"
+            className="md:hidden p-1.5 text-zinc-400 hover:text-white bg-zinc-800/80 rounded-xl active:scale-95 transition"
             title="Open Menu"
           >
-            <MenuIcon className="w-5 h-5" />
+            <MenuIcon className="w-4 h-4" />
           </button>
         )}
 
         <img
           src={naniLogo}
           alt="Nani's Fry Nation"
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-amber-400 shadow-md bg-black shrink-0"
+          className="w-8 h-8 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-amber-400 shadow-md bg-black shrink-0"
         />
         <div className="shrink-0">
-          <div className="flex items-center space-x-1 sm:space-x-1.5">
-            <span className="text-base sm:text-lg font-black tracking-tight text-zinc-100">
-              NANI'S <span className="text-brand-500">FRY NATION</span>
+          <div className="flex items-center space-x-1">
+            <span className="text-xs sm:text-base font-black tracking-tight text-zinc-100 hidden min-[360px]:inline">
+              NANI'S <span className="text-brand-500">FRY</span>
             </span>
-            <span className="text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">
+            <span className="text-xs sm:text-base font-black tracking-tight text-zinc-100 hidden sm:inline">
+              NATION
+            </span>
+            <span className="text-[9px] sm:text-xs font-bold px-1 py-0.2 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">
               POS
             </span>
           </div>
-          <p className="text-[10px] text-zinc-400 font-medium hidden lg:block">Crispy • Golden • Irresistible</p>
+          <p className="text-[10px] text-zinc-400 font-medium hidden xl:block">Crispy • Golden • Irresistible</p>
         </div>
       </div>
 
       {/* Center Controls: Branch Selector & Active Shift */}
-      <div className="flex items-center space-x-1.5 sm:space-x-3">
+      <div className="flex items-center space-x-1 sm:space-x-2">
         {/* Multi-Branch Selector */}
-        <div className="relative flex items-center bg-zinc-800/80 border border-zinc-700/80 rounded-xl px-2 sm:px-2.5 py-1 sm:py-1.5">
-          <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-400 mr-1 sm:mr-2 shrink-0" />
+        <div className="relative flex items-center bg-zinc-800/80 border border-zinc-700/80 rounded-xl px-1.5 sm:px-2.5 py-1">
+          <Store className="w-3.5 h-3.5 text-brand-400 mr-1 shrink-0" />
           <select
             aria-label="Select Restaurant Branch"
             value={currentBranchId || 'all'}
             onChange={e => setCurrentBranchId(e.target.value === 'all' ? null : e.target.value)}
             disabled={user?.role === 'CASHIER'}
-            className="bg-transparent text-[11px] sm:text-xs font-semibold text-zinc-200 outline-none cursor-pointer pr-1 max-w-[85px] sm:max-w-[160px] md:max-w-[200px] truncate"
+            className="bg-transparent text-[11px] sm:text-xs font-semibold text-zinc-200 outline-none cursor-pointer pr-1 max-w-[65px] min-[400px]:max-w-[100px] sm:max-w-[160px] md:max-w-[200px] truncate"
           >
             {branches.length > 1 && user?.role === 'OWNER' && (
-              <option value="all" className="bg-zinc-900 text-zinc-100">All Branches (HQ)</option>
+              <option value="all" className="bg-zinc-900 text-zinc-100">All Branches</option>
             )}
             {branches.map(b => (
               <option key={b.id} value={b.id} className="bg-zinc-900 text-zinc-100">
@@ -156,35 +159,38 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Shift Status Button */}
         <button
           onClick={onOpenShiftModal}
-          className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition border shrink-0 ${
+          className={`flex items-center space-x-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition border shrink-0 ${
             activeShift
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
               : 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
           }`}
+          title={activeShift ? `Shift Open (${activeShift.cashier?.name})` : 'No Open Shift'}
         >
           <Clock className="w-3.5 h-3.5 shrink-0" />
           <span className="hidden md:inline">
-            {activeShift ? `Shift Open (${activeShift.cashier?.name.split(' ')[0]})` : 'No Open Shift'}
+            {activeShift ? `Shift Open (${activeShift.cashier?.name.split(' ')[0]})` : 'No Shift'}
           </span>
-          <span className="md:hidden text-[10px] sm:text-xs">{activeShift ? 'Shift Open' : 'Shift'}</span>
+          <span className="md:hidden text-[10px] hidden min-[380px]:inline">
+            {activeShift ? 'Open' : 'Shift'}
+          </span>
         </button>
 
         {/* Offline Indicator & Sync */}
         {!isOnline || offlineQueue.length > 0 ? (
-          <div className="flex items-center space-x-1 sm:space-x-1.5 px-2 py-1 rounded-xl text-[10px] sm:text-xs font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">
-            <WifiOff className="w-3.5 h-3.5 animate-pulse text-amber-400" />
-            <span className="hidden sm:inline">{offlineQueue.length} Queued</span>
+          <div className="flex items-center space-x-1 px-1.5 py-1 rounded-xl text-[10px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">
+            <WifiOff className="w-3.5 h-3.5 animate-pulse text-amber-400 shrink-0" />
+            <span className="hidden sm:inline">{offlineQueue.length}</span>
             <button
               onClick={handleSyncNow}
               disabled={isSyncing || !isOnline}
               className="p-0.5 hover:bg-amber-500/30 rounded transition"
               title="Sync offline orders now"
             >
-              <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         ) : (
-          <div className="hidden xl:flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-emerald-400 bg-emerald-500/10">
+          <div className="hidden 2xl:flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-medium text-emerald-400 bg-emerald-500/10">
             <Wifi className="w-3 h-3 text-emerald-400" />
             <span>Online</span>
           </div>
@@ -192,22 +198,22 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Right Controls: Theme Toggle, Quick PIN Switch, User Info & Logout */}
-      <div className="flex items-center space-x-1.5 sm:space-x-2">
+      <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
         {/* Theme Toggle (White / Dark) */}
         <button
           onClick={toggleTheme}
-          className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
-          title={theme === 'light' ? 'Switch to Dark Background' : 'Switch to White Background'}
+          className="flex items-center space-x-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to White Mode'}
         >
           {theme === 'light' ? (
             <>
               <Sun className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden md:inline">White Mode</span>
+              <span className="hidden lg:inline">White</span>
             </>
           ) : (
             <>
               <Moon className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden md:inline">Dark Mode</span>
+              <span className="hidden lg:inline">Dark</span>
             </>
           )}
         </button>
@@ -215,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Switch Cashier via 4-Digit PIN */}
         <button
           onClick={onOpenPinModal}
-          className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
+          className="flex items-center space-x-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
           title="Quick Switch Cashier via PIN"
         >
           <KeyRound className="w-3.5 h-3.5 text-brand-400" />
@@ -223,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         {/* User Role Tag */}
-        <div className="hidden lg:flex items-center space-x-2 pl-2 border-l border-zinc-800">
+        <div className="hidden xl:flex items-center space-x-2 pl-2 border-l border-zinc-800">
           <div className="text-right">
             <div className="text-xs font-bold text-zinc-200 leading-tight">{user?.name}</div>
             <div className="text-[10px] font-semibold text-brand-400 flex items-center justify-end space-x-0.5">
@@ -236,10 +242,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Logout */}
         <button
           onClick={logout}
-          className="p-1.5 sm:p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-xl transition"
+          className="p-1.5 sm:p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-xl transition active:scale-95"
           title="Sign Out"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
       </div>
     </header>

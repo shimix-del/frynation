@@ -175,14 +175,14 @@ export const ExpenseTracker: React.FC = () => {
           <table className="w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950/70 text-zinc-400 font-bold uppercase tracking-wider text-[10px] border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-4">Date / Time</th>
-                <th className="py-3 px-4">Branch</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4">Paid To</th>
-                <th className="py-3 px-4">Payment Source</th>
-                <th className="py-3 px-4">Amount (KES)</th>
-                <th className="py-3 px-4 text-right">Delete</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Date / Time</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Branch</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Category</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Description</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">Paid To</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Source</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Amount</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-right">Delete</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
@@ -197,18 +197,20 @@ export const ExpenseTracker: React.FC = () => {
                   const badge = getCategoryBadge(exp.category);
                   return (
                     <tr key={exp.id} className="hover:bg-zinc-800/40">
-                      <td className="py-3 px-4 text-zinc-400">{formatKenyaDateTime(exp.createdAt)}</td>
-                      <td className="py-3 px-4 font-semibold text-white">{exp.branch?.name}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 text-[11px]">
+                        {formatKenyaDateTime(exp.createdAt).split(' ')[1] || formatKenyaDateTime(exp.createdAt)}
+                      </td>
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-white hidden sm:table-cell">{exp.branch?.name}</td>
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.color}`}
                         >
                           {badge.label}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-zinc-200 font-medium">{exp.description}</td>
-                      <td className="py-3 px-4 text-zinc-400">{exp.paidTo || '-'}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-200 font-medium truncate max-w-[120px] sm:max-w-none">{exp.description}</td>
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden lg:table-cell">{exp.paidTo || '-'}</td>
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
                         <span
                           className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${
                             exp.paymentSource === 'CASH_DRAWER'
@@ -216,13 +218,13 @@ export const ExpenseTracker: React.FC = () => {
                               : 'bg-safari-mpesa/10 text-safari-mpesa'
                           }`}
                         >
-                          {exp.paymentSource === 'CASH_DRAWER' ? 'Cash Drawer' : 'Bank / M-Pesa'}
+                          {exp.paymentSource === 'CASH_DRAWER' ? 'Cash' : 'M-Pesa'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-black text-red-400 text-sm">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-black text-red-500 dark:text-red-400 text-xs sm:text-sm">
                         {formatKES(exp.amount)}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-right">
                         <button
                           onClick={() => handleDelete(exp.id)}
                           className="p-1 text-zinc-500 hover:text-red-400 transition"
