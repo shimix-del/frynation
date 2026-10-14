@@ -9,7 +9,6 @@ import {
   AlertCircle,
   Receipt,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react';
 import { usePosCart } from '../../context/PosCartContext';
 import { useBranch } from '../../context/BranchContext';
@@ -54,16 +53,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   // Cash details
   const [cashTendered, setCashTendered] = useState<number>(totalAmount);
   
-  // M-Pesa details
-  const [mpesaCode, setMpesaCode] = useState<string>('');
-  const [mpesaPhone, setMpesaPhone] = useState<string>(customerPhone || '');
-  const [isSimulatingStk, setIsSimulatingStk] = useState<boolean>(false);
-  const [stkStatus, setStkStatus] = useState<string | null>(null);
-
   // Split details
   const [splitCash, setSplitCash] = useState<number>(Math.floor(totalAmount / 2));
   const [splitMpesa, setSplitMpesa] = useState<number>(totalAmount - Math.floor(totalAmount / 2));
-  const [splitMpesaCode, setSplitMpesaCode] = useState<string>('');
 
   // Card details
   const [cardRef, setCardRef] = useState<string>('');
@@ -76,33 +68,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const changeAmount = Math.max(0, cashTendered - totalAmount);
   const splitRemaining = totalAmount - (splitCash + splitMpesa);
-
-  const generateMpesaDemoCode = () => {
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const randLetters = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
-    const randNums = Math.floor(1000 + Math.random() * 9000);
-    const code = `QHK${randNums}${randLetters.slice(0, 3)}`;
-    if (paymentMethod === 'SPLIT') {
-      setSplitMpesaCode(code);
-    } else {
-      setMpesaCode(code);
-    }
-  };
-
-  const handleSimulateStkPush = () => {
-    const targetPhone = mpesaPhone.trim() || '0712345678';
-    if (!mpesaPhone.trim()) {
-      setMpesaPhone('0712345678');
-    }
-    setError(null);
-    setIsSimulatingStk(true);
-    setStkStatus(`Sending payment prompt of ${formatKES(paymentMethod === 'SPLIT' ? splitMpesa : totalAmount)} to ${targetPhone}...`);
-    setTimeout(() => {
-      generateMpesaDemoCode();
-      setIsSimulatingStk(false);
-      setStkStatus(`✓ Prompt delivered to ${targetPhone}! Customer approved transaction.`);
-    }, 1200);
-  };
 
   const handleProcessCheckout = async () => {
     if (cartItems.length === 0) return;
@@ -125,14 +90,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         changeAmount,
       });
     } else if (paymentMethod === 'MPESA') {
-      if (!mpesaCode && mpesaCode.trim().length === 0) {
-        // Generate auto code if not provided
-        generateMpesaDemoCode();
-      }
+      const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const randLetters = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+      const randNums = Math.floor(1000 + Math.random() * 9000);
+      const autoCode = `QHK${randNums}${randLetters.slice(0, 3)}`;
+
       paymentsPayload.push({
         amount: totalAmount,
         paymentMethod: 'MPESA',
-        mpesaCode: mpesaCode || `QHK${Math.floor(100000 + Math.random() * 900000)}`,
+        mpesaCode: autoCode,
       });
     } else if (paymentMethod === 'SPLIT') {
       if (splitRemaining !== 0) {
@@ -149,10 +115,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         });
       }
       if (splitMpesa > 0) {
+        const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const randLetters = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+        const randNums = Math.floor(1000 + Math.random() * 9000);
+        const autoCode = `QHK${randNums}${randLetters.slice(0, 3)}`;
+
         paymentsPayload.push({
           amount: splitMpesa,
           paymentMethod: 'MPESA',
-          mpesaCode: splitMpesaCode || `QHK${Math.floor(100000 + Math.random() * 900000)}`,
+          mpesaCode: autoCode,
         });
       }
     } else if (paymentMethod === 'CARD') {
@@ -168,7 +139,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       orderType,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : null,
       customerName: customerName || null,
-      customerPhone: customerPhone || mpesaPhone || null,
+      customerPhone: customerPhone || null,
       items: cartItems.map(ci => ({
         menuItemId: ci.menuItem.id,
         variantId: ci.variant?.id || null,
@@ -177,51 +148,50 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         quantity: ci.quantity,
         unitPrice: ci.unitPrice,
         unitCost: ci.unitCost,
+        totalPrice: ci.quantity * ci.unitPrice,
         notes: ci.notes || null,
       })),
+      subtotal,
       discountAmount,
       discountReason,
+      totalAmount,
       notes,
       payments: paymentsPayload,
     };
 
     try {
-      if (offlineSync.isOnline()) {
-        const res = await api.createOrder(orderPayload);
-        clearCart();
-        onClose();
-        onOrderCompleted(res.order, res.warnings || []);
-      } else {
-        // Offline mode: enqueue locally
-        const offlineItem = offlineSync.enqueueOrder(orderPayload);
-        const mockCompletedOrder: any = {
-          id: offlineItem.id,
-          orderNumber: `ORD-OFFLINE-${Date.now().toString().slice(-4)}`,
-          branchId: currentBranchId || '',
-          branch: currentBranch || undefined,
-          cashierId: user?.id || '',
-          cashier: { name: user?.name || 'Cashier' },
-          orderType,
-          tableNumber,
-          customerName,
-          customerPhone,
-          status: 'COMPLETED',
-          subtotal,
-          discountAmount,
-          taxAmount: 0,
-          totalAmount,
-          items: orderPayload.items.map(i => ({ ...i, totalPrice: i.quantity * i.unitPrice })),
-          payments: paymentsPayload,
-          createdAt: new Date().toISOString(),
-        };
-
-        clearCart();
-        onClose();
-        onOrderCompleted(mockCompletedOrder, ['Order saved locally in offline queue and will sync once connected!']);
-      }
+      const res = await api.createOrder(orderPayload);
+      clearCart();
+      onClose();
+      onOrderCompleted(res.order, res.warnings || []);
     } catch (err: any) {
-      console.error('Checkout error:', err);
-      setError(err.message || 'Payment processing failed');
+      console.warn('Backend order submission failed, falling back to local offline queue:', err);
+      // Offline mode: enqueue locally so it syncs when backend is reachable
+      const offlineItem = offlineSync.enqueueOrder(orderPayload);
+      const mockCompletedOrder: any = {
+        id: offlineItem.id,
+        orderNumber: `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        branchId: currentBranchId || '',
+        branch: currentBranch || undefined,
+        cashierId: user?.id || '',
+        cashier: { name: user?.name || 'Cashier' },
+        orderType,
+        tableNumber,
+        customerName,
+        customerPhone,
+        status: 'COMPLETED',
+        subtotal,
+        discountAmount,
+        taxAmount: 0,
+        totalAmount,
+        items: orderPayload.items.map(i => ({ ...i, totalPrice: i.quantity * i.unitPrice })),
+        payments: paymentsPayload,
+        createdAt: new Date().toISOString(),
+      };
+
+      clearCart();
+      onClose();
+      onOrderCompleted(mockCompletedOrder, ['Order saved locally in offline queue and will sync to central server.']);
     } finally {
       setIsSubmitting(false);
     }
@@ -385,79 +355,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
           {/* M-PESA TAB */}
           {paymentMethod === 'MPESA' && (
-            <div className="space-y-3">
-              {/* Branch Till Info Card */}
-              <div className="p-3.5 rounded-2xl bg-safari-mpesa/10 border border-safari-mpesa/30 flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="p-6 rounded-3xl bg-safari-mpesa/10 border border-safari-mpesa/30 flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-safari-mpesa/20 text-safari-mpesa flex items-center justify-center">
+                  <Smartphone className="w-8 h-8" />
+                </div>
                 <div>
-                  <div className="text-[10px] font-bold text-safari-mpesa uppercase tracking-wider">
+                  <div className="text-xs font-bold text-safari-mpesa uppercase tracking-wider">
                     Branch M-Pesa Till
                   </div>
-                  <div className="text-base font-black text-white">
+                  <div className="text-xl font-black text-white mt-1">
                     Buy Goods Till: <span className="text-safari-mpesa font-mono">{currentBranch?.tillNumber || '5428901'}</span>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-zinc-400 font-medium">Paybill Option</div>
-                  <div className="text-xs font-mono font-bold text-zinc-300">247247</div>
-                </div>
-              </div>
-
-              {/* Customer Phone for Mobile Payment / STK Push */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
-                  <span>Customer Phone Number</span>
-                  <span className="text-[10px] text-safari-mpesa font-normal">For M-Pesa STK push prompt</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    value={mpesaPhone}
-                    onChange={e => setMpesaPhone(e.target.value)}
-                    placeholder="e.g. 0712345678 or 2547..."
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl py-2.5 px-4 text-sm font-semibold text-white placeholder-zinc-500 focus:outline-none focus:border-safari-mpesa"
-                  />
-                </div>
-              </div>
-
-              {/* STK Push Action Button */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={handleSimulateStkPush}
-                  disabled={isSimulatingStk}
-                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-lg shadow-emerald-950/40"
-                >
-                  <Sparkles className={`w-4 h-4 ${isSimulatingStk ? 'animate-spin' : ''}`} />
-                  <span>{isSimulatingStk ? 'Prompting Customer Phone...' : '📱 Request Payment on Phone (STK Push)'}</span>
-                </button>
-                {stkStatus && (
-                  <div className="mt-2 text-xs font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-2.5 text-center">
-                    {stkStatus}
+                  <div className="text-xs text-zinc-400 mt-1.5">
+                    Customer pays directly via Till on their phone.
                   </div>
-                )}
+                </div>
+
+                <div className="w-full bg-zinc-900/90 border border-zinc-800 p-3 rounded-2xl flex items-center justify-between text-xs">
+                  <span className="text-zinc-400 font-semibold">Amount to Receive:</span>
+                  <span className="text-base font-black text-safari-mpesa">{formatKES(totalAmount)}</span>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
-                  <span>M-Pesa Transaction Confirmation Code</span>
-                  <span className="text-[10px] text-zinc-400">Auto-filled or manual</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={mpesaCode}
-                    onChange={e => setMpesaCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. QHK8921XLA"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl py-2.5 px-4 text-base font-mono font-bold text-safari-mpesa uppercase placeholder-zinc-500 focus:outline-none focus:border-safari-mpesa tracking-wider"
-                  />
-                  <button
-                    type="button"
-                    onClick={generateMpesaDemoCode}
-                    className="absolute right-2 top-2 px-2.5 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-[10px] font-bold rounded-lg"
-                  >
-                    Auto Code
-                  </button>
-                </div>
+              <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl text-[11px] text-zinc-400 text-center">
+                ✓ Recorded automatically as <span className="text-safari-mpesa font-bold">M-Pesa Payment</span> in your shift and receipt upon completion.
               </div>
             </div>
           )}
@@ -499,47 +421,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-zinc-300">
-                  M-Pesa STK Push & Confirmation Code
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    value={mpesaPhone}
-                    onChange={e => setMpesaPhone(e.target.value)}
-                    placeholder="Phone (0712345678)"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl py-2 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-safari-mpesa"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSimulateStkPush}
-                    disabled={isSimulatingStk || splitMpesa <= 0}
-                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-[11px] font-bold rounded-xl whitespace-nowrap"
-                  >
-                    {isSimulatingStk ? 'Sending...' : '📱 STK Push'}
-                  </button>
+              <div className="p-3 rounded-xl bg-safari-mpesa/10 border border-safari-mpesa/25 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-safari-mpesa block">M-Pesa Till</span>
+                  <span className="text-xs font-black text-white font-mono">{currentBranch?.tillNumber || '5428901'}</span>
                 </div>
-                {stkStatus && (
-                  <div className="text-[11px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/30 rounded-lg p-1.5 text-center">
-                    {stkStatus}
-                  </div>
-                )}
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={splitMpesaCode}
-                    onChange={e => setSplitMpesaCode(e.target.value.toUpperCase())}
-                    placeholder="Ref code (e.g. QHK8921XLA)"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl py-2 px-3 text-xs font-mono font-bold uppercase text-safari-mpesa"
-                  />
-                  <button
-                    type="button"
-                    onClick={generateMpesaDemoCode}
-                    className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold rounded-xl border border-zinc-700"
-                  >
-                    Auto Code
-                  </button>
+                <div className="text-right">
+                  <span className="text-[10px] text-zinc-400 block">M-Pesa Portion</span>
+                  <span className="text-xs font-black text-safari-mpesa">{formatKES(splitMpesa)}</span>
                 </div>
               </div>
 

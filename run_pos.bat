@@ -7,11 +7,11 @@ echo.
 
 :: 1. Check if MySQL is running on port 3306
 echo [1/3] Checking MySQL database engine...
-netstat -ano | findstr /R ":3306 " >nul
+netstat -ano | findstr /C:":3306 " | findstr /I "LISTENING" >nul
 if %ERRORLEVEL% NEQ 0 (
     echo [!] MySQL is not running. Starting MySQL daemon...
     start "" /B "C:\xampp\mysql\bin\mysqld.exe" --defaults-file="C:\xampp\mysql\bin\my.ini" --standalone
-    timeout /t 3 /nobreak >nul
+    ping 127.0.0.1 -n 4 >nul
     echo [+] MySQL started successfully.
 ) else (
     echo [+] MySQL is already running.
@@ -19,11 +19,11 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: 2. Check if Apache is running on port 80
 echo [2/3] Checking Apache web server...
-netstat -ano | findstr /R ":80 " >nul
+netstat -ano | findstr /C:":80 " | findstr /I "LISTENING" >nul
 if %ERRORLEVEL% NEQ 0 (
     echo [!] Apache is not running. Starting Apache...
     start "" /B "C:\xampp\apache\bin\httpd.exe"
-    timeout /t 2 /nobreak >nul
+    ping 127.0.0.1 -n 3 >nul
     echo [+] Apache started.
 ) else (
     echo [+] Apache is already running.
@@ -31,12 +31,12 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: 3. Check if POS API server is running on port 5000
 echo [3/3] Checking POS API server (Port 5000)...
-netstat -ano | findstr /R ":5000 " >nul
+netstat -ano | findstr /C:":5000 " | findstr /I "LISTENING" >nul
 if %ERRORLEVEL% NEQ 0 (
     echo [!] Starting Node.js API server...
     cd /d "%~dp0server"
     start /min "Nani Frys API Server" cmd /c "npm run dev"
-    timeout /t 3 /nobreak >nul
+    ping 127.0.0.1 -n 5 >nul
     echo [+] POS API server started.
 ) else (
     echo [+] POS API server is already running.
@@ -51,5 +51,5 @@ echo.
 echo Launching POS in default browser...
 start http://localhost/pos%%20sys/
 
-timeout /t 3 /nobreak >nul
+ping 127.0.0.1 -n 3 >nul
 exit

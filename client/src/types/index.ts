@@ -172,6 +172,8 @@ export interface Shift {
   cashDrops?: number;
   cashAdditions?: number;
   expectedCash?: number;
+  orders?: Order[];
+  itemsSold?: { itemName: string; variantName?: string | null; quantity: number; totalPrice: number }[];
   _count?: { orders?: number };
 }
 

@@ -52,10 +52,10 @@ export const navItems = [
   },
   {
     id: 'menu' as NavTab,
-    label: 'Menu & Recipes',
+    label: 'Dishes & Menu',
     shortLabel: 'Menu',
     icon: Utensils,
-    desc: 'BOM & Dishes',
+    desc: 'Menu & Categories',
     roles: ['OWNER', 'MANAGER'],
   },
   {

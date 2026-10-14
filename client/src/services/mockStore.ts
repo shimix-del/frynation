@@ -513,6 +513,29 @@ export const mockStore = {
     const branch = branches.find(b => b.id === orderData.branchId) || branches[0];
     const user = getStored<any>('currentUser', users[0]);
 
+    const processedItems = (orderData.items || []).map((i: any) => {
+      const q = Number(i.quantity) || 1;
+      const up = Number(i.unitPrice) || 0;
+      const tp = i.totalPrice !== undefined ? Number(i.totalPrice) : q * up;
+      return {
+        id: `oi-${Date.now()}-${Math.random()}`,
+        menuItemId: i.menuItemId,
+        variantId: i.variantId || null,
+        itemName: i.itemName,
+        variantName: i.variantName || null,
+        quantity: q,
+        unitPrice: up,
+        unitCost: Number(i.unitCost) || 0,
+        totalPrice: tp,
+        notes: i.notes || null,
+      };
+    });
+
+    const calculatedSubtotal = processedItems.reduce((acc: number, it: any) => acc + it.totalPrice, 0);
+    const disc = Number(orderData.discountAmount || 0);
+    const subtotal = Number(orderData.subtotal) || calculatedSubtotal;
+    const totalAmount = Number(orderData.totalAmount) || Math.max(0, subtotal - disc);
+
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       orderNumber: `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -524,31 +547,20 @@ export const mockStore = {
       customerName: orderData.customerName || null,
       customerPhone: orderData.customerPhone || null,
       status: orderData.status || 'COMPLETED',
-      subtotal: Number(orderData.subtotal || orderData.totalAmount || 0),
-      discountAmount: Number(orderData.discountAmount || 0),
+      subtotal,
+      discountAmount: disc,
       discountReason: orderData.discountReason || null,
       taxAmount: 0,
-      totalAmount: Number(orderData.totalAmount || 0),
+      totalAmount,
       notes: orderData.notes || null,
       createdAt: new Date().toISOString(),
       branch,
       cashier: { id: user.id, name: user.name },
-      items: (orderData.items || []).map((i: any) => ({
-        id: `oi-${Date.now()}-${Math.random()}`,
-        menuItemId: i.menuItemId,
-        variantId: i.variantId || null,
-        itemName: i.itemName,
-        variantName: i.variantName || null,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-        unitCost: i.unitCost || 0,
-        totalPrice: i.totalPrice,
-        notes: i.notes || null,
-      })),
+      items: processedItems,
       payments: (orderData.payments || []).map((p: any) => ({
         id: `pay-${Date.now()}-${Math.random()}`,
         paymentMethod: p.paymentMethod,
-        amount: p.amount,
+        amount: Number(p.amount) || totalAmount,
         cashTendered: p.cashTendered || null,
         changeAmount: p.changeAmount || null,
         mpesaCode: p.mpesaCode || null,
@@ -558,6 +570,26 @@ export const mockStore = {
 
     orders.unshift(newOrder);
     setStored('orders', orders);
+
+    // Update active shift in local store so shifts and reports reflect immediately
+    const activeShift = getStored<any>('activeShift', null);
+    if (activeShift) {
+      let cashAmt = 0;
+      let mpesaAmt = 0;
+      (newOrder.payments || []).forEach((p: any) => {
+        if (p.paymentMethod === 'CASH') cashAmt += Number(p.amount);
+        else if (p.paymentMethod === 'MPESA') mpesaAmt += Number(p.amount);
+        else if (p.paymentMethod === 'SPLIT') {
+          if (p.mpesaCode) mpesaAmt += Number(p.amount);
+          else cashAmt += Number(p.amount);
+        }
+      });
+      activeShift.totalCashSales = (activeShift.totalCashSales || 0) + cashAmt;
+      activeShift.totalMpesaSales = (activeShift.totalMpesaSales || 0) + mpesaAmt;
+      if (!activeShift.orders) activeShift.orders = [];
+      activeShift.orders.unshift(newOrder);
+      setStored('activeShift', activeShift);
+    }
 
     return {
       order: newOrder,
@@ -593,7 +625,7 @@ export const mockStore = {
       id: 'shift-active-1',
       branchId: params?.branchId || 'branch-migadini',
       cashierId: 'user-cashier1',
-      openingFloat: 3000,
+      openingFloat: 0,
       totalCashSales: 520,
       totalMpesaSales: 1200,
       totalCardSales: 0,
@@ -609,6 +641,30 @@ export const mockStore = {
       cashier: { id: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER' },
       _count: { orders: 6 },
     });
+
+    if (active) {
+      const orders = (active as any).orders || [];
+      const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
+      orders.forEach((ord: any) => {
+        (ord.items || []).forEach((item: any) => {
+          const key = `${item.itemName}___${item.variantName || ''}`;
+          const existing = itemMap.get(key);
+          if (existing) {
+            existing.quantity += item.quantity;
+            existing.totalPrice += item.totalPrice;
+          } else {
+            itemMap.set(key, {
+              itemName: item.itemName,
+              variantName: item.variantName || null,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+            });
+          }
+        });
+      });
+      (active as any).itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
+    }
+
     return { activeShift: active };
   },
 
@@ -749,11 +805,11 @@ export const mockStore = {
   ],
 
   getTopItems: () => [
-    { name: 'Chips & 1/4 Kuku Combo', variant: 'Full Meal', quantity: 38, revenue: 17100 },
-    { name: 'Swahili Beef Pilau', variant: 'Single Plate', quantity: 29, revenue: 9280 },
-    { name: 'Chips Masala', variant: 'Spicy', quantity: 32, revenue: 6400 },
-    { name: 'Chips Plain', variant: 'Regular', quantity: 40, revenue: 6000 },
-    { name: 'Coca-Cola 300ml', variant: 'Glass Bottle', quantity: 55, revenue: 3300 },
+    { name: 'Chips & 1/4 Kuku Combo', variant: 'Full Meal', quantity: 38, revenue: 17100, cost: 7180, profit: 9920 },
+    { name: 'Swahili Beef Pilau', variant: 'Single Plate', quantity: 29, revenue: 9280, cost: 4060, profit: 5220 },
+    { name: 'Chips Masala', variant: 'Spicy', quantity: 32, revenue: 6400, cost: 2560, profit: 3840 },
+    { name: 'Chips Plain', variant: 'Regular', quantity: 40, revenue: 6000, cost: 2400, profit: 3600 },
+    { name: 'Coca-Cola 300ml', variant: 'Glass Bottle', quantity: 55, revenue: 3300, cost: 1925, profit: 1375 },
   ],
 
   getHourlySales: () => [

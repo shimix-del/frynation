@@ -14,6 +14,9 @@ import {
   Clock,
   Sparkles,
   AlertCircle,
+  Receipt,
+  Wallet,
+  ArrowRight,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -32,8 +35,8 @@ import {
 } from 'recharts';
 import { api } from '../../services/api';
 import { useBranch } from '../../context/BranchContext';
-import { DashboardSummary } from '../../types';
-import { formatKES } from '../../utils/currency';
+import { DashboardSummary, Expense } from '../../types';
+import { formatKES, formatKenyaDateTime } from '../../utils/currency';
 
 export const AnalyticsDashboard: React.FC = () => {
   const { currentBranchId, branches } = useBranch();
@@ -44,6 +47,11 @@ export const AnalyticsDashboard: React.FC = () => {
   const [branchComparison, setBranchComparison] = useState<any[]>([]);
   const [cashierStats, setCashierStats] = useState<any[]>([]);
   const [profitLoss, setProfitLoss] = useState<any | null>(null);
+  const [expensesData, setExpensesData] = useState<{ totalAmount: number; count: number; expenses: Expense[] }>({
+    totalAmount: 0,
+    count: 0,
+    expenses: [],
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
 
@@ -59,6 +67,7 @@ export const AnalyticsDashboard: React.FC = () => {
         compData,
         cashierData,
         plData,
+        expData,
       ] = await Promise.all([
         api.getDashboardSummary({ branchId: currentBranchId || undefined }).catch(() => null),
         api.getSalesByCategory({ branchId: currentBranchId || undefined, days: 7 }).catch(() => []),
@@ -67,6 +76,7 @@ export const AnalyticsDashboard: React.FC = () => {
         api.getBranchComparison().catch(() => []),
         api.getCashierPerformance({ branchId: currentBranchId || undefined }).catch(() => []),
         api.getProfitLoss({ branchId: currentBranchId || undefined }).catch(() => null),
+        api.getExpenses({ branchId: currentBranchId || undefined }).catch(() => ({ totalAmount: 0, count: 0, expenses: [] })),
       ]);
 
       setSummary(sumData || {
@@ -89,11 +99,33 @@ export const AnalyticsDashboard: React.FC = () => {
       setBranchComparison(Array.isArray(compData) ? compData : []);
       setCashierStats(Array.isArray(cashierData) ? cashierData : []);
       setProfitLoss(plData);
+      setExpensesData(expData || { totalAmount: 0, count: 0, expenses: [] });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
       setHasError(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getExpenseCategoryBadge = (cat: string) => {
+    switch (cat) {
+      case 'MARKET_PRODUCE':
+        return { label: 'Wakulima Market', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+      case 'GAS_CHARCOAL':
+        return { label: 'Gas / Charcoal', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+      case 'COOKING_OIL':
+        return { label: 'Cooking Oil', color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' };
+      case 'DAILY_WAGES':
+        return { label: 'Casual Wages', color: 'bg-purple-500/15 text-purple-400 border-purple-500/30' };
+      case 'TRANSPORT_BODA':
+        return { label: 'Boda Transport', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' };
+      case 'REPAIRS':
+        return { label: 'Repairs & Maint.', color: 'bg-orange-500/15 text-orange-400 border-orange-500/30' };
+      case 'UTILITIES':
+        return { label: 'Utilities (Water/Power)', color: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' };
+      default:
+        return { label: 'Other Operating', color: 'bg-zinc-800 text-zinc-400 border-zinc-700' };
     }
   };
 
@@ -103,20 +135,135 @@ export const AnalyticsDashboard: React.FC = () => {
 
   const COLORS = ['#ea580c', '#00a859', '#3b82f6', '#eab308', '#a855f7', '#ec4899'];
 
-  const exportCSV = () => {
-    if (!topItems || topItems.length === 0) return;
-    const headers = ['Dish Name', 'Variant', 'Quantity Sold', 'Total Revenue (KES)'];
-    const rows = topItems.map(i => [
-      `"${i.name || i.itemName || 'Item'}"`,
-      `"${i.variant || 'Standard'}"`,
-      i.quantity || 0,
-      i.revenue || 0,
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const exportExecutiveReportCSV = () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const branchName = branches.find(b => b.id === currentBranchId)?.name || 'Migadini Main Shop';
+
+    // 1. Income Metrics
+    const grossSales = profitLoss?.grossSales || summary?.todayGrossSales || 0;
+    const foodCost = profitLoss?.cogs || summary?.todayCOGS || Math.round(grossSales * 0.42);
+    const grossFoodProfit = grossSales - foodCost;
+    const totalExpenses = profitLoss?.totalExpenses || expensesData.totalAmount || summary?.totalTodayExpenses || 0;
+    const netProfit = profitLoss?.netOperatingProfit || summary?.todayNetProfit || (grossFoodProfit - totalExpenses);
+    const netMargin = grossSales > 0 ? ((netProfit / grossSales) * 100).toFixed(1) : '0.0';
+
+    // 2. Category Breakdown
+    const categoriesMap: Record<string, { label: string; amount: number; count: number }> = {
+      GAS_CHARCOAL: { label: 'Gas & Charcoal Refills', amount: 0, count: 0 },
+      MARKET_PRODUCE: { label: 'Wakulima Market Produce', amount: 0, count: 0 },
+      COOKING_OIL: { label: 'Cooking Oil (Drums & Refills)', amount: 0, count: 0 },
+      DAILY_WAGES: { label: 'Casual & Kitchen Staff Wages', amount: 0, count: 0 },
+      TRANSPORT_BODA: { label: 'Boda Transport & Deliveries', amount: 0, count: 0 },
+      REPAIRS: { label: 'Repairs & Equipment Maintenance', amount: 0, count: 0 },
+      UTILITIES: { label: 'Utilities (Water & Electricity)', amount: 0, count: 0 },
+      OTHER: { label: 'Other Operating Expenses', amount: 0, count: 0 },
+    };
+
+    expensesData.expenses.forEach(e => {
+      const catKey = e.category || 'OTHER';
+      if (!categoriesMap[catKey]) {
+        categoriesMap[catKey] = { label: getExpenseCategoryBadge(catKey).label, amount: 0, count: 0 };
+      }
+      categoriesMap[catKey].amount += Number(e.amount);
+      categoriesMap[catKey].count += 1;
+    });
+
+    if (expensesData.expenses.length === 0 && profitLoss?.expensesByCategory) {
+      Object.entries(profitLoss.expensesByCategory as Record<string, number>).forEach(([catKey, amt]) => {
+        if (!categoriesMap[catKey]) {
+          categoriesMap[catKey] = { label: getExpenseCategoryBadge(catKey).label, amount: 0, count: 0 };
+        }
+        categoriesMap[catKey].amount = amt;
+      });
+    }
+
+    const lines: string[] = [];
+
+    // Header
+    lines.push('================================================================================');
+    lines.push(`NANI'S FRY NATION - EXECUTIVE BUSINESS & FINANCIAL REPORT`);
+    lines.push('================================================================================');
+    lines.push(`Report Generated: ${new Date().toLocaleString()}`);
+    lines.push(`Branch: "${branchName}"`);
+    lines.push('');
+
+    // SECTION 1: EXECUTIVE FINANCIAL OVERVIEW
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('1. EXECUTIVE SUMMARY: INCOME, EXPENSES & NET PROFIT');
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('Financial Metric,Amount (KES),Description');
+    lines.push(`"Total Food Sales (Gross Income)","${grossSales}","Total customer sales rung up on POS"`);
+    lines.push(`"Estimated Food Ingredient Cost (COGS)","${foodCost}","Direct kitchen food ingredients & recipe cost"`);
+    lines.push(`"Gross Profit from Food Sales","${grossFoodProfit}","Income from food sales minus ingredient costs"`);
+    lines.push(`"Total Operating Expenditures","${totalExpenses}","Total operational expenses (Gas, Produce, Oil, Wages)"`);
+    lines.push(`"NET TAKE-HOME PROFIT / (LOSS)","${netProfit}","Net profit after deducting all operating expenses"`);
+    lines.push(`"Net Profit Margin %","${netMargin}%","Percentage of income retained as profit"`);
+    lines.push('');
+
+    // SECTION 2: EXPENSES SUMMARY BREAKDOWN
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('2. OPERATING EXPENSES - SUMMARY BREAKDOWN (BY CATEGORY)');
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('Expense Category,Total Amount (KES),% of Total Expenses,Entries Count');
+    Object.values(categoriesMap)
+      .sort((a, b) => b.amount - a.amount)
+      .forEach(cat => {
+        const pct = totalExpenses > 0 ? ((cat.amount / totalExpenses) * 100).toFixed(1) : '0.0';
+        lines.push(`"${cat.label}","${cat.amount}","${pct}%","${cat.count}"`);
+      });
+    lines.push(`"TOTAL OPERATING EXPENDITURES","${totalExpenses}","100.0%","${expensesData.expenses.length}"`);
+    lines.push('');
+
+    // SECTION 3: DETAILED EXPENSES REGISTER
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('3. DETAILED EXPENSES REGISTER (WHAT WAS BOUGHT - LINE BY LINE)');
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('Date,Item / Expense Description,Category,Supplier / Paid To,Payment Source,Receipt / Voucher #,Amount (KES)');
+    if (expensesData.expenses.length > 0) {
+      expensesData.expenses.forEach(exp => {
+        const d = exp.createdAt ? exp.createdAt.slice(0, 10) : todayStr;
+        const catBadge = getExpenseCategoryBadge(exp.category).label;
+        const desc = (exp.description || '').replace(/"/g, '""');
+        const paidTo = (exp.paidTo || 'N/A').replace(/"/g, '""');
+        const src = exp.paymentSource === 'CASH_DRAWER' ? 'Cash Drawer Float' : 'Bank / M-Pesa Till';
+        const rcpt = exp.receiptNumber || 'N/A';
+        lines.push(`"${d}","${desc}","${catBadge}","${paidTo}","${src}","${rcpt}","${exp.amount}"`);
+      });
+    } else {
+      lines.push('"No detailed expense entries recorded yet","","","","","","0"');
+    }
+    lines.push('');
+
+    // SECTION 4: FOOD SALES & PROFIT FROM SELLING FOODS
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('4. FOOD SALES & PROFIT MADE FROM SELLING FOODS');
+    lines.push('--------------------------------------------------------------------------------');
+    lines.push('Dish Name,Portion / Variant,Quantity Sold,Total Revenue (KES),Estimated Cost (KES),PROFIT MADE (KES),Profit Margin %');
+    if (topItems && topItems.length > 0) {
+      topItems.forEach(item => {
+        const name = (item.name || item.itemName || 'Dish').replace(/"/g, '""');
+        const variant = (item.variant || 'Standard').replace(/"/g, '""');
+        const qty = item.quantity || 0;
+        const rev = item.revenue || 0;
+        const cost = item.cost !== undefined ? item.cost : Math.round(rev * 0.42);
+        const profit = item.profit !== undefined ? item.profit : Math.round(rev - cost);
+        const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : '0.0';
+        lines.push(`"${name}","${variant}","${qty}","${rev}","${cost}","${profit}","${margin}%"`);
+      });
+      const totalFoodRev = topItems.reduce((s, i) => s + (i.revenue || 0), 0);
+      const totalFoodCost = topItems.reduce((s, i) => s + (i.cost || Math.round((i.revenue || 0) * 0.42)), 0);
+      const totalFoodProfit = totalFoodRev - totalFoodCost;
+      const totalFoodMargin = totalFoodRev > 0 ? ((totalFoodProfit / totalFoodRev) * 100).toFixed(1) : '0.0';
+      lines.push(`"TOTAL FOOD SALES","","${topItems.reduce((s, i) => s + (i.quantity || 0), 0)}","${totalFoodRev}","${totalFoodCost}","${totalFoodProfit}","${totalFoodMargin}%"`);
+    } else {
+      lines.push('"No food sales recorded yet","","0","0","0","0","0.0%"');
+    }
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + lines.join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `nani_frys_sales_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `nani_frys_executive_report_${todayStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -138,11 +285,12 @@ export const AnalyticsDashboard: React.FC = () => {
 
         <div className="flex items-center space-x-2 shrink-0">
           <button
-            onClick={exportCSV}
-            className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            onClick={exportExecutiveReportCSV}
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            title="Download complete income, operating expenses breakdown, detailed vouchers, and food profit analysis for Excel"
           >
-            <Download className="w-3.5 h-3.5 text-brand-400" />
-            <span>Export CSV</span>
+            <Download className="w-3.5 h-3.5 text-white" />
+            <span>Export Executive Report (Excel/CSV)</span>
           </button>
           <button
             onClick={fetchDashboardData}
@@ -343,6 +491,177 @@ export const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Owner Expenditure & Cost Intelligence Section */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3 sm:pb-4">
+          <div>
+            <h3 className="font-extrabold text-white text-base sm:text-lg flex items-center space-x-2">
+              <Receipt className="w-5 h-5 text-red-500" />
+              <span>Owner's Expenditure & Cost Intelligence</span>
+            </h3>
+            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">
+              Comprehensive report of operational costs, market produce, cooking oil, gas refills, and net margins
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-zinc-400 font-semibold">Total Expenditures:</span>
+            <span className="text-sm sm:text-base font-black text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-xl">
+              {formatKES(expensesData.totalAmount || summary?.totalTodayExpenses || 0)}
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Core Intelligence Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          {/* Card 1: Profitability Equation */}
+          <div className="bg-zinc-850/80 border border-zinc-750/80 rounded-2xl p-4 space-y-3">
+            <span className="text-xs font-bold text-zinc-300 block">P&L Net Profit Reconciliation</span>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400">Gross Sales Revenue:</span>
+                <span className="font-black text-white">{formatKES(profitLoss?.grossSales || summary?.todayGrossSales || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center text-amber-400">
+                <span>− Cost of Goods (COGS):</span>
+                <span className="font-bold">− {formatKES(profitLoss?.cogs || summary?.todayCOGS || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center text-red-400">
+                <span>− Operational Expenditures:</span>
+                <span className="font-bold">− {formatKES(profitLoss?.totalExpenses || expensesData.totalAmount || summary?.totalTodayExpenses || 0)}</span>
+              </div>
+              <div className="pt-2 border-t border-zinc-700/80 flex justify-between items-center">
+                <span className="font-bold text-zinc-200">Take-Home Net Profit:</span>
+                <span className={`text-base font-black ${(profitLoss?.netOperatingProfit || summary?.todayNetProfit || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatKES(profitLoss?.netOperatingProfit || summary?.todayNetProfit || 0)}
+                </span>
+              </div>
+              <div className="text-[10px] text-zinc-500 flex justify-between">
+                <span>Net Profit Margin:</span>
+                <span className="font-bold text-zinc-400">{profitLoss?.netMargin || 0}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Cash Drawer vs Bank/M-Pesa Payouts */}
+          <div className="bg-zinc-850/80 border border-zinc-750/80 rounded-2xl p-4 space-y-3">
+            <span className="text-xs font-bold text-zinc-300 block">Payout Channels</span>
+            <div className="space-y-2.5 text-xs">
+              <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                <div>
+                  <div className="text-zinc-400 text-[11px] font-semibold">Cash Drawer Payouts</div>
+                  <div className="text-[10px] text-zinc-500">Paid out from till float</div>
+                </div>
+                <div className="font-black text-amber-400 text-sm">
+                  {formatKES(expensesData.expenses.filter(e => e.paymentSource === 'CASH_DRAWER').reduce((s, e) => s + e.amount, 0))}
+                </div>
+              </div>
+              <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex justify-between items-center">
+                <div>
+                  <div className="text-zinc-400 text-[11px] font-semibold">Bank / M-Pesa Payouts</div>
+                  <div className="text-[10px] text-zinc-500">Paid via till/business paybill</div>
+                </div>
+                <div className="font-black text-safari-mpesa text-sm">
+                  {formatKES(expensesData.expenses.filter(e => e.paymentSource !== 'CASH_DRAWER').reduce((s, e) => s + e.amount, 0))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Top Expense Categories */}
+          <div className="bg-zinc-850/80 border border-zinc-750/80 rounded-2xl p-4 space-y-3">
+            <span className="text-xs font-bold text-zinc-300 block">Top Expenditure Categories</span>
+            <div className="space-y-2 text-xs">
+              {Object.entries(
+                expensesData.expenses.reduce((acc: Record<string, number>, e) => {
+                  acc[e.category] = (acc[e.category] || 0) + e.amount;
+                  return acc;
+                }, (profitLoss?.expensesByCategory as Record<string, number>) || {})
+              ).slice(0, 4).map(([cat, amt]) => {
+                const badge = getExpenseCategoryBadge(cat);
+                const pct = (expensesData.totalAmount || summary?.totalTodayExpenses)
+                  ? Math.round((amt / (expensesData.totalAmount || summary?.totalTodayExpenses || 1)) * 100)
+                  : 0;
+                return (
+                  <div key={cat} className="space-y-1">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="font-medium text-zinc-300">{badge.label}</span>
+                      <span className="font-bold text-zinc-100">{formatKES(amt)} ({pct}%)</span>
+                    </div>
+                    <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-red-500 h-full rounded-full" style={{ width: `${Math.min(100, pct)}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+              {expensesData.expenses.length === 0 && (!profitLoss?.expensesByCategory || Object.keys(profitLoss.expensesByCategory).length === 0) && (
+                <div className="text-zinc-500 text-xs text-center py-4">No expense categories recorded yet.</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Recent Expenditure Vouchers Table */}
+        <div className="space-y-2.5 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-300">
+              Recent Expenditure Vouchers ({expensesData.expenses.length} entries):
+            </span>
+          </div>
+
+          {expensesData.expenses.length > 0 ? (
+            <div className="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-zinc-800">
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead className="bg-zinc-950/80 text-zinc-400 font-bold uppercase tracking-wider text-[10px] sticky top-0 border-b border-zinc-800">
+                  <tr>
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3">Category</th>
+                    <th className="py-2.5 px-3">Description</th>
+                    <th className="py-2.5 px-3 hidden sm:table-cell">Paid To</th>
+                    <th className="py-2.5 px-3 hidden md:table-cell">Source</th>
+                    <th className="py-2.5 px-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/60 font-medium bg-zinc-900/50">
+                  {expensesData.expenses.slice(0, 8).map(exp => {
+                    const badge = getExpenseCategoryBadge(exp.category);
+                    return (
+                      <tr key={exp.id} className="hover:bg-zinc-800/40">
+                        <td className="py-2 px-3 text-zinc-400 text-[11px] whitespace-nowrap">
+                          {formatKenyaDateTime(exp.createdAt).split(' ')[0]}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge.color}`}>
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-zinc-200 max-w-[180px] truncate">
+                          {exp.description}
+                        </td>
+                        <td className="py-2 px-3 text-zinc-400 hidden sm:table-cell">
+                          {exp.paidTo || '—'}
+                        </td>
+                        <td className="py-2 px-3 hidden md:table-cell text-[11px]">
+                          <span className={exp.paymentSource === 'CASH_DRAWER' ? 'text-amber-400 font-bold' : 'text-safari-mpesa font-bold'}>
+                            {exp.paymentSource === 'CASH_DRAWER' ? 'Cash Drawer' : 'Bank / M-Pesa'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-red-400 font-mono whitespace-nowrap">
+                          - {formatKES(exp.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 bg-zinc-950/40 border border-zinc-800/70 rounded-xl text-center text-xs text-zinc-500">
+              No recent expenditures logged for this branch. Expenses added via the Expense Tracker will show up here.
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Top Dishes & Cashier Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Top Selling Menu Items */}
@@ -373,6 +692,9 @@ export const AnalyticsDashboard: React.FC = () => {
 
                   <div className="text-right shrink-0">
                     <div className="font-black text-zinc-100">{formatKES(item.revenue)}</div>
+                    <div className="text-[10px] text-emerald-400 font-bold">
+                      +{formatKES(item.profit !== undefined ? item.profit : Math.round(item.revenue * 0.58))} profit
+                    </div>
                     <div className="text-[10px] text-zinc-400 font-semibold">{item.quantity} sold</div>
                   </div>
                 </div>

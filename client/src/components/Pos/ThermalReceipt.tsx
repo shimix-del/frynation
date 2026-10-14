@@ -246,7 +246,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             {/* Footer */}
             <div className="pt-3 text-center space-y-1 text-[10px]">
               <div className="font-bold">ASANTE SANA! KARIBU TENA!</div>
-              <div className="text-zinc-600">Prices inclusive of 16% VAT where applicable</div>
               <div className="text-zinc-400 pt-1 tracking-widest">*** NANI FRYS POS ***</div>
             </div>
           </div>

@@ -18,12 +18,12 @@ export const OpenShiftModal: React.FC<OpenShiftModalProps> = ({
   if (!isOpen) return null;
 
   const { currentBranchId, currentBranch } = useBranch();
-  const [openingFloat, setOpeningFloat] = useState<string>('3000');
+  const [openingFloat, setOpeningFloat] = useState<string>('0');
   const [notes, setNotes] = useState<string>('Opening drawer float counted and verified');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const quickFloats = [1000, 2000, 3000, 5000];
+  const quickFloats = [0, 1000, 2000, 3000];
 
   const handleOpen = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +78,7 @@ export const OpenShiftModal: React.FC<OpenShiftModalProps> = ({
               type="number"
               value={openingFloat}
               onChange={e => setOpeningFloat(e.target.value)}
-              placeholder="e.g. 3000"
+              placeholder="e.g. 0"
               required
               className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl py-2.5 px-4 text-xl font-black text-emerald-400 focus:outline-none focus:border-emerald-500"
             />

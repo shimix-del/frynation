@@ -131,7 +131,7 @@ export async function getSalesByCategory(branchId?: string | null, days = 7) {
   return Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue);
 }
 
-export async function getTopSellingItems(branchId?: string | null, limit = 10, days = 7) {
+export async function getTopSellingItems(branchId?: string | null, limit = 20, days = 30) {
   const whereBranch = branchId ? { branchId } : {};
   const since = new Date();
   since.setDate(since.getDate() - days);
@@ -146,24 +146,32 @@ export async function getTopSellingItems(branchId?: string | null, limit = 10, d
     },
   });
 
-  const itemMap: Record<string, { name: string; variant?: string; quantity: number; revenue: number }> = {};
+  const itemMap: Record<string, { name: string; variant?: string; quantity: number; revenue: number; cost: number; profit: number }> = {};
 
   orderItems.forEach(item => {
-    const key = `${item.itemName}${item.variantName ? ` (${item.variantName})` : ''}`;
+    const key = `${item.itemName}___${item.variantName || ''}`;
     if (!itemMap[key]) {
       itemMap[key] = {
         name: item.itemName,
         variant: item.variantName || undefined,
         quantity: 0,
         revenue: 0,
+        cost: 0,
+        profit: 0,
       };
     }
+    const unitCost = item.unitCost && item.unitCost > 0 ? item.unitCost : Math.round(item.unitPrice * 0.42);
+    const itemCost = Math.round(unitCost * item.quantity);
+    const itemProfit = Math.round(item.totalPrice - itemCost);
+
     itemMap[key].quantity += item.quantity;
     itemMap[key].revenue += item.totalPrice;
+    itemMap[key].cost += itemCost;
+    itemMap[key].profit += itemProfit;
   });
 
   return Object.values(itemMap)
-    .sort((a, b) => b.quantity - a.quantity)
+    .sort((a, b) => b.revenue - a.revenue)
     .slice(0, limit);
 }
 

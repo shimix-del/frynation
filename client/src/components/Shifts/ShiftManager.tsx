@@ -10,6 +10,9 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
+  UtensilsCrossed,
+  Receipt,
+  ShoppingBag,
 } from 'lucide-react';
 import { Shift } from '../../types';
 import { api } from '../../services/api';
@@ -163,9 +166,52 @@ export const ShiftManager: React.FC = () => {
             </div>
           </div>
 
+          {/* Foods & Dishes Sold During Shift */}
+          <div className="pt-3 border-t border-zinc-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-200 flex items-center space-x-2">
+                <UtensilsCrossed className="w-4 h-4 text-brand-500" />
+                <span>Dishes & Foods Sold This Shift ({activeShift.itemsSold?.reduce((s, i) => s + i.quantity, 0) || 0} items):</span>
+              </span>
+              <span className="text-[11px] text-zinc-400 font-semibold">
+                Completed Tickets: <span className="text-white font-bold">{activeShift.orders?.length || activeShift._count?.orders || 0}</span>
+              </span>
+            </div>
+
+            {activeShift.itemsSold && activeShift.itemsSold.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
+                {activeShift.itemsSold.map((food, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-zinc-950/70 border border-zinc-800 p-2.5 rounded-xl flex items-center justify-between text-xs"
+                  >
+                    <div className="truncate pr-2">
+                      <div className="font-bold text-zinc-100 truncate">{food.itemName}</div>
+                      {food.variantName && (
+                        <div className="text-[10px] text-zinc-400 truncate">{food.variantName}</div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-extrabold text-brand-400">
+                        {food.quantity} sold
+                      </div>
+                      <div className="text-[10px] font-mono text-zinc-300 font-bold">
+                        {formatKES(food.totalPrice)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3.5 bg-zinc-950/50 border border-zinc-800/80 rounded-2xl text-center text-xs text-zinc-500">
+                No food sales recorded in this active shift yet. Ring up meals on POS to see them appear live!
+              </div>
+            )}
+          </div>
+
           {/* Cash Movements during this shift */}
           {activeShift.cashMovements && activeShift.cashMovements.length > 0 && (
-            <div className="pt-2">
+            <div className="pt-2 border-t border-zinc-800">
               <span className="text-xs font-bold text-zinc-300 block mb-2">
                 Shift Cash Drops & Payouts ({activeShift.cashMovements.length}):
               </span>

@@ -11,7 +11,7 @@ router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res:
       ? (req.query.branchId as string)
       : (req.user?.branchId || undefined);
 
-    const shift = await prisma.shift.findFirst({
+    let shift = await prisma.shift.findFirst({
       where: {
         ...(branchId ? { branchId } : {}),
         status: 'OPEN',
@@ -21,6 +21,11 @@ router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res:
         branch: true,
         cashMovements: { orderBy: { createdAt: 'desc' } },
         expenses: { orderBy: { createdAt: 'desc' } },
+        orders: {
+          where: { status: 'COMPLETED' },
+          include: { items: true, payments: true },
+          orderBy: { createdAt: 'desc' },
+        },
       },
       orderBy: { openedAt: 'desc' },
     });
@@ -29,6 +34,62 @@ router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res:
       res.json({ activeShift: null });
       return;
     }
+
+    // Auto-link any orphan completed orders from this branch during the shift duration
+    await prisma.order.updateMany({
+      where: {
+        branchId: shift.branchId,
+        shiftId: null,
+        status: 'COMPLETED',
+        createdAt: { gte: shift.openedAt },
+      },
+      data: {
+        shiftId: shift.id,
+      },
+    });
+
+    // Re-fetch shift orders to ensure all linked orders are included
+    const allShiftOrders = await prisma.order.findMany({
+      where: { shiftId: shift.id, status: 'COMPLETED' },
+      include: { items: true, payments: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Compute food items sold aggregation
+    const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
+    let actualCash = 0;
+    let actualMpesa = 0;
+    let actualCard = 0;
+
+    allShiftOrders.forEach(order => {
+      order.items.forEach(item => {
+        const key = `${item.itemName}___${item.variantName || ''}`;
+        const existing = itemMap.get(key);
+        if (existing) {
+          existing.quantity += item.quantity;
+          existing.totalPrice += item.totalPrice;
+        } else {
+          itemMap.set(key, {
+            itemName: item.itemName,
+            variantName: item.variantName || null,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+          });
+        }
+      });
+
+      order.payments.forEach(p => {
+        if (p.paymentMethod === 'CASH') actualCash += p.amount;
+        else if (p.paymentMethod === 'MPESA') actualMpesa += p.amount;
+        else if (p.paymentMethod === 'CARD') actualCard += p.amount;
+        else if (p.paymentMethod === 'SPLIT') {
+          if (p.mpesaCode) actualMpesa += p.amount;
+          else actualCash += p.amount;
+        }
+      });
+    });
+
+    const itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
 
     // Compute expected cash in drawer in real-time
     const cashDrops = shift.cashMovements
@@ -39,11 +100,20 @@ router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res:
       .filter(m => m.type === 'FLOAT_IN')
       .reduce((sum, m) => sum + m.amount, 0);
 
-    const expectedCash = shift.openingFloat + shift.totalCashSales + cashAdditions - cashDrops;
+    const totalCash = Math.max(shift.totalCashSales, actualCash);
+    const totalMpesa = Math.max(shift.totalMpesaSales, actualMpesa);
+    const totalCard = Math.max(shift.totalCardSales, actualCard);
+
+    const expectedCash = shift.openingFloat + totalCash + cashAdditions - cashDrops;
 
     res.json({
       activeShift: {
         ...shift,
+        totalCashSales: totalCash,
+        totalMpesaSales: totalMpesa,
+        totalCardSales: totalCard,
+        orders: allShiftOrders,
+        itemsSold,
         cashDrops,
         cashAdditions,
         expectedCash,
