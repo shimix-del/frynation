@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { KeyRound, Mail, Lock, Store, Shield, ArrowRight, Sparkles, Delete } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { KeyRound, Mail, Lock, Store, Shield, ArrowRight, Sparkles, Delete, Keyboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 import naniLogo from '../../assets/logo.jpg';
@@ -36,6 +36,35 @@ export const LoginScreen: React.FC = () => {
     const interval = setInterval(checkServer, 5000);
     return () => clearInterval(interval);
   }, [isLocalHost]);
+
+  // Physical keyboard support for PIN mode (in case touchscreen has issues)
+  useEffect(() => {
+    if (mode !== 'PIN' || isLoading) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If typing in an active input, let the input's onChange handle it
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handlePinInput(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handlePinDelete();
+      } else if (e.key === 'Escape' || e.key === 'Delete') {
+        e.preventDefault();
+        handlePinClear();
+      } else if (e.key === 'Enter' && pin.length >= 4) {
+        e.preventDefault();
+        submitPin(pin);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, pin, isLoading]);
 
   const handlePinInput = (num: string) => {
     if (pin.length < 6) {
@@ -172,7 +201,7 @@ export const LoginScreen: React.FC = () => {
         {mode === 'PIN' ? (
           <div>
             {/* PIN Display circles */}
-            <div className="flex justify-center space-x-3 mb-6">
+            <div className="flex justify-center space-x-3 mb-4">
               {[0, 1, 2, 3].map(index => (
                 <div
                   key={index}
@@ -183,6 +212,45 @@ export const LoginScreen: React.FC = () => {
                   }`}
                 />
               ))}
+            </div>
+
+            {/* Direct Physical Keyboard Input Field (fallback when touchscreen has an issue) */}
+            <div className="mb-4">
+              <label className="block text-[11px] font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center space-x-1.5">
+                  <Keyboard className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Physical Keyboard / PIN Input:</span>
+                </span>
+                <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Keyboard Active
+                </span>
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={pin}
+                  onChange={e => {
+                    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPin(cleaned);
+                    setError(null);
+                    if (cleaned.length === 4) {
+                      submitPin(cleaned);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && pin.length >= 4) {
+                      e.preventDefault();
+                      submitPin(pin);
+                    }
+                  }}
+                  placeholder="Type PIN with keyboard & press Enter..."
+                  autoFocus
+                  className="w-full bg-zinc-800 border border-zinc-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 px-4 text-center font-mono tracking-widest text-lg font-bold text-white placeholder:text-zinc-500 placeholder:text-xs placeholder:tracking-normal focus:outline-none transition shadow-inner"
+                />
+              </div>
             </div>
 
             {/* Keypad Grid */}

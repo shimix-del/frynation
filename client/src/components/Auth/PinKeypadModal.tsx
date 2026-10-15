@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, KeyRound, Delete, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, KeyRound, Delete, CheckCircle2, Keyboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface PinKeypadModalProps {
@@ -12,6 +12,32 @@ export const PinKeypadModal: React.FC<PinKeypadModalProps> = ({ isOpen, onClose 
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOpen || isLoading) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handleInput(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        setPin(prev => prev.slice(0, -1));
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'Enter' && pin.length >= 4) {
+        e.preventDefault();
+        submitPin(pin);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, pin, isLoading]);
 
   if (!isOpen) return null;
 
@@ -61,7 +87,7 @@ export const PinKeypadModal: React.FC<PinKeypadModalProps> = ({ isOpen, onClose 
         )}
 
         {/* PIN Indicators */}
-        <div className="flex justify-center space-x-3 mb-5">
+        <div className="flex justify-center space-x-3 mb-3">
           {[0, 1, 2, 3].map(i => (
             <div
               key={i}
@@ -70,6 +96,36 @@ export const PinKeypadModal: React.FC<PinKeypadModalProps> = ({ isOpen, onClose 
               }`}
             />
           ))}
+        </div>
+
+        {/* Physical Keyboard Input */}
+        <div className="mb-3">
+          <div className="relative">
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pin}
+              onChange={e => {
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setPin(cleaned);
+                setError(null);
+                if (cleaned.length === 4) {
+                  submitPin(cleaned);
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && pin.length >= 4) {
+                  e.preventDefault();
+                  submitPin(pin);
+                }
+              }}
+              placeholder="Type PIN with keyboard..."
+              autoFocus
+              className="w-full bg-zinc-800 border border-zinc-700 focus:border-brand-500 rounded-xl py-2 px-3 text-center font-mono tracking-widest text-base font-bold text-white placeholder:text-zinc-500 placeholder:text-xs placeholder:tracking-normal focus:outline-none"
+            />
+          </div>
         </div>
 
         {/* Keypad */}

@@ -621,26 +621,7 @@ export const mockStore = {
   },
 
   getCurrentShift: (params?: { branchId?: string }) => {
-    const active = getStored<Shift | null>('activeShift', {
-      id: 'shift-active-1',
-      branchId: params?.branchId || 'branch-migadini',
-      cashierId: 'user-cashier1',
-      openingFloat: 0,
-      totalCashSales: 520,
-      totalMpesaSales: 1200,
-      totalCardSales: 0,
-      totalExpensesPaid: 4200,
-      status: 'OPEN',
-      openedAt: new Date(new Date().setHours(8, 0, 0, 0)).toISOString(),
-      closedAt: null,
-      closingCashActual: null,
-      closingCashExpected: null,
-      variance: null,
-      notes: null,
-      branch: initialBranches[0],
-      cashier: { id: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER' },
-      _count: { orders: 6 },
-    });
+    const active = getStored<Shift | null>('activeShift', null);
 
     if (active) {
       const orders = (active as any).orders || [];

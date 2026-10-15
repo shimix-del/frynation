@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight, Smartphone } from 'lucide-react';
+import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight, Smartphone, Wallet, Plus } from 'lucide-react';
 import { MenuCategoryBar } from './MenuCategoryBar';
 import { MenuItemCard } from './MenuItemCard';
 import { VariantModal } from './VariantModal';
@@ -8,6 +8,7 @@ import { PaymentModal } from './PaymentModal';
 import { HeldOrdersModal } from './HeldOrdersModal';
 import { ThermalReceipt } from './ThermalReceipt';
 import { OfflineBanner } from './OfflineBanner';
+import { OpenShiftModal } from '../Shifts/OpenShiftModal';
 import { usePosCart } from '../../context/PosCartContext';
 import { useBranch } from '../../context/BranchContext';
 import { api } from '../../services/api';
@@ -24,6 +25,8 @@ export const PosTerminal: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
+  const [activeShift, setActiveShift] = useState<any | null>(null);
+  const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState<boolean>(false);
 
   // Modals state
   const [selectedItemForVariant, setSelectedItemForVariant] = useState<MenuItem | null>(null);
@@ -36,15 +39,26 @@ export const PosTerminal: React.FC = () => {
   const [stockWarnings, setStockWarnings] = useState<string[]>([]);
   const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
 
+  const fetchShiftStatus = async () => {
+    try {
+      const shiftRes = await api.getCurrentShift({ branchId: currentBranchId || undefined });
+      setActiveShift(shiftRes?.activeShift || null);
+    } catch {
+      setActiveShift(null);
+    }
+  };
+
   const fetchMenuData = async () => {
     setIsLoading(true);
     try {
-      const [catsData, menuData] = await Promise.all([
+      const [catsData, menuData, shiftRes] = await Promise.all([
         api.getCategories(),
         api.getMenu(),
+        api.getCurrentShift({ branchId: currentBranchId || undefined }).catch(() => ({ activeShift: null })),
       ]);
       setCategories(catsData);
       setMenuItems(menuData);
+      setActiveShift(shiftRes?.activeShift || null);
     } catch (err) {
       console.error('Failed to load menu data:', err);
     } finally {
@@ -55,6 +69,14 @@ export const PosTerminal: React.FC = () => {
   useEffect(() => {
     fetchMenuData();
   }, [currentBranchId]);
+
+  const handleOpenPayment = () => {
+    if (!activeShift) {
+      setIsOpenShiftModalOpen(true);
+      return;
+    }
+    setIsPaymentModalOpen(true);
+  };
 
   const handleCardClick = (item: MenuItem) => {
     if (item.hasVariants && item.variants && item.variants.length > 0) {
@@ -121,6 +143,28 @@ export const PosTerminal: React.FC = () => {
             isMobileCartOpen ? 'hidden lg:flex' : 'flex'
           }`}
         >
+          {/* Active Shift Warning Banner if not started */}
+          {!activeShift && !isLoading && (
+            <div className="bg-amber-500/15 border border-amber-500/40 text-amber-200 p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs shadow-lg animate-in fade-in duration-200">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-white text-xs sm:text-sm">No Shift Currently Open</div>
+                  <div className="text-[11px] text-amber-300/80">Cashier must start shift to record drawer float &amp; process orders.</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOpenShiftModalOpen(true)}
+                className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-xl text-xs transition shadow-md shadow-emerald-950/40 flex items-center justify-center space-x-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Start Shift (Float: KES 0)</span>
+              </button>
+            </div>
+          )}
+
           {/* Top Filter Controls */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-2.5">
             {/* Category Selector Bar */}
@@ -190,7 +234,7 @@ export const PosTerminal: React.FC = () => {
           }`}
         >
           <CartSidebar
-            onOpenPaymentModal={() => setIsPaymentModalOpen(true)}
+            onOpenPaymentModal={handleOpenPayment}
             onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
             onClose={() => setIsMobileCartOpen(false)}
           />
@@ -217,7 +261,7 @@ export const PosTerminal: React.FC = () => {
 
             {/* Direct Pay on Phone */}
             <button
-              onClick={() => setIsPaymentModalOpen(true)}
+              onClick={handleOpenPayment}
               className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-safari-mpesa hover:from-emerald-500 hover:to-safari-mpesaDark active:scale-95 text-white font-black rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-emerald-600/30 transition border border-emerald-400/30"
             >
               <Smartphone className="w-4 h-4 shrink-0" />
@@ -256,6 +300,15 @@ export const PosTerminal: React.FC = () => {
         onClose={() => {
           setIsReceiptOpen(false);
           setCompletedOrder(null);
+        }}
+      />
+
+      <OpenShiftModal
+        isOpen={isOpenShiftModalOpen}
+        onClose={() => setIsOpenShiftModalOpen(false)}
+        onShiftOpened={async () => {
+          await fetchShiftStatus();
+          setIsPaymentModalOpen(true);
         }}
       />
     </div>

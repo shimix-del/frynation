@@ -265,7 +265,90 @@ export const ShiftManager: React.FC = () => {
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 space-y-4">
         <h3 className="font-bold text-white text-base">Closed Shifts & Z-Report Archive</h3>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Clean Cards for Phones & Small Devices */}
+        <div className="block sm:hidden space-y-3">
+          {shiftHistory.length === 0 ? (
+            <div className="text-center py-6 text-zinc-500 text-xs">No closed shift records found.</div>
+          ) : (
+            shiftHistory.map(shift => {
+              const gross = shift.totalCashSales + shift.totalMpesaSales + (shift.totalCardSales || 0);
+              return (
+                <div key={shift.id} className="bg-zinc-850 border border-zinc-750 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-zinc-750 pb-2">
+                    <div>
+                      <div className="font-bold text-white text-xs">{shift.cashier?.name}</div>
+                      <div className="text-[10px] text-zinc-400">
+                        {formatKenyaDateTime(shift.openedAt).split(' ')[0]} • {shift.branch?.name || 'Main Shop'}
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        shift.status === 'OPEN'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      {shift.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 block font-medium">Gross Revenue</span>
+                      <span className="font-black text-white text-sm">{formatKES(gross)}</span>
+                    </div>
+                    <div className="bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 block font-medium">Cash / M-Pesa</span>
+                      <span className="text-[11px] font-bold text-emerald-400">{formatKES(shift.totalCashSales)}</span>
+                      <span className="text-[10px] text-zinc-500"> / </span>
+                      <span className="text-[11px] font-bold text-safari-mpesa">{formatKES(shift.totalMpesaSales)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
+                    <span>Float: <span className="font-bold text-zinc-200">{formatKES(shift.openingFloat)}</span></span>
+                    <span>
+                      Variance: {' '}
+                      <span className={`font-black ${shift.variance === 0 ? 'text-emerald-400' : (shift.variance || 0) < 0 ? 'text-red-400' : 'text-blue-400'}`}>
+                        {shift.variance === 0 ? '✓ Balanced' : `${(shift.variance || 0) > 0 ? '+' : ''}${formatKES(shift.variance || 0)}`}
+                      </span>
+                    </span>
+                  </div>
+
+                  {shift.status === 'CLOSED' && (
+                    <button
+                      onClick={() =>
+                        setSelectedZReport({
+                          zReportNumber: `Z-${shift.branch?.code || 'MGD'}-${shift.id.slice(-4).toUpperCase()}`,
+                          branchName: shift.branch?.name,
+                          cashierName: shift.cashier?.name,
+                          openedAt: shift.openedAt,
+                          closedAt: shift.closedAt,
+                          openingFloat: shift.openingFloat,
+                          totalCashSales: shift.totalCashSales,
+                          totalMpesaSales: shift.totalMpesaSales,
+                          totalCardSales: shift.totalCardSales,
+                          totalGrossSales: gross,
+                          expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales),
+                          actualCountedCash: shift.closingCashActual || shift.closingCashExpected,
+                          variance: shift.variance || 0,
+                          totalOrdersCount: shift._count?.orders || 0,
+                        })
+                      }
+                      className="w-full py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 active:scale-95 shadow-sm"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>View Shift Report (Z-Report)</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Full Table for Tablets & PCs */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950/70 text-zinc-400 font-bold uppercase tracking-wider text-[10px] border-b border-zinc-800">
               <tr>
@@ -334,7 +417,7 @@ export const ShiftManager: React.FC = () => {
                         }
                         className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold rounded-xl border border-zinc-700 transition"
                       >
-                        Reprint Z-Report
+                        View Z-Report
                       </button>
                     )}
                   </td>
