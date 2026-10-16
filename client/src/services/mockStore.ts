@@ -240,7 +240,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Chilled pure mineral water (500ml small bottle)',
     basePrice: 30,
     costPrice: 15,
-    imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500&q=80',
+    imageUrl: './images/water-small.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[3],
@@ -252,7 +252,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Chilled pure mineral water (1L big bottle)',
     basePrice: 50,
     costPrice: 25,
-    imageUrl: 'https://images.unsplash.com/photo-1559839914-1b3ef5007324?w=500&q=80',
+    imageUrl: './images/water-big.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[3],
@@ -276,7 +276,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v7_water_and_security_updates';
+const STORE_VERSION = 'v8_water_images_and_pins';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {

@@ -13,6 +13,9 @@ import {
   Bike,
   Wrench,
   HelpCircle,
+  Lock,
+  Shield,
+  Delete,
 } from 'lucide-react';
 import { Expense } from '../../types';
 import { api } from '../../services/api';
@@ -28,6 +31,20 @@ export const ExpenseTracker: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<string>(new Date().toISOString().slice(0, 10));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  const [pinInput, setPinInput] = useState<string>('');
+  const [pinError, setPinError] = useState<string | null>(null);
+
+  const handleVerifyPin = (pin: string) => {
+    if (pin === '0099') {
+      setIsUnlocked(true);
+      setPinError(null);
+      setPinInput('');
+    } else {
+      setPinError('🚨 Invalid Security PIN. Access denied.');
+      setPinInput('');
+    }
+  };
 
   const fetchExpenses = async () => {
     setIsLoading(true);
@@ -50,7 +67,38 @@ export const ExpenseTracker: React.FC = () => {
     fetchExpenses();
   }, [currentBranchId, categoryFilter, dateFilter]);
 
+  useEffect(() => {
+    if (isUnlocked) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        setPinInput(prev => {
+          const next = prev + e.key;
+          if (next.length <= 4) {
+            setPinError(null);
+            if (next.length === 4) handleVerifyPin(next);
+            return next;
+          }
+          return prev;
+        });
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        setPinInput(prev => prev.slice(0, -1));
+      } else if (e.key === 'Escape' || e.key === 'Delete') {
+        e.preventDefault();
+        setPinInput('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isUnlocked]);
+
   const handleDelete = async (id: string) => {
+    const pin = prompt('Enter Security PIN (0099) to delete this expense:');
+    if (pin !== '0099') {
+      alert('🚨 Unauthorized: Security PIN 0099 is required to delete expenses.');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this expense record?')) return;
     try {
       await api.deleteExpense(id);
@@ -79,6 +127,94 @@ export const ExpenseTracker: React.FC = () => {
     }
   };
 
+  if (!isUnlocked) {
+    return (
+      <div className="flex-1 p-6 flex flex-col items-center justify-center bg-zinc-950 overflow-y-auto">
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 w-full max-w-sm shadow-2xl backdrop-blur-sm text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-black text-white tracking-tight">Daily Expense Security</h2>
+          <p className="text-xs text-zinc-400 mt-1 mb-5">
+            Enter authorized 4-digit PIN (0099) to view and manage daily eatery expenses.
+          </p>
+
+          {pinError && (
+            <div className="mb-4 p-2.5 bg-red-500/15 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold animate-shake">
+              {pinError}
+            </div>
+          )}
+
+          {/* PIN Dots */}
+          <div className="flex justify-center space-x-3 mb-6">
+            {[0, 1, 2, 3].map(idx => (
+              <div
+                key={idx}
+                className={`w-4 h-4 rounded-full border-2 transition-all ${
+                  pinInput.length > idx
+                    ? 'bg-red-500 border-red-500 scale-110 shadow-md shadow-red-500/50'
+                    : 'border-zinc-700 bg-zinc-800'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Keypad */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+              <button
+                key={n}
+                onClick={() => {
+                  const next = pinInput + n;
+                  if (next.length <= 4) {
+                    setPinInput(next);
+                    setPinError(null);
+                    if (next.length === 4) handleVerifyPin(next);
+                  }
+                }}
+                className="h-12 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-lg font-black text-zinc-100 transition active:scale-95 border border-zinc-700/60"
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              onClick={() => setPinInput('')}
+              className="h-12 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 text-xs font-bold text-zinc-400 transition border border-zinc-800"
+            >
+              CLEAR
+            </button>
+            <button
+              onClick={() => {
+                const next = pinInput + '0';
+                if (next.length <= 4) {
+                  setPinInput(next);
+                  setPinError(null);
+                  if (next.length === 4) handleVerifyPin(next);
+                }
+              }}
+              className="h-12 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-lg font-black text-zinc-100 transition active:scale-95 border border-zinc-700/60"
+            >
+              0
+            </button>
+            <button
+              onClick={() => setPinInput(p => p.slice(0, -1))}
+              className="h-12 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 transition flex items-center justify-center border border-zinc-800"
+            >
+              <Delete className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="border-t border-zinc-800/80 pt-3 text-center">
+            <span className="text-[11px] text-zinc-500 font-semibold flex items-center justify-center space-x-1">
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>Use on-screen keypad or physical keyboard</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 bg-zinc-950">
       {/* Header */}
@@ -104,8 +240,17 @@ export const ExpenseTracker: React.FC = () => {
           <button
             onClick={fetchExpenses}
             className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-2xl border border-zinc-800"
+            title="Refresh list"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsUnlocked(false)}
+            className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-2xl border border-zinc-800 text-xs font-bold transition flex items-center space-x-1.5"
+            title="Lock Daily Expenses"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Lock</span>
           </button>
         </div>
       </div>

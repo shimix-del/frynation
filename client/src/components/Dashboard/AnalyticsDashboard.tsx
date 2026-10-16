@@ -21,6 +21,10 @@ import {
   FileSpreadsheet,
   Smartphone,
   Banknote,
+  Lock,
+  Shield,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -61,6 +65,22 @@ export const AnalyticsDashboard: React.FC = () => {
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === '1@1@') {
+      setIsUnlocked(true);
+      setAuthError(null);
+      setPasswordInput('');
+    } else {
+      setAuthError('🚨 Incorrect Owner Password. Access denied.');
+      setPasswordInput('');
+    }
+  };
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -290,6 +310,83 @@ export const AnalyticsDashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  if (!isUnlocked) {
+    return (
+      <div className="flex-1 p-6 flex flex-col items-center justify-center bg-zinc-950 overflow-y-auto">
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl backdrop-blur-sm text-center">
+          <div className="relative mb-4 inline-block">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+              <Lock className="w-8 h-8" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-brand-500 text-white rounded-full p-1 shadow">
+              <Shield className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div className="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2">
+            Owner Confidential Area
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Owner Analytics Protection</h2>
+          <p className="text-xs text-zinc-400 mt-1.5 mb-6 max-w-sm mx-auto">
+            Turnover, net profits, margin breakdowns, and cashier stats are locked. Enter the owner security password to proceed.
+          </p>
+
+          {authError && (
+            <div className="mb-4 p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-400 text-xs font-semibold animate-shake">
+              {authError}
+            </div>
+          )}
+
+          <form onSubmit={handleUnlock} className="space-y-4">
+            <div className="relative text-left">
+              <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                <span>Security Password</span>
+                <span className="text-[10px] text-zinc-500 font-normal">Case-sensitive</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordInput}
+                  onChange={e => {
+                    setPasswordInput(e.target.value);
+                    setAuthError(null);
+                  }}
+                  placeholder="Enter owner password (1@1@)..."
+                  autoFocus
+                  required
+                  className="w-full bg-zinc-800/90 border border-zinc-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl py-3 pl-4 pr-11 text-sm text-white placeholder-zinc-500 tracking-wider font-mono focus:outline-none transition shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center justify-center space-x-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Unlock Owner Analytics</span>
+            </button>
+          </form>
+
+          <div className="border-t border-zinc-800/80 pt-4 mt-6 text-center">
+            <div className="text-[11px] font-semibold text-zinc-500 flex items-center justify-center space-x-1.5">
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span>Encrypted financial reports strictly restricted to the business owner</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 bg-zinc-950">
       {/* Top Header */}
@@ -332,6 +429,16 @@ export const AnalyticsDashboard: React.FC = () => {
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsUnlocked(false)}
+            className="px-3 py-1.5 sm:px-3 sm:py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl border border-zinc-700/80 text-xs font-bold transition flex items-center space-x-1.5"
+            title="Lock Analytics"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Lock</span>
           </button>
         </div>
       </div>
