@@ -477,8 +477,8 @@ SET foreign_key_checks = 1;
 --  SEED DATA — Initial branches
 -- ============================================================
 INSERT IGNORE INTO `branches` (`id`, `name`, `code`, `address`, `phone`, `till_number`, `paybill_number`, `is_active`) VALUES
-('branch-migadini', 'Migadini Main Shop', 'MGD01', 'Migadini, Mombasa', '+254 712 345 678', '5428901', '247247', 1),
-('branch-exp2',     'Branch 2 - Express', 'EXP02', 'Express Outlet',    '+254 722 987 654', '5428902', '247247', 1);
+('branch-migadini', 'Migadini Main Shop', 'MGD01', 'Migadini, Mombasa', '0143285625', NULL, '247247', 1),
+('branch-exp2',     'Branch 2 - Express', 'EXP02', 'Express Outlet',    '0143285625', NULL, '247247', 1);
 
 -- ============================================================
 --  SEED DATA — Initial users (Owner + Manager + Cashiers)
@@ -506,36 +506,20 @@ INSERT IGNORE INTO `categories` (`id`, `name`, `code`, `sort_order`, `icon`) VAL
 --  SEED DATA — Menu items
 -- ============================================================
 INSERT IGNORE INTO `menu_items` (`id`, `category_id`, `name`, `description`, `base_price`, `cost_price`, `image_url`, `is_available`, `has_variants`) VALUES
-('item-chips-plain',  'cat-fast-food','Chips Plain (Regular Plate)',       'Crispy deep-fried fresh potato chips served with sauce and salad',                    150.00, 65.00,  'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500&q=80', 1, 0),
-('item-chips-masala', 'cat-fast-food','Chips Masala (Swahili Style)',      'Spicy tossed potato chips in tomato masala, dhania, and chili sauce',                 200.00, 85.00,  'https://images.unsplash.com/photo-1585109649139-366815a0d713?w=500&q=80', 1, 0),
-('item-chips-kuku',   'cat-fast-food','Chips & 1/4 Kuku Combo',           'Full plate chips + 1/4 crispy fried chicken + kachumbari',                            450.00, 220.00, 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&q=80', 1, 0),
-('item-kuku-choma',   'cat-meat',    'Kuku Choma / Fry (Deep Fried)',     'Golden seasoned deep fried tender chicken with secret marinade',                       400.00, 180.00, 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=500&q=80', 1, 1),
-('item-beef-pilau',   'cat-rice',    'Swahili Beef Pilau',                'Authentic coastal spiced basmati rice with tender chunks of beef',                     320.00, 140.00, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80', 1, 1),
-('item-chicken-biryani','cat-rice',  'Coastal Chicken Biryani',           'Layered saffron aromatic rice with thick rich chicken masala sauce',                   420.00, 180.00, 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&q=80', 1, 1),
-('item-coke300',      'cat-drinks',  'Coca-Cola 300ml Glass Bottle',      'Chilled classic Coca-Cola glass bottle',                                               60.00,  35.00,  'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80', 1, 0),
-('item-sprite300',    'cat-drinks',  'Sprite 300ml Glass Bottle',         'Chilled lemon-lime Sprite soda',                                                       60.00,  35.00,  'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80', 1, 0),
-('item-fresh-juice',  'cat-drinks',  'Freshly Squeezed Juice (500ml)',    '100% pure fresh fruit juice blended daily',                                            150.00, 60.00,  'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500&q=80', 1, 1),
-('item-smokie-pasua', 'cat-snacks',  'Smokie Pasua (with Kachumbari)',    "Grilled Farmer's Choice smokie sliced open and stuffed with spicy kachumbari",         60.00,  28.00,  'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=500&q=80', 1, 0),
-('item-sausage-beef', 'cat-snacks',  "Fried Beef Sausage (Farmer's Choice)",'Plump deep-fried Kenyan butcher beef sausage',                                        80.00,  38.00,  'https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=500&q=80', 1, 0);
-
--- ============================================================
---  SEED DATA — Menu item variants
--- ============================================================
-INSERT IGNORE INTO `menu_item_variants` (`id`, `menu_item_id`, `name`, `price`, `cost_price`, `is_available`) VALUES
--- Kuku Choma variants
-('v-14-kuku',        'item-kuku-choma',    '1/4 Chicken (Kuku Choma)',        300.00, 130.00, 1),
-('v-12-kuku',        'item-kuku-choma',    '1/2 Chicken (Kuku Choma)',        580.00, 250.00, 1),
-('v-full-kuku',      'item-kuku-choma',    'Full Chicken (Kuku Choma)',       1100.00,480.00, 1),
--- Pilau variants
-('v-plain-pilau',    'item-beef-pilau',    'Plain Pilau Rice',                180.00, 70.00,  1),
-('v-beef-pilau',     'item-beef-pilau',    'Beef Pilau',                      320.00, 140.00, 1),
-('v-kuku-pilau',     'item-beef-pilau',    'Kuku Pilau (with 1/4 Chicken)',   460.00, 210.00, 1),
--- Biryani variants
-('v-chicken-biryani','item-chicken-biryani','Chicken Biryani',                420.00, 180.00, 1),
-('v-beef-biryani',   'item-chicken-biryani','Beef Biryani',                   390.00, 165.00, 1),
--- Juice variants
-('v-passion',        'item-fresh-juice',   'Fresh Passion Juice',             150.00, 60.00,  1),
-('v-mango',          'item-fresh-juice',   'Fresh Mango Juice',               150.00, 60.00,  1);
+('item-chips',        'cat-fast-food', 'Chips',         'Crispy golden potato chips',                                           100.00, 45.00,  'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=500&q=80', 1, 0),
+('item-chips-mayai',  'cat-fast-food', 'Chips Mayai',   'Crispy chips and eggs bound in double-egg omelette (Zege)',            180.00, 80.00,  'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80', 1, 0),
+('item-chicken',      'cat-meat',      'Chicken',       'Seasoned golden deep-fried or grilled chicken portion',                250.00, 120.00, 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=500&q=80', 1, 0),
+('item-pilau',        'cat-rice',      'Pilau',         'Authentic coastal Swahili spiced fragrant basmati pilau',              250.00, 110.00, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80', 1, 0),
+('item-biriani',      'cat-rice',      'Biriani',       'Aromatic layered coastal Biriani rice with rich savory sauce',         350.00, 150.00, 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&q=80', 1, 0),
+('item-viazi-karai',  'cat-snacks',    'Viazi Karai',   'Crispy golden Swahili battered spiced potatoes',                       50.00,  20.00,  'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=500&q=80', 1, 0),
+('item-sausages',     'cat-snacks',    'Sausages',      'Deep-fried Kenyan butcher beef sausages',                              50.00,  25.00,  'https://images.unsplash.com/photo-1585325701165-351af916e581?w=500&q=80', 1, 0),
+('item-energy-drink', 'cat-drinks',    'Energy Drink',  'Chilled revitalizing energy drink',                                    70.00,  45.00,  'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=500&q=80', 1, 0),
+('item-fresh-juice',  'cat-drinks',    'Fresh Juice',   '100% pure freshly squeezed and blended tropical juice',                70.00,  35.00,  'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500&q=80', 1, 0),
+('item-coca-cola',    'cat-drinks',    'Coca-Cola',     'Chilled classic Coca-Cola soda',                                       70.00,  40.00,  'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80', 1, 0),
+('item-fanta',        'cat-drinks',    'Fanta',         'Chilled vibrant orange Fanta soda',                                    70.00,  40.00,  'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80', 1, 0),
+('item-sprite',       'cat-drinks',    'Sprite',        'Chilled crisp lemon-lime Sprite soda',                                 70.00,  40.00,  'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80', 1, 0),
+('item-stoney',       'cat-drinks',    'Stoney',        'Chilled fiery Stoney Tangawizi ginger soda',                           70.00,  40.00,  'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80', 1, 0),
+('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80', 1, 0);
 
 -- ============================================================
 --  SEED DATA — Inventory / Stock items (Migadini branch)

@@ -362,13 +362,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
                 <div>
                   <div className="text-xs font-bold text-safari-mpesa uppercase tracking-wider">
-                    Branch M-Pesa Till
+                    Lipa na M-Pesa — Pochi la Biashara
                   </div>
-                  <div className="text-xl font-black text-white mt-1">
-                    Buy Goods Till: <span className="text-safari-mpesa font-mono">{currentBranch?.tillNumber || '5428901'}</span>
+                  <div className="text-2xl font-black text-white mt-1">
+                    Pochi No: <span className="text-safari-mpesa font-mono tracking-wider">0143285625</span>
                   </div>
-                  <div className="text-xs text-zinc-400 mt-1.5">
-                    Customer pays directly via Till on their phone.
+                  <div className="text-xs text-zinc-300 mt-2 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-750 text-left space-y-1">
+                    <p className="font-bold text-zinc-200">How to pay:</p>
+                    <p>1. Go to M-Pesa on phone &gt; Lipa na M-Pesa</p>
+                    <p>2. Select <span className="text-safari-mpesa font-bold">Pochi la Biashara</span></p>
+                    <p>3. Enter Mobile Number: <span className="font-bold text-white font-mono">0143285625</span></p>
+                    <p>4. Enter Amount: <span className="font-bold text-safari-mpesa">{formatKES(totalAmount)}</span> &amp; complete</p>
                   </div>
                 </div>
 
@@ -379,7 +383,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl text-[11px] text-zinc-400 text-center">
-                ✓ Recorded automatically as <span className="text-safari-mpesa font-bold">M-Pesa Payment</span> in your shift and receipt upon completion.
+                ✓ Recorded automatically as <span className="text-safari-mpesa font-bold">M-Pesa (Pochi) Payment</span> in your shift and receipt.
               </div>
             </div>
           )}
@@ -423,8 +427,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
               <div className="p-3 rounded-xl bg-safari-mpesa/10 border border-safari-mpesa/25 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-safari-mpesa block">M-Pesa Till</span>
-                  <span className="text-xs font-black text-white font-mono">{currentBranch?.tillNumber || '5428901'}</span>
+                  <span className="text-[10px] uppercase font-bold text-safari-mpesa block">Pochi la Biashara</span>
+                  <span className="text-xs font-black text-white font-mono">0143285625</span>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-zinc-400 block">M-Pesa Portion</span>

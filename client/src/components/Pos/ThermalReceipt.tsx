@@ -33,15 +33,17 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       )
       .join('\n');
 
-    const message = `*NANI FRYS RECEIPT*\n` +
+    const message = `*NANI'S FRY NATION RECEIPT*\n` +
       `Order: ${order.orderNumber}\n` +
       `Date: ${formatKenyaDateTime(order.createdAt)}\n` +
-      `Branch: ${order.branch?.name || 'Main'}\n` +
+      `Branch: ${order.branch?.name || 'Migadini Main Shop'}\n` +
+      `📞 Make Order / Call: 0143285625\n` +
+      `💳 Lipa na M-Pesa (Pochi la Biashara): 0143285625\n` +
       `---------------------------\n` +
       `${itemsText}\n` +
       `---------------------------\n` +
       `*Total: ${formatKES(order.totalAmount)}*\n` +
-      `Payment: ${order.payments?.map(p => `${p.paymentMethod} ${p.mpesaCode ? `(${p.mpesaCode})` : ''}`).join(', ') || 'CASH'}\n` +
+      `Payment: ${order.payments?.map(p => `${p.paymentMethod === 'MPESA' ? 'M-PESA (POCHI)' : p.paymentMethod} ${p.mpesaCode ? `(${p.mpesaCode})` : ''}`).join(', ') || 'CASH'}\n` +
       `Asante Sana! Karibu Tena!`;
 
     const encoded = encodeURIComponent(message);
@@ -127,14 +129,13 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               {order.branch?.address && (
                 <div className="text-[10px] text-zinc-600">{order.branch.address}</div>
               )}
-              {order.branch?.phone && (
-                <div className="text-[10px] text-zinc-600">Tel: {order.branch.phone}</div>
-              )}
-              {order.branch?.tillNumber && (
-                <div className="text-[11px] font-bold mt-1">
-                  M-PESA TILL: <span className="underline">{order.branch.tillNumber}</span>
-                </div>
-              )}
+              <div className="text-[10px] font-bold text-zinc-800 mt-1">
+                CALL TO MAKE ORDER: <span className="font-mono text-black font-black">0143285625</span>
+              </div>
+              <div className="text-[10px] font-bold mt-1 bg-zinc-100 p-1.5 rounded border border-zinc-300 text-black">
+                <div className="text-[9px] uppercase tracking-wide text-zinc-600">Lipa na M-Pesa (Pochi la Biashara):</div>
+                <div className="text-xs font-black font-mono tracking-wider">0143285625</div>
+              </div>
             </div>
 
             {/* Order Meta Info */}
@@ -218,7 +219,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 order.payments.map((p, idx) => (
                   <div key={idx} className="flex justify-between">
                     <span>
-                      {p.paymentMethod}{' '}
+                      {p.paymentMethod === 'MPESA' ? 'LIPA M-PESA (POCHI)' : p.paymentMethod}{' '}
                       {p.mpesaCode ? `(Ref: ${p.mpesaCode})` : ''}
                     </span>
                     <span className="font-bold">{formatKES(p.amount)}</span>

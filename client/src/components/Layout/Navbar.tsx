@@ -129,7 +129,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               POS
             </span>
           </div>
-          <p className="text-[10px] text-zinc-400 font-medium hidden xl:block">Crispy • Golden • Irresistible</p>
+          <div className="flex items-center space-x-2 text-[10px] text-zinc-300">
+            <span className="text-amber-400 font-bold">📞 Order: <span className="font-mono text-white font-extrabold">0143285625</span></span>
+            <span className="hidden xl:inline text-zinc-500">•</span>
+            <span className="hidden xl:inline text-safari-mpesa font-semibold">Pochi: <span className="font-mono text-white font-extrabold">0143285625</span></span>
+          </div>
         </div>
       </div>
 

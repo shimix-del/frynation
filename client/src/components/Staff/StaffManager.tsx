@@ -160,8 +160,12 @@ export const StaffManager: React.FC = () => {
               {b.address && <div className="text-xs text-zinc-400">{b.address}</div>}
               <div className="text-xs space-y-0.5 pt-1 border-t border-zinc-750 text-zinc-300">
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">M-Pesa Till:</span>
-                  <span className="font-mono font-bold text-safari-mpesa">{b.tillNumber || 'Not set'}</span>
+                  <span className="text-zinc-500">Order Hotline:</span>
+                  <span className="font-mono font-bold text-amber-400">{b.phone || '0143285625'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Pochi la Biashara:</span>
+                  <span className="font-mono font-bold text-safari-mpesa">0143285625</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Staff Count:</span>

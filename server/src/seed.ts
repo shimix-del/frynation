@@ -30,8 +30,8 @@ async function main() {
       name: 'Migadini Main Shop',
       code: 'MGD01',
       address: 'Migadini, Mombasa',
-      phone: '+254 712 345 678',
-      tillNumber: '5428901',
+      phone: '0143285625',
+      tillNumber: null,
       paybillNumber: '247247',
       isActive: true,
     },
@@ -42,8 +42,8 @@ async function main() {
       name: 'Branch 2 - Express',
       code: 'EXP02',
       address: 'Express Outlet',
-      phone: '+254 722 987 654',
-      tillNumber: '5428902',
+      phone: '0143285625',
+      tillNumber: null,
       paybillNumber: '247247',
       isActive: true,
     },
@@ -195,28 +195,15 @@ async function main() {
   // 5. Create Menu Items, Variants, and Recipes
   console.log('Creating menu items & recipes...');
 
-  // A. Fast Foods
-  const chipsPlain = await prisma.menuItem.create({
+  // A. Fast Foods & Chips
+  const chips = await prisma.menuItem.create({
     data: {
       categoryId: catFastFood.id,
-      name: 'Chips Plain (French Fries)',
-      description: 'Hot crispy potato chips seasoned with salt and fresh tomato sauce',
-      basePrice: 150,
-      costPrice: 60,
+      name: 'Chips',
+      description: 'Crispy golden potato chips',
+      basePrice: 100,
+      costPrice: 45,
       imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=500&q=80',
-      isAvailable: true,
-      hasVariants: false,
-    },
-  });
-
-  const chipsMasala = await prisma.menuItem.create({
-    data: {
-      categoryId: catFastFood.id,
-      name: 'Chips Masala (Swahili Style)',
-      description: 'Chips tossed in spicy tomato masala gravy with coriander and lemon',
-      basePrice: 200,
-      costPrice: 85,
-      imageUrl: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
@@ -225,175 +212,93 @@ async function main() {
   const chipsMayai = await prisma.menuItem.create({
     data: {
       categoryId: catFastFood.id,
-      name: 'Chips Mayai (Zege)',
-      description: 'Crispy chips bound in double-egg omelette served with Kachumbari',
-      basePrice: 250,
-      costPrice: 100,
+      name: 'Chips Mayai',
+      description: 'Crispy chips and eggs bound in double-egg omelette (Zege)',
+      basePrice: 180,
+      costPrice: 80,
       imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
   });
 
-  const chipsKuku = await prisma.menuItem.create({
+  // B. Kuku & Meat Dishes
+  const chicken = await prisma.menuItem.create({
     data: {
-      categoryId: catFastFood.id,
-      name: 'Chips & 1/4 Kuku Combo',
-      description: 'Generous plate of chips served with quarter roasted or fried chicken',
-      basePrice: 450,
-      costPrice: 220,
-      imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&q=80',
+      categoryId: catMeat.id,
+      name: 'Chicken',
+      description: 'Seasoned golden deep-fried or grilled chicken portion',
+      basePrice: 250,
+      costPrice: 120,
+      imageUrl: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
-  });
-
-  // B. Kuku / Chicken Items
-  const kukuChoma = await prisma.menuItem.create({
-    data: {
-      categoryId: catMeat.id,
-      name: 'Kuku Choma (Roast Chicken)',
-      description: 'Marinated and char-grilled tender chicken served with hot chili & kachumbari',
-      basePrice: 300,
-      costPrice: 130,
-      imageUrl: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=500&q=80',
-      isAvailable: true,
-      hasVariants: true,
-      variants: {
-        create: [
-          { name: '1/4 Kuku Choma', price: 300, costPrice: 130 },
-          { name: '1/2 Kuku Choma', price: 550, costPrice: 250 },
-          { name: 'Full Kuku Choma', price: 1000, costPrice: 480 },
-        ],
-      },
-    },
-    include: { variants: true },
-  });
-
-  const kukuFry = await prisma.menuItem.create({
-    data: {
-      categoryId: catMeat.id,
-      name: 'Kuku Wet Fry (Thick Gravy)',
-      description: 'Chicken pieces pan-fried in rich onion, tomato, and garlic reduction',
-      basePrice: 320,
-      costPrice: 140,
-      imageUrl: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=500&q=80',
-      isAvailable: true,
-      hasVariants: true,
-      variants: {
-        create: [
-          { name: '1/4 Wet Fry', price: 320, costPrice: 140 },
-          { name: '1/2 Wet Fry', price: 580, costPrice: 260 },
-          { name: 'Full Wet Fry', price: 1050, costPrice: 500 },
-        ],
-      },
-    },
-    include: { variants: true },
   });
 
   // C. Swahili Cooked Meals
-  const beefPilau = await prisma.menuItem.create({
+  const pilau = await prisma.menuItem.create({
     data: {
       categoryId: catRice.id,
-      name: 'Swahili Beef Pilau',
-      description: 'Fragrant basmati rice slow-cooked with tender beef, cumin, cloves, and cinnamon',
-      basePrice: 320,
-      costPrice: 140,
+      name: 'Pilau',
+      description: 'Authentic coastal Swahili spiced fragrant basmati pilau',
+      basePrice: 250,
+      costPrice: 110,
       imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80',
       isAvailable: true,
-      hasVariants: true,
-      variants: {
-        create: [
-          { name: 'Pilau Plain (Rice only)', price: 180, costPrice: 70 },
-          { name: 'Beef Pilau', price: 320, costPrice: 140 },
-          { name: 'Kuku Pilau (with 1/4 Chicken)', price: 380, costPrice: 160 },
-        ],
-      },
+      hasVariants: false,
     },
-    include: { variants: true },
   });
 
-  const chickenBiryani = await prisma.menuItem.create({
+  const biriani = await prisma.menuItem.create({
     data: {
       categoryId: catRice.id,
-      name: 'Coastal Chicken Biryani',
-      description: 'Layered saffron basmati rice with aromatic spiced chicken and potato gravy',
-      basePrice: 420,
-      costPrice: 180,
-      imageUrl: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&q=80',
-      isAvailable: true,
-      hasVariants: true,
-      variants: {
-        create: [
-          { name: 'Chicken Biryani', price: 420, costPrice: 180 },
-          { name: 'Beef Biryani', price: 380, costPrice: 160 },
-        ],
-      },
-    },
-    include: { variants: true },
-  });
-
-  const mukimoBeef = await prisma.menuItem.create({
-    data: {
-      categoryId: catRice.id,
-      name: 'Mukimo & Beef Stew',
-      description: 'Mashed potatoes, pumpkin leaves, maize, and beans served with rich beef stew',
+      name: 'Biriani',
+      description: 'Aromatic layered coastal Biriani rice with rich savory sauce',
       basePrice: 350,
       costPrice: 150,
-      imageUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=500&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
   });
 
-  // D. Drinks & Refreshments
-  const coke300 = await prisma.menuItem.create({
+  // D. Snacks & Pasua Sides
+  const viaziKarai = await prisma.menuItem.create({
     data: {
-      categoryId: catDrinks.id,
-      name: 'Coca-Cola 300ml Glass Bottle',
-      description: 'Chilled classic Coca-Cola glass bottle',
-      basePrice: 60,
-      costPrice: 35,
-      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80',
+      categoryId: catSnacks.id,
+      name: 'Viazi Karai',
+      description: 'Crispy golden Swahili battered spiced potatoes',
+      basePrice: 50,
+      costPrice: 20,
+      imageUrl: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
   });
 
-  const sprite300 = await prisma.menuItem.create({
+  const sausages = await prisma.menuItem.create({
     data: {
-      categoryId: catDrinks.id,
-      name: 'Sprite 300ml Glass Bottle',
-      description: 'Chilled lemon-lime Sprite soda',
-      basePrice: 60,
-      costPrice: 35,
-      imageUrl: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80',
-      isAvailable: true,
-      hasVariants: false,
-    },
-  });
-
-  const fanta300 = await prisma.menuItem.create({
-    data: {
-      categoryId: catDrinks.id,
-      name: 'Fanta Orange 300ml Glass Bottle',
-      description: 'Chilled vibrant orange soda',
-      basePrice: 60,
-      costPrice: 35,
-      imageUrl: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80',
-      isAvailable: true,
-      hasVariants: false,
-    },
-  });
-
-  const dasaniWater = await prisma.menuItem.create({
-    data: {
-      categoryId: catDrinks.id,
-      name: 'Dasani Mineral Water 500ml',
-      description: 'Chilled purified drinking water',
+      categoryId: catSnacks.id,
+      name: 'Sausages',
+      description: 'Deep-fried Kenyan butcher beef sausages',
       basePrice: 50,
       costPrice: 25,
-      imageUrl: 'https://images.unsplash.com/photo-1564419320461-6870880221ad?w=500&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1585325701165-351af916e581?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  // E. Drinks & Juices
+  const energyDrink = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Energy Drink',
+      description: 'Chilled revitalizing energy drink',
+      basePrice: 70,
+      costPrice: 45,
+      imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
@@ -402,59 +307,76 @@ async function main() {
   const freshJuice = await prisma.menuItem.create({
     data: {
       categoryId: catDrinks.id,
-      name: 'Freshly Squeezed Juice (500ml)',
-      description: '100% pure fresh fruit juice blended daily',
-      basePrice: 150,
-      costPrice: 60,
+      name: 'Fresh Juice',
+      description: '100% pure freshly squeezed and blended tropical juice',
+      basePrice: 70,
+      costPrice: 35,
       imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500&q=80',
       isAvailable: true,
-      hasVariants: true,
-      variants: {
-        create: [
-          { name: 'Fresh Passion Juice', price: 150, costPrice: 60 },
-          { name: 'Fresh Mango Juice', price: 150, costPrice: 60 },
-          { name: 'Passion & Mango Cocktail', price: 170, costPrice: 70 },
-        ],
-      },
-    },
-    include: { variants: true },
-  });
-
-  // E. Snacks & Sides
-  const smokiePasua = await prisma.menuItem.create({
-    data: {
-      categoryId: catSnacks.id,
-      name: 'Smokie Pasua (with Kachumbari)',
-      description: 'Grilled Farmer\'s Choice smokie sliced open and stuffed with spicy kachumbari',
-      basePrice: 60,
-      costPrice: 28,
-      imageUrl: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=500&q=80',
-      isAvailable: true,
       hasVariants: false,
     },
   });
 
-  const sausageBeef = await prisma.menuItem.create({
+  const cocaCola = await prisma.menuItem.create({
     data: {
-      categoryId: catSnacks.id,
-      name: 'Beef Sausage (Deep Fried)',
-      description: 'Crispy deep-fried beef sausage served with tomato ketchup',
-      basePrice: 80,
-      costPrice: 38,
-      imageUrl: 'https://images.unsplash.com/photo-1585325701165-351af916e581?w=500&q=80',
-      isAvailable: true,
-      hasVariants: false,
-    },
-  });
-
-  const samosaBeef = await prisma.menuItem.create({
-    data: {
-      categoryId: catSnacks.id,
-      name: 'Beef Samosa (2 pcs)',
-      description: 'Crispy triangular pastry stuffed with seasoned minced beef and herbs',
-      basePrice: 100,
+      categoryId: catDrinks.id,
+      name: 'Coca-Cola',
+      description: 'Chilled classic Coca-Cola soda',
+      basePrice: 70,
       costPrice: 40,
-      imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  const fanta = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Fanta',
+      description: 'Chilled vibrant orange Fanta soda',
+      basePrice: 70,
+      costPrice: 40,
+      imageUrl: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  const sprite = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Sprite',
+      description: 'Chilled crisp lemon-lime Sprite soda',
+      basePrice: 70,
+      costPrice: 40,
+      imageUrl: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  const stoney = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Stoney',
+      description: 'Chilled fiery Stoney Tangawizi ginger soda',
+      basePrice: 70,
+      costPrice: 40,
+      imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  const krest = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Krest',
+      description: 'Chilled sparkling Krest Bitter Lemon soda',
+      basePrice: 70,
+      costPrice: 40,
+      imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80',
       isAvailable: true,
       hasVariants: false,
     },
@@ -464,70 +386,20 @@ async function main() {
   console.log('Linking recipe bill of materials...');
   const migadiniStock = stockMap[migadini.id];
 
-  // Recipe: Chips Plain -> 0.35kg Potatoes + 0.05L Oil
   await prisma.menuItemRecipe.create({
-    data: { menuItemId: chipsPlain.id, stockItemId: migadiniStock['Potatoes (Shangi)'], quantityRequired: 0.35 },
+    data: { menuItemId: chips.id, stockItemId: migadiniStock['Potatoes (Shangi)'], quantityRequired: 0.35 },
   });
   await prisma.menuItemRecipe.create({
-    data: { menuItemId: chipsPlain.id, stockItemId: migadiniStock['Cooking Oil (Rina/Elianto)'], quantityRequired: 0.05 },
-  });
-
-  // Recipe: Chips Masala -> 0.35kg Potatoes + 0.05L Oil + 0.05kg Tomato/Onion
-  await prisma.menuItemRecipe.create({
-    data: { menuItemId: chipsMasala.id, stockItemId: migadiniStock['Potatoes (Shangi)'], quantityRequired: 0.35 },
+    data: { menuItemId: chips.id, stockItemId: migadiniStock['Cooking Oil (Rina/Elianto)'], quantityRequired: 0.05 },
   });
   await prisma.menuItemRecipe.create({
-    data: { menuItemId: chipsMasala.id, stockItemId: migadiniStock['Cooking Oil (Rina/Elianto)'], quantityRequired: 0.05 },
+    data: { menuItemId: chicken.id, stockItemId: migadiniStock['Raw Chicken (Whole/Cut)'], quantityRequired: 0.30 },
   });
   await prisma.menuItemRecipe.create({
-    data: { menuItemId: chipsMasala.id, stockItemId: migadiniStock['Tomatoes & Onions'], quantityRequired: 0.05 },
-  });
-
-  // Recipe: Kuku Choma variants
-  if (kukuChoma.variants) {
-    const qChoma = kukuChoma.variants.find(v => v.name.includes('1/4'));
-    const hChoma = kukuChoma.variants.find(v => v.name.includes('1/2'));
-    const fChoma = kukuChoma.variants.find(v => v.name.includes('Full'));
-
-    if (qChoma) {
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: kukuChoma.id, variantId: qChoma.id, stockItemId: migadiniStock['Raw Chicken (Whole/Cut)'], quantityRequired: 0.30 },
-      });
-    }
-    if (hChoma) {
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: kukuChoma.id, variantId: hChoma.id, stockItemId: migadiniStock['Raw Chicken (Whole/Cut)'], quantityRequired: 0.60 },
-      });
-    }
-    if (fChoma) {
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: kukuChoma.id, variantId: fChoma.id, stockItemId: migadiniStock['Raw Chicken (Whole/Cut)'], quantityRequired: 1.20 },
-      });
-    }
-  }
-
-  // Recipe: Pilau Beef variants
-  if (beefPilau.variants) {
-    const bPilau = beefPilau.variants.find(v => v.name === 'Beef Pilau');
-    if (bPilau) {
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: beefPilau.id, variantId: bPilau.id, stockItemId: migadiniStock['Basmati Rice (Grade 1)'], quantityRequired: 0.20 },
-      });
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: beefPilau.id, variantId: bPilau.id, stockItemId: migadiniStock['Fresh Beef (Stew Cut)'], quantityRequired: 0.15 },
-      });
-      await prisma.menuItemRecipe.create({
-        data: { menuItemId: beefPilau.id, variantId: bPilau.id, stockItemId: migadiniStock['Cooking Oil (Rina/Elianto)'], quantityRequired: 0.03 },
-      });
-    }
-  }
-
-  // Recipe: Smokie Pasua -> 1 piece Smokie + 0.03kg Tomato/Onion
-  await prisma.menuItemRecipe.create({
-    data: { menuItemId: smokiePasua.id, stockItemId: migadiniStock['Smokies Pack (Farmer\'s Choice)'], quantityRequired: 1 },
+    data: { menuItemId: pilau.id, stockItemId: migadiniStock['Basmati Rice (Grade 1)'], quantityRequired: 0.20 },
   });
   await prisma.menuItemRecipe.create({
-    data: { menuItemId: smokiePasua.id, stockItemId: migadiniStock['Tomatoes & Onions'], quantityRequired: 0.03 },
+    data: { menuItemId: biriani.id, stockItemId: migadiniStock['Basmati Rice (Grade 1)'], quantityRequired: 0.25 },
   });
 
   // 7. Create Active Shift for Migadini
@@ -580,10 +452,10 @@ async function main() {
     },
   });
 
-  // 9. Create Sample Completed Orders with M-Pesa and Cash payments across branches
+  // 9. Create Sample Completed Orders with M-Pesa (Pochi) and Cash payments across branches
   console.log('Generating realistic demo orders...');
 
-  // Order 1: Migadini - Dine-in Pilau & Soda (M-Pesa)
+  // Order 1: Migadini - Dine-in Pilau & Coca-Cola (M-Pesa Pochi)
   const ord1 = await prisma.order.create({
     data: {
       orderNumber: 'ORD-20260822-1001',
@@ -593,30 +465,28 @@ async function main() {
       orderType: 'DINE_IN',
       tableNumber: 'T-04',
       customerName: 'Customer',
-      customerPhone: '0712345678',
+      customerPhone: '0143285625',
       status: 'COMPLETED',
-      subtotal: 380,
+      subtotal: 320,
       discountAmount: 0,
-      totalAmount: 380,
+      totalAmount: 320,
       items: {
         create: [
           {
-            menuItemId: beefPilau.id,
-            variantId: beefPilau.variants?.find(v => v.name === 'Beef Pilau')?.id,
-            itemName: 'Swahili Beef Pilau',
-            variantName: 'Beef Pilau',
+            menuItemId: pilau.id,
+            itemName: 'Pilau',
             quantity: 1,
-            unitPrice: 320,
-            unitCost: 140,
-            totalPrice: 320,
+            unitPrice: 250,
+            unitCost: 110,
+            totalPrice: 250,
           },
           {
-            menuItemId: coke300.id,
-            itemName: 'Coca-Cola 300ml Glass Bottle',
+            menuItemId: cocaCola.id,
+            itemName: 'Coca-Cola',
             quantity: 1,
-            unitPrice: 60,
-            unitCost: 35,
-            totalPrice: 60,
+            unitPrice: 70,
+            unitCost: 40,
+            totalPrice: 70,
           },
         ],
       },
@@ -624,7 +494,7 @@ async function main() {
         create: [
           {
             branchId: migadini.id,
-            amount: 380,
+            amount: 320,
             paymentMethod: 'MPESA',
             mpesaCode: 'QHK8921XLA',
             status: 'COMPLETED',
@@ -634,7 +504,7 @@ async function main() {
     },
   });
 
-  // Order 2: Migadini - Takeaway Chips & 1/4 Kuku + Passion Juice (Split Payment: Cash + M-Pesa)
+  // Order 2: Migadini - Takeaway Chips & Chicken + Fresh Juice (Split Payment: Cash + M-Pesa)
   const ord2 = await prisma.order.create({
     data: {
       orderNumber: 'ORD-20260822-1002',
@@ -644,28 +514,34 @@ async function main() {
       orderType: 'TAKEAWAY',
       customerName: 'Customer',
       status: 'COMPLETED',
-      subtotal: 600,
+      subtotal: 420,
       discountAmount: 0,
-      totalAmount: 600,
+      totalAmount: 420,
       items: {
         create: [
           {
-            menuItemId: chipsKuku.id,
-            itemName: 'Chips & 1/4 Kuku Combo',
+            menuItemId: chips.id,
+            itemName: 'Chips',
             quantity: 1,
-            unitPrice: 450,
-            unitCost: 220,
-            totalPrice: 450,
+            unitPrice: 100,
+            unitCost: 45,
+            totalPrice: 100,
+          },
+          {
+            menuItemId: chicken.id,
+            itemName: 'Chicken',
+            quantity: 1,
+            unitPrice: 250,
+            unitCost: 120,
+            totalPrice: 250,
           },
           {
             menuItemId: freshJuice.id,
-            variantId: freshJuice.variants?.find(v => v.name === 'Fresh Passion Juice')?.id,
-            itemName: 'Freshly Squeezed Juice (500ml)',
-            variantName: 'Fresh Passion Juice',
+            itemName: 'Fresh Juice',
             quantity: 1,
-            unitPrice: 150,
-            unitCost: 60,
-            totalPrice: 150,
+            unitPrice: 70,
+            unitCost: 35,
+            totalPrice: 70,
           },
         ],
       },
@@ -673,7 +549,7 @@ async function main() {
         create: [
           {
             branchId: migadini.id,
-            amount: 400,
+            amount: 220,
             paymentMethod: 'MPESA',
             mpesaCode: 'QHK9942MPB',
             status: 'COMPLETED',
@@ -691,7 +567,7 @@ async function main() {
     },
   });
 
-  // Order 3: Branch 2 - Biryani & Sprite (Cash)
+  // Order 3: Branch 2 - Biriani & Sprite (Cash)
   await prisma.order.create({
     data: {
       orderNumber: 'ORD-20260822-2001',
@@ -701,28 +577,26 @@ async function main() {
       tableNumber: 'T-12',
       customerName: 'Customer',
       status: 'COMPLETED',
-      subtotal: 480,
+      subtotal: 420,
       discountAmount: 0,
-      totalAmount: 480,
+      totalAmount: 420,
       items: {
         create: [
           {
-            menuItemId: chickenBiryani.id,
-            variantId: chickenBiryani.variants?.find(v => v.name === 'Chicken Biryani')?.id,
-            itemName: 'Coastal Chicken Biryani',
-            variantName: 'Chicken Biryani',
+            menuItemId: biriani.id,
+            itemName: 'Biriani',
             quantity: 1,
-            unitPrice: 420,
-            unitCost: 180,
-            totalPrice: 420,
+            unitPrice: 350,
+            unitCost: 150,
+            totalPrice: 350,
           },
           {
-            menuItemId: sprite300.id,
-            itemName: 'Sprite 300ml Glass Bottle',
+            menuItemId: sprite.id,
+            itemName: 'Sprite',
             quantity: 1,
-            unitPrice: 60,
-            unitCost: 35,
-            totalPrice: 60,
+            unitPrice: 70,
+            unitCost: 40,
+            totalPrice: 70,
           },
         ],
       },
@@ -730,10 +604,10 @@ async function main() {
         create: [
           {
             branchId: branch2.id,
-            amount: 480,
+            amount: 420,
             paymentMethod: 'CASH',
-            cashTendered: 1000,
-            changeAmount: 520,
+            cashTendered: 500,
+            changeAmount: 80,
             status: 'COMPLETED',
           },
         ],
@@ -741,7 +615,7 @@ async function main() {
     },
   });
 
-  // Order 4: Migadini - Chips Masala + Smokies + Dasani (M-Pesa)
+  // Order 4: Migadini - Chips Mayai + Sausages + Energy Drink (M-Pesa)
   await prisma.order.create({
     data: {
       orderNumber: 'ORD-20260822-3001',
@@ -750,35 +624,34 @@ async function main() {
       orderType: 'TAKEAWAY',
       customerName: 'Customer',
       status: 'COMPLETED',
-      subtotal: 370,
-      discountAmount: 20,
-      discountReason: 'Loyalty regular discount',
-      totalAmount: 350,
+      subtotal: 300,
+      discountAmount: 0,
+      totalAmount: 300,
       items: {
         create: [
           {
-            menuItemId: chipsMasala.id,
-            itemName: 'Chips Masala (Swahili Style)',
+            menuItemId: chipsMayai.id,
+            itemName: 'Chips Mayai',
             quantity: 1,
-            unitPrice: 200,
-            unitCost: 85,
-            totalPrice: 200,
+            unitPrice: 180,
+            unitCost: 80,
+            totalPrice: 180,
           },
           {
-            menuItemId: smokiePasua.id,
-            itemName: 'Smokie Pasua (with Kachumbari)',
-            quantity: 2,
-            unitPrice: 60,
-            unitCost: 28,
-            totalPrice: 120,
-          },
-          {
-            menuItemId: dasaniWater.id,
-            itemName: 'Dasani Mineral Water 500ml',
+            menuItemId: sausages.id,
+            itemName: 'Sausages',
             quantity: 1,
             unitPrice: 50,
             unitCost: 25,
             totalPrice: 50,
+          },
+          {
+            menuItemId: energyDrink.id,
+            itemName: 'Energy Drink',
+            quantity: 1,
+            unitPrice: 70,
+            unitCost: 45,
+            totalPrice: 70,
           },
         ],
       },
@@ -786,7 +659,7 @@ async function main() {
         create: [
           {
             branchId: migadini.id,
-            amount: 350,
+            amount: 300,
             paymentMethod: 'MPESA',
             mpesaCode: 'QHL0014KLM',
             status: 'COMPLETED',
