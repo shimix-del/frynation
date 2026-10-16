@@ -312,7 +312,14 @@ router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res:
       ? (branchId as string)
       : (req.user?.role === 'OWNER' && (!branchId || branchId === 'all') ? undefined : req.user?.branchId || undefined);
 
-    const where = targetBranchId ? { branchId: targetBranchId } : {};
+    // Auto-purge closed shifts and Z-reports older than 3 weeks (21 days) to prevent database congestion
+    const threeWeeksAgo = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+    await prisma.shift.deleteMany({
+      where: {
+        status: 'CLOSED',
+        closedAt: { lt: threeWeeksAgo },
+      },
+    }).catch(() => {});
 
     const shifts = await prisma.shift.findMany({
       where,

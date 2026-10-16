@@ -85,12 +85,12 @@ export const AnalyticsDashboard: React.FC = () => {
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     const val = passwordInput.trim();
-    if (val === '1@1@' || val === '9878') {
+    if (val === '1@1@') {
       setIsUnlocked(true);
       setAuthError(null);
       setPasswordInput('');
     } else {
-      setAuthError('🚨 Incorrect Owner Password or PIN. Access denied.');
+      setAuthError('🚨 Incorrect Owner Password. Access denied.');
       setPasswordInput('');
     }
   };
@@ -354,7 +354,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <form onSubmit={handleUnlock} className="space-y-4">
             <div className="relative text-left">
               <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
-                <span>Owner Security Password or PIN</span>
+                <span>Owner Security Password</span>
                 <span className="text-[10px] text-zinc-500 font-normal">Confidential</span>
               </label>
               <div className="relative">
@@ -365,7 +365,7 @@ export const AnalyticsDashboard: React.FC = () => {
                     setPasswordInput(e.target.value);
                     setAuthError(null);
                   }}
-                  placeholder="Enter owner security password or PIN..."
+                  placeholder="Enter owner security password..."
                   autoFocus
                   required
                   className="w-full bg-zinc-800/90 border border-zinc-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl py-3 pl-4 pr-11 text-sm text-white placeholder-zinc-500 tracking-wider font-mono focus:outline-none transition shadow-inner"
@@ -1240,7 +1240,7 @@ export const AnalyticsDashboard: React.FC = () => {
                       <div className="flex items-center space-x-1.5">
                         <span className="font-bold text-white text-sm">Sales &amp; Analytics Password</span>
                       </div>
-                      <div className="text-[11px] text-zinc-400 mt-0.5">Required to unlock financial analytics (or PIN 9878)</div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">Required to unlock financial analytics</div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-amber-500/40 rounded-xl text-amber-300 tracking-wider shadow-inner">

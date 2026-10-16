@@ -276,7 +276,18 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v9_confidential_pins_updated';
+const THREE_WEEKS_MS = 21 * 24 * 60 * 60 * 1000;
+
+function purgeExpiredZReportsAndShifts(history: Shift[]): Shift[] {
+  const cutoff = Date.now() - THREE_WEEKS_MS;
+  return history.filter(shift => {
+    if (shift.status === 'OPEN') return true;
+    const shiftTimestamp = new Date(shift.closedAt || shift.openedAt || (shift as any).createdAt || 0).getTime();
+    return shiftTimestamp >= cutoff;
+  });
+}
+
+const STORE_VERSION = 'v10_zreport_3week_purge';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
@@ -914,7 +925,7 @@ export const mockStore = {
       totalOrdersCount: active?._count?.orders || (active as any)?.orders?.length || 0,
     };
 
-    const history = getStored<Shift[]>('shiftHistory', []);
+    const history = purgeExpiredZReportsAndShifts(getStored<Shift[]>('shiftHistory', []));
     const closedShiftRecord: Shift = {
       ...(active || {}),
       id: active?.id || `shift-${Date.now()}`,
@@ -979,6 +990,11 @@ export const mockStore = {
 
   getShiftHistory: (params?: { branchId?: string }) => {
     let history = getStored<Shift[]>('shiftHistory', []);
+    const clean = purgeExpiredZReportsAndShifts(history);
+    if (clean.length !== history.length) {
+      setStored('shiftHistory', clean);
+      history = clean;
+    }
     if (params?.branchId) history = history.filter(s => s.branchId === params.branchId);
     return history;
   },

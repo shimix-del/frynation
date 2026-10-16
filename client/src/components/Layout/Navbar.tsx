@@ -5,7 +5,6 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
-  KeyRound,
   LogOut,
   ShieldCheck,
   Menu as MenuIcon,
@@ -20,13 +19,11 @@ import { Shift } from '../../types';
 import naniLogo from '../../assets/logo.jpg';
 
 interface NavbarProps {
-  onOpenPinModal: () => void;
   onOpenShiftModal: () => void;
   onOpenMobileMenu?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  onOpenPinModal,
   onOpenShiftModal,
   onOpenMobileMenu,
 }) => {

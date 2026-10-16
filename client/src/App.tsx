@@ -6,7 +6,6 @@ import { Navbar } from './components/Layout/Navbar';
 import { Sidebar, NavTab } from './components/Layout/Sidebar';
 import { MobileBottomNav } from './components/Layout/MobileBottomNav';
 import { LoginScreen } from './components/Auth/LoginScreen';
-import { PinKeypadModal } from './components/Auth/PinKeypadModal';
 import { PosTerminal } from './components/Pos/PosTerminal';
 import { InventoryManager } from './components/Inventory/InventoryManager';
 import { MenuManager } from './components/MenuAdmin/MenuManager';
@@ -20,7 +19,6 @@ import naniLogo from './assets/logo.jpg';
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('pos');
-  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
@@ -37,7 +35,6 @@ const AuthenticatedApp: React.FC = () => {
     <div className="flex flex-col h-screen w-screen bg-zinc-950 overflow-hidden text-zinc-100">
       {/* Top Navbar */}
       <Navbar
-        onOpenPinModal={() => setIsPinModalOpen(true)}
         onOpenMobileMenu={() => setIsMobileDrawerOpen(true)}
         onOpenShiftModal={() => {
           if (activeTab !== 'shifts') {
@@ -76,11 +73,6 @@ const AuthenticatedApp: React.FC = () => {
       />
 
       {/* Global Modals */}
-      <PinKeypadModal
-        isOpen={isPinModalOpen}
-        onClose={() => setIsPinModalOpen(false)}
-      />
-
       <OpenShiftModal
         isOpen={isOpenShiftModalOpen}
         onClose={() => setIsOpenShiftModalOpen(false)}
