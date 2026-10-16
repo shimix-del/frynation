@@ -233,6 +233,30 @@ const initialMenuItems: MenuItem[] = [
     hasVariants: false,
     category: initialCategories[3],
   },
+  {
+    id: 'item-water-small',
+    categoryId: 'cat-drinks',
+    name: 'Water (Small)',
+    description: 'Chilled pure mineral water (500ml small bottle)',
+    basePrice: 30,
+    costPrice: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500&q=80',
+    isAvailable: true,
+    hasVariants: false,
+    category: initialCategories[3],
+  },
+  {
+    id: 'item-water-big',
+    categoryId: 'cat-drinks',
+    name: 'Water (Big)',
+    description: 'Chilled pure mineral water (1L big bottle)',
+    basePrice: 50,
+    costPrice: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1559839914-1b3ef5007324?w=500&q=80',
+    isAvailable: true,
+    hasVariants: false,
+    category: initialCategories[3],
+  },
 ];
 
 function getStored<T>(key: string, defaultVal: T): T {
@@ -252,7 +276,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v6_zreport_lockout_concurrency';
+const STORE_VERSION = 'v7_water_and_security_updates';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {

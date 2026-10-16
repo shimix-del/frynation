@@ -84,12 +84,6 @@ export const ZReportPrint: React.FC<ZReportPrintProps> = ({ zReport, isOpen, onC
                 <span className="font-bold">{formatKES(zReport.totalMpesaSales || 0)}</span>
               </div>
 
-              {/* Combined Cash + M-Pesa Total */}
-              <div className="flex justify-between font-extrabold text-[11px] bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">
-                <span>TOTAL (CASH + M-PESA):</span>
-                <span>{formatKES((zReport.totalCashSales || 0) + (zReport.totalMpesaSales || 0))}</span>
-              </div>
-
               {(zReport.totalCardSales || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>CARD SALES:</span>

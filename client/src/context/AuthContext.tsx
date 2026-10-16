@@ -98,21 +98,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   // 2. Inactivity Auto-Logout Timer:
-  // Cashiers & Manager: 20 seconds of inactivity
-  // Owner: 2 minutes (120 seconds) of inactivity
+  // Cashiers: 2 minutes
+  // Manager: 5 minutes
+  // Owner: 20 minutes
   useEffect(() => {
     if (!user) return;
 
     lastActivityRef.current = Date.now();
 
-    const timeoutDuration = user.role === 'OWNER' ? 120 * 1000 : 20 * 1000;
+    const timeoutDuration =
+      user.role === 'OWNER'
+        ? 20 * 60 * 1000 // 20 minutes for Owner
+        : user.role === 'MANAGER'
+        ? 5 * 60 * 1000 // 5 minutes for Manager
+        : 2 * 60 * 1000; // 2 minutes for Cashier
 
     const resetActivity = () => {
       lastActivityRef.current = Date.now();
     };
 
     const handleTransactionCompleted = () => {
-      // Receipt finished: reset activity timer to start active 20s countdown
+      // Receipt finished: reset activity timer to start countdown
       lastActivityRef.current = Date.now();
     };
 
@@ -123,7 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkInactivity = setInterval(() => {
       const elapsed = Date.now() - lastActivityRef.current;
       if (elapsed >= timeoutDuration) {
-        const roleLabel = user.role === 'OWNER' ? 'Owner (2 min)' : 'Staff (20s)';
+        const roleLabel =
+          user.role === 'OWNER'
+            ? 'Owner (20 min)'
+            : user.role === 'MANAGER'
+            ? 'Manager (5 min)'
+            : 'Cashier (2 min)';
         logout(`Auto-lock: Logged out due to ${roleLabel} inactivity for security.`);
       }
     }, 1000);

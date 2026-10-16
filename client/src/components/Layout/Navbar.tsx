@@ -222,15 +222,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </button>
 
-        {/* Switch Cashier via 4-Digit PIN */}
-        <button
-          onClick={onOpenPinModal}
-          className="flex items-center space-x-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
-          title="Quick Switch Cashier via PIN"
-        >
-          <KeyRound className="w-3.5 h-3.5 text-brand-400" />
-          <span className="hidden sm:inline">PIN</span>
-        </button>
+        {/* Switch via Master PIN (Owner Only) */}
+        {user?.role === 'OWNER' && (
+          <button
+            onClick={onOpenPinModal}
+            className="flex items-center space-x-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition active:scale-95 shadow-sm"
+            title="Owner Master PIN Override"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-brand-400" />
+            <span className="hidden sm:inline">PIN</span>
+          </button>
+        )}
 
         {/* User Role Tag */}
         <div className="hidden xl:flex items-center space-x-2 pl-2 border-l border-zinc-800">

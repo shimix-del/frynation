@@ -519,7 +519,9 @@ INSERT IGNORE INTO `menu_items` (`id`, `category_id`, `name`, `description`, `ba
 ('item-fanta',        'cat-drinks',    'Fanta',         'Chilled vibrant orange Fanta soda',                                    70.00,  40.00,  'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80', 1, 0),
 ('item-sprite',       'cat-drinks',    'Sprite',        'Chilled crisp lemon-lime Sprite soda',                                 70.00,  40.00,  'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80', 1, 0),
 ('item-stoney',       'cat-drinks',    'Stoney',        'Chilled fiery Stoney Tangawizi ginger soda',                           70.00,  40.00,  './images/stoney.jpg', 1, 0),
-('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  './images/krest.jpg', 1, 0);
+('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  './images/krest.jpg', 1, 0),
+('item-water-small',  'cat-drinks',    'Water (Small)', 'Chilled pure mineral water (500ml small bottle)',                       30.00,  15.00,  'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500&q=80', 1, 0),
+('item-water-big',    'cat-drinks',    'Water (Big)',   'Chilled pure mineral water (1L big bottle)',                           50.00,  25.00,  'https://images.unsplash.com/photo-1559839914-1b3ef5007324?w=500&q=80', 1, 0);
 
 -- ============================================================
 --  SEED DATA — Inventory / Stock items (Migadini branch)

@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, Mail, Lock, Store, Shield, ArrowRight, Sparkles, Delete } from 'lucide-react';
+import { Shield, Sparkles, Delete } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 import naniLogo from '../../assets/logo.jpg';
 
 export const LoginScreen: React.FC = () => {
-  const { loginWithCredentials, loginWithPin, logoutReason } = useAuth();
-  const [mode, setMode] = useState<'PIN' | 'PASSWORD'>('PIN');
+  const { loginWithPin, logoutReason } = useAuth();
   const [pin, setPin] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
@@ -61,7 +58,7 @@ export const LoginScreen: React.FC = () => {
     } else {
       setLockoutInfo({ count, lockedUntil: 0, lastFailedAt: Date.now() });
       const left = 3 - count;
-      setError(`Invalid PIN / credentials. ${left} attempt${left === 1 ? '' : 's'} remaining before 5-minute security lockout.`);
+      setError(`Invalid PIN code. ${left} attempt${left === 1 ? '' : 's'} remaining before 5-minute security lockout.`);
     }
   };
 
@@ -94,7 +91,7 @@ export const LoginScreen: React.FC = () => {
 
   // Physical keyboard support for PIN mode
   useEffect(() => {
-    if (mode !== 'PIN' || isLoading || lockoutRemaining > 0) return;
+    if (isLoading || lockoutRemaining > 0) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -118,7 +115,7 @@ export const LoginScreen: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, pin, isLoading, lockoutRemaining]);
+  }, [pin, isLoading, lockoutRemaining]);
 
   const handlePinInput = (num: string) => {
     if (lockoutRemaining > 0 || isLoading) return;
@@ -162,29 +159,6 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (lockoutRemaining > 0) return;
-    if (!email.trim() || !password) {
-      setError('Please enter both your email address and password.');
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      await loginWithCredentials(email.trim(), password);
-      clearFailedAttempts();
-    } catch (err: any) {
-      if (err.message?.includes('Shift in Progress') || err.message?.includes('Access Denied')) {
-        setError(err.message);
-      } else {
-        recordFailedAttempt();
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-3 sm:p-4 relative overflow-y-auto">
       {/* Background glow */}
@@ -212,27 +186,7 @@ export const LoginScreen: React.FC = () => {
           <p className="text-[11px] text-zinc-400 mt-0.5">Hotel, Fast Food & Inventory POS</p>
         </div>
 
-        {/* Mode Switcher */}
-        <div className="flex bg-zinc-800/80 p-1 rounded-xl mb-6 border border-zinc-700/60">
-          <button
-            onClick={() => { setMode('PIN'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-2 ${
-              mode === 'PIN' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Fast PIN Login</span>
-          </button>
-          <button
-            onClick={() => { setMode('PASSWORD'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-2 ${
-              mode === 'PASSWORD' ? 'bg-brand-500 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Email / Password</span>
-          </button>
-        </div>
+
 
         {!isLocalHost && (
           <div className="mb-4 p-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center justify-between">
@@ -287,9 +241,8 @@ export const LoginScreen: React.FC = () => {
           </div>
         )}
 
-        {/* PIN Pad Mode */}
-        {mode === 'PIN' ? (
-          <div>
+        {/* PIN Pad Login */}
+        <div>
             {/* PIN Display circles */}
             <div className="flex justify-center space-x-3 mb-4">
               {[0, 1, 2, 3].map(index => (
@@ -382,60 +335,6 @@ export const LoginScreen: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : (
-          /* Email & Password Mode */
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-3.5" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="Enter your registered email"
-                  required
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-3.5" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading || lockoutRemaining > 0}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>
-                {lockoutRemaining > 0
-                  ? `Locked (${lockoutRemaining}s)`
-                  : isLoading
-                  ? 'Signing In...'
-                  : 'Sign In with Password'}
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <div className="text-center text-[11px] text-zinc-400 mt-2 flex items-center justify-center space-x-1.5">
-              <Lock className="w-3.5 h-3.5 text-brand-400" />
-              <span>Password verification required for system privacy</span>
-            </div>
-          </form>
-        )}
       </div>
     </div>
   );

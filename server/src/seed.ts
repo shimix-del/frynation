@@ -382,6 +382,32 @@ async function main() {
     },
   });
 
+  const waterSmall = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Water (Small)',
+      description: 'Chilled pure mineral water (500ml small bottle)',
+      basePrice: 30,
+      costPrice: 15,
+      imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
+  const waterBig = await prisma.menuItem.create({
+    data: {
+      categoryId: catDrinks.id,
+      name: 'Water (Big)',
+      description: 'Chilled pure mineral water (1L big bottle)',
+      basePrice: 50,
+      costPrice: 25,
+      imageUrl: 'https://images.unsplash.com/photo-1559839914-1b3ef5007324?w=500&q=80',
+      isAvailable: true,
+      hasVariants: false,
+    },
+  });
+
   // 6. Link Recipe Bill of Materials (using Migadini branch stock IDs as template)
   console.log('Linking recipe bill of materials...');
   const migadiniStock = stockMap[migadini.id];
