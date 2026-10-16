@@ -316,7 +316,10 @@ export const ShiftManager: React.FC = () => {
 
                   {shift.status === 'CLOSED' && (
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        const movements = shift.cashMovements || [];
+                        const additions = shift.cashAdditions ?? (movements.filter(m => m.type === 'FLOAT_IN').reduce((sum, m) => sum + m.amount, 0));
+                        const drops = shift.cashDrops ?? shift.totalExpensesPaid ?? (movements.filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP').reduce((sum, m) => sum + m.amount, 0));
                         setSelectedZReport({
                           zReportNumber: `Z-${shift.branch?.code || 'MGD'}-${shift.id.slice(-4).toUpperCase()}`,
                           branchName: shift.branch?.name,
@@ -328,12 +331,15 @@ export const ShiftManager: React.FC = () => {
                           totalMpesaSales: shift.totalMpesaSales,
                           totalCardSales: shift.totalCardSales,
                           totalGrossSales: gross,
-                          expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales),
+                          cashMovements: movements,
+                          totalCashAdditions: additions,
+                          totalCashDrops: drops,
+                          expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales + additions - drops),
                           actualCountedCash: shift.closingCashActual || shift.closingCashExpected,
                           variance: shift.variance || 0,
                           totalOrdersCount: shift._count?.orders || 0,
-                        })
-                      }
+                        });
+                      }}
                       className="w-full py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 active:scale-95 shadow-sm"
                     >
                       <FileSpreadsheet className="w-4 h-4" />
@@ -396,7 +402,10 @@ export const ShiftManager: React.FC = () => {
                   <td className="py-3 px-4 text-right">
                     {shift.status === 'CLOSED' && (
                       <button
-                        onClick={() =>
+                        onClick={() => {
+                          const movements = shift.cashMovements || [];
+                          const additions = shift.cashAdditions ?? (movements.filter(m => m.type === 'FLOAT_IN').reduce((sum, m) => sum + m.amount, 0));
+                          const drops = shift.cashDrops ?? shift.totalExpensesPaid ?? (movements.filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP').reduce((sum, m) => sum + m.amount, 0));
                           setSelectedZReport({
                             zReportNumber: `Z-${shift.branch?.code || 'MGD'}-${shift.id.slice(-4).toUpperCase()}`,
                             branchName: shift.branch?.name,
@@ -407,13 +416,16 @@ export const ShiftManager: React.FC = () => {
                             totalCashSales: shift.totalCashSales,
                             totalMpesaSales: shift.totalMpesaSales,
                             totalCardSales: shift.totalCardSales,
-                            totalGrossSales: shift.totalCashSales + shift.totalMpesaSales + shift.totalCardSales,
-                            expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales),
+                            totalGrossSales: shift.totalCashSales + shift.totalMpesaSales + (shift.totalCardSales || 0),
+                            cashMovements: movements,
+                            totalCashAdditions: additions,
+                            totalCashDrops: drops,
+                            expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales + additions - drops),
                             actualCountedCash: shift.closingCashActual || shift.closingCashExpected,
                             variance: shift.variance || 0,
                             totalOrdersCount: shift._count?.orders || 0,
-                          })
-                        }
+                          });
+                        }}
                         className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold rounded-xl border border-zinc-700 transition"
                       >
                         View Z-Report

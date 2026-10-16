@@ -72,7 +72,7 @@ export const navItems = [
     shortLabel: 'Analytics',
     icon: BarChart3,
     desc: 'Net Profit & Rollups',
-    roles: ['OWNER', 'MANAGER'],
+    roles: ['OWNER'],
   },
   {
     id: 'staff' as NavTab,
@@ -80,7 +80,7 @@ export const navItems = [
     shortLabel: 'Staff',
     icon: Users,
     desc: 'Roles, PINs & Till #',
-    roles: ['OWNER', 'MANAGER'],
+    roles: ['OWNER'],
   },
 ];
 

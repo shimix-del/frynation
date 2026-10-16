@@ -24,6 +24,15 @@ const AuthenticatedApp: React.FC = () => {
   const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
+  // Strict role guard: Cashiers only have access to POS & Shifts. Only OWNER has access to Analytics & Staff.
+  React.useEffect(() => {
+    if (user?.role === 'CASHIER' && activeTab !== 'pos' && activeTab !== 'shifts') {
+      setActiveTab('pos');
+    } else if (user?.role === 'MANAGER' && (activeTab === 'analytics' || activeTab === 'staff')) {
+      setActiveTab('pos');
+    }
+  }, [activeTab, user?.role]);
+
   return (
     <div className="flex flex-col h-screen w-screen bg-zinc-950 overflow-hidden text-zinc-100">
       {/* Top Navbar */}
@@ -51,11 +60,11 @@ const AuthenticatedApp: React.FC = () => {
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTab === 'pos' && <PosTerminal />}
           {activeTab === 'shifts' && <ShiftManager />}
-          {activeTab === 'inventory' && <InventoryManager />}
-          {activeTab === 'menu' && <MenuManager />}
-          {activeTab === 'expenses' && <ExpenseTracker />}
-          {activeTab === 'analytics' && <AnalyticsDashboard />}
-          {activeTab === 'staff' && <StaffManager />}
+          {activeTab === 'inventory' && user?.role !== 'CASHIER' && <InventoryManager />}
+          {activeTab === 'menu' && user?.role !== 'CASHIER' && <MenuManager />}
+          {activeTab === 'expenses' && user?.role !== 'CASHIER' && <ExpenseTracker />}
+          {activeTab === 'analytics' && user?.role === 'OWNER' && <AnalyticsDashboard />}
+          {activeTab === 'staff' && user?.role === 'OWNER' && <StaffManager />}
         </main>
       </div>
 

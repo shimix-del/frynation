@@ -252,7 +252,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v5_krest_cash_movement_cleanup';
+const STORE_VERSION = 'v6_zreport_lockout_concurrency';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
@@ -456,6 +456,17 @@ export const mockStore = {
       throw new Error('Invalid credentials. Check PIN or Email.');
     }
 
+    // Only one cashier can run a shift at a time; two shifts cannot run concurrently
+    const activeShift = getStored<Shift | null>('activeShift', null);
+    if (activeShift && activeShift.status === 'OPEN') {
+      if (matchedUser.role === 'CASHIER' && activeShift.cashierId && activeShift.cashierId !== matchedUser.id) {
+        const activeName = activeShift.cashier?.name || 'Another cashier';
+        throw new Error(
+          `Shift in Progress: ${activeName} is currently on an active shift. Only one cashier can run a shift at a time. Two shifts cannot run concurrently. ${activeName} must close their shift first.`
+        );
+      }
+    }
+
     const token = `mock-token-${matchedUser.id}-${Date.now()}`;
     setStored('currentUser', matchedUser);
 
@@ -467,7 +478,7 @@ export const mockStore = {
   },
 
   getMe: () => {
-    const user = getStored<any>('currentUser', initialUsers[0]);
+    const user = getStored<any>('currentUser', null);
     return user;
   },
 
@@ -804,6 +815,12 @@ export const mockStore = {
   },
 
   openShift: (data: any) => {
+    const existing = getStored<Shift | null>('activeShift', null);
+    if (existing && existing.status === 'OPEN') {
+      const activeName = existing.cashier?.name || 'A cashier';
+      throw new Error(`A shift is already active (${activeName}). Two shifts cannot run concurrently. Please close the active shift first.`);
+    }
+
     const user = getStored<any>('currentUser', initialUsers[2]);
     const branches = getStored<Branch[]>('branches', initialBranches);
     const branch = branches.find(b => b.id === data.branchId) || branches[0];

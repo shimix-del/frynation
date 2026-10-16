@@ -77,42 +77,100 @@ export const ZReportPrint: React.FC<ZReportPrintProps> = ({ zReport, isOpen, onC
               <div className="font-bold text-zinc-700">REVENUE BREAKDOWN:</div>
               <div className="flex justify-between">
                 <span>CASH SALES:</span>
-                <span className="font-bold">{formatKES(zReport.totalCashSales)}</span>
+                <span className="font-bold">{formatKES(zReport.totalCashSales || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span>M-PESA SALES:</span>
-                <span className="font-bold">{formatKES(zReport.totalMpesaSales)}</span>
+                <span className="font-bold">{formatKES(zReport.totalMpesaSales || 0)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>CARD SALES:</span>
-                <span className="font-bold">{formatKES(zReport.totalCardSales)}</span>
+
+              {/* Combined Cash + M-Pesa Total */}
+              <div className="flex justify-between font-extrabold text-[11px] bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">
+                <span>TOTAL (CASH + M-PESA):</span>
+                <span>{formatKES((zReport.totalCashSales || 0) + (zReport.totalMpesaSales || 0))}</span>
               </div>
-              <div className="flex justify-between font-black text-sm pt-1 border-t border-zinc-400">
-                <span>GROSS SALES:</span>
-                <span>{formatKES(zReport.totalGrossSales)}</span>
+
+              {(zReport.totalCardSales || 0) > 0 && (
+                <div className="flex justify-between">
+                  <span>CARD SALES:</span>
+                  <span className="font-bold">{formatKES(zReport.totalCardSales)}</span>
+                </div>
+              )}
+
+              {/* End of Day Total Gross Money */}
+              <div className="flex justify-between font-black text-sm pt-1 border-t-2 border-black">
+                <span>TOTAL MONEY AT END OF DAY:</span>
+                <span>{formatKES(zReport.totalGrossSales || ((zReport.totalCashSales || 0) + (zReport.totalMpesaSales || 0) + (zReport.totalCardSales || 0)))}</span>
               </div>
             </div>
+
+            {/* Cash Movements during Shift (Float In & Payouts) */}
+            {((zReport.cashMovements && zReport.cashMovements.length > 0) || (zReport.totalCashAdditions > 0) || (zReport.totalCashDrops > 0)) && (
+              <div className="py-2.5 border-b border-dashed border-zinc-400 space-y-1 text-[11px]">
+                <div className="font-bold text-zinc-700">
+                  CASH MOVEMENTS {zReport.cashMovements ? `(${zReport.cashMovements.length})` : ''}:
+                </div>
+                {zReport.cashMovements && zReport.cashMovements.length > 0 ? (
+                  <div className="space-y-1">
+                    {zReport.cashMovements.map((m: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-[10px] items-center">
+                        <span className="truncate pr-2">
+                          <span className="font-bold">{m.type === 'FLOAT_IN' ? '[+] FLOAT IN' : '[-] PAYOUT'}: </span>
+                          <span>{m.reason || (m.type === 'FLOAT_IN' ? 'Drawer in' : 'Payout')}</span>
+                        </span>
+                        <span className="font-mono font-bold shrink-0">
+                          {m.type === 'FLOAT_IN' ? '+' : '-'}{formatKES(m.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[10px] space-y-0.5 text-zinc-700">
+                    {zReport.totalCashAdditions > 0 && (
+                      <div className="flex justify-between">
+                        <span>[+] Extra Float Additions:</span>
+                        <span className="font-bold font-mono">+{formatKES(zReport.totalCashAdditions)}</span>
+                      </div>
+                    )}
+                    {zReport.totalCashDrops > 0 && (
+                      <div className="flex justify-between">
+                        <span>[-] Payouts / Drops:</span>
+                        <span className="font-bold font-mono">-{formatKES(zReport.totalCashDrops)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-between text-[10px] font-bold pt-1 border-t border-zinc-200">
+                  <span>TOTAL FLOAT ADDITIONS:</span>
+                  <span className="font-mono">+{formatKES(zReport.totalCashAdditions || 0)}</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-bold text-zinc-800">
+                  <span>TOTAL PAYOUTS:</span>
+                  <span className="font-mono">-{formatKES(zReport.totalCashDrops || 0)}</span>
+                </div>
+              </div>
+            )}
 
             {/* Cash Drawer Reconciliation */}
             <div className="py-2.5 border-b border-dashed border-zinc-400 space-y-1 text-[11px]">
               <div className="font-bold text-zinc-700">CASH DRAWER BALANCING:</div>
               <div className="flex justify-between">
                 <span>(+) OPENING FLOAT:</span>
-                <span>{formatKES(zReport.openingFloat)}</span>
+                <span>{formatKES(zReport.openingFloat || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span>(+) CASH SALES:</span>
-                <span>{formatKES(zReport.totalCashSales)}</span>
+                <span>{formatKES(zReport.totalCashSales || 0)}</span>
               </div>
-              {zReport.totalCashAdditions > 0 && (
+              {(zReport.totalCashAdditions || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>(+) EXTRA FLOAT IN:</span>
                   <span>{formatKES(zReport.totalCashAdditions)}</span>
                 </div>
               )}
-              {zReport.totalCashDrops > 0 && (
+              {(zReport.totalCashDrops || 0) > 0 && (
                 <div className="flex justify-between text-zinc-700">
-                  <span>(-) CASH DROPS/PAYOUTS:</span>
+                  <span>(-) CASH PAYOUTS:</span>
                   <span>- {formatKES(zReport.totalCashDrops)}</span>
                 </div>
               )}

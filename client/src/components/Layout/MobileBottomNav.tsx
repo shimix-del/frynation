@@ -67,8 +67,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         </button>
       )}
 
-      {/* 4. Sales Analytics */}
-      {isOwnerOrManager && (
+      {/* 4. Sales Analytics (Owner Only) */}
+      {user?.role === 'OWNER' && (
         <button
           onClick={() => onSelectTab('analytics')}
           className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${

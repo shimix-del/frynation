@@ -7,9 +7,23 @@ import { authenticateToken, AuthenticatedRequest, requireOwner, requireManagerOr
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'kenya_pos_secure_secret_key_2026_jwt_token';
 
+const failedAttemptsMap = new Map<string, { count: number; lockedUntil: number }>();
+
 // Login with Email/Password or PIN Code
 router.post('/login', async (req, res): Promise<void> => {
   try {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const lockoutKey = `auth_lockout_${clientIp}`;
+    const attemptRecord = failedAttemptsMap.get(lockoutKey);
+
+    if (attemptRecord && attemptRecord.lockedUntil > Date.now()) {
+      const remainingSecs = Math.ceil((attemptRecord.lockedUntil - Date.now()) / 1000);
+      res.status(429).json({
+        error: `Security Lockout: 3 failed attempts exceeded. Access blocked for ${remainingSecs}s to prevent unauthorized access.`,
+      });
+      return;
+    }
+
     const { email, password, pinCode, branchId } = req.body;
 
     let user;
@@ -26,7 +40,14 @@ router.post('/login', async (req, res): Promise<void> => {
       });
 
       if (!user) {
-        res.status(401).json({ error: 'Invalid PIN code or user not found' });
+        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        if (curCount >= 3) {
+          failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
+          res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
+        } else {
+          failedAttemptsMap.set(lockoutKey, { count: curCount, lockedUntil: 0 });
+          res.status(401).json({ error: `Invalid PIN code. ${3 - curCount} attempt(s) remaining before 5-minute lockout.` });
+        }
         return;
       }
     } else if (email && password) {
@@ -36,18 +57,54 @@ router.post('/login', async (req, res): Promise<void> => {
       });
 
       if (!user || !user.isActive) {
-        res.status(401).json({ error: 'Invalid credentials or inactive account' });
+        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        if (curCount >= 3) {
+          failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
+          res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
+        } else {
+          failedAttemptsMap.set(lockoutKey, { count: curCount, lockedUntil: 0 });
+          res.status(401).json({ error: `Invalid credentials. ${3 - curCount} attempt(s) remaining before 5-minute lockout.` });
+        }
         return;
       }
 
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
-        res.status(401).json({ error: 'Invalid credentials' });
+        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        if (curCount >= 3) {
+          failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
+          res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
+        } else {
+          failedAttemptsMap.set(lockoutKey, { count: curCount, lockedUntil: 0 });
+          res.status(401).json({ error: `Invalid credentials. ${3 - curCount} attempt(s) remaining before 5-minute lockout.` });
+        }
         return;
       }
     } else {
       res.status(400).json({ error: 'Provide either email & password or PIN code' });
       return;
+    }
+
+    // Reset failed attempts on success
+    failedAttemptsMap.delete(lockoutKey);
+
+    // Only one cashier can run a shift at a time; two shifts cannot run concurrently
+    if (user.role === 'CASHIER') {
+      const activeShift = await prisma.shift.findFirst({
+        where: {
+          status: 'OPEN',
+          ...(user.branchId ? { branchId: user.branchId } : {}),
+        },
+        include: { cashier: true },
+      });
+
+      if (activeShift && activeShift.cashierId !== user.id) {
+        const activeName = activeShift.cashier?.name || 'Another cashier';
+        res.status(403).json({
+          error: `Shift in Progress: ${activeName} is currently on an active shift. Only one cashier can run a shift at a time. Two shifts cannot run concurrently. ${activeName} must close their shift first.`,
+        });
+        return;
+      }
     }
 
     const token = jwt.sign(

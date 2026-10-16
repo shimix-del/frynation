@@ -114,6 +114,7 @@ export const PosTerminal: React.FC = () => {
     setIsReceiptOpen(true);
     setIsMobileCartOpen(false);
     fetchMenuData(); // Refresh stock/availability
+    window.dispatchEvent(new CustomEvent('nanifrys_transaction_completed'));
   };
 
   const filteredItems = useMemo(() => {

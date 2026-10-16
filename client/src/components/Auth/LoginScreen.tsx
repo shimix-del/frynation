@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import naniLogo from '../../assets/logo.jpg';
 
 export const LoginScreen: React.FC = () => {
-  const { loginWithCredentials, loginWithPin } = useAuth();
+  const { loginWithCredentials, loginWithPin, logoutReason } = useAuth();
   const [mode, setMode] = useState<'PIN' | 'PASSWORD'>('PIN');
   const [pin, setPin] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -13,13 +13,68 @@ export const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(0);
+
+  const LOCKOUT_KEY = 'nanifrys_auth_lockout';
+
+  const getLockoutInfo = (): { count: number; lockedUntil: number; lastFailedAt: number } => {
+    try {
+      const raw = localStorage.getItem(LOCKOUT_KEY);
+      return raw ? JSON.parse(raw) : { count: 0, lockedUntil: 0, lastFailedAt: 0 };
+    } catch {
+      return { count: 0, lockedUntil: 0, lastFailedAt: 0 };
+    }
+  };
+
+  const setLockoutInfo = (info: { count: number; lockedUntil: number; lastFailedAt: number }) => {
+    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(info));
+  };
+
+  useEffect(() => {
+    const checkLockout = () => {
+      const info = getLockoutInfo();
+      if (info.lockedUntil && info.lockedUntil > Date.now()) {
+        setLockoutRemaining(Math.ceil((info.lockedUntil - Date.now()) / 1000));
+      } else {
+        setLockoutRemaining(0);
+        if (info.count >= 3 && info.lockedUntil > 0) {
+          setLockoutInfo({ count: 0, lockedUntil: 0, lastFailedAt: 0 });
+        }
+      }
+    };
+
+    checkLockout();
+    const interval = setInterval(checkLockout, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const recordFailedAttempt = () => {
+    const info = getLockoutInfo();
+    const isOld = Date.now() - (info.lastFailedAt || 0) > 5 * 60 * 1000;
+    const count = isOld ? 1 : (info.count || 0) + 1;
+
+    if (count >= 3) {
+      const lockedUntil = Date.now() + 5 * 60 * 1000;
+      setLockoutInfo({ count: 3, lockedUntil, lastFailedAt: Date.now() });
+      setLockoutRemaining(300);
+      setError('🚨 Security Lockout: 3 failed attempts exceeded. Access blocked for 5 minutes.');
+    } else {
+      setLockoutInfo({ count, lockedUntil: 0, lastFailedAt: Date.now() });
+      const left = 3 - count;
+      setError(`Invalid PIN / credentials. ${left} attempt${left === 1 ? '' : 's'} remaining before 5-minute security lockout.`);
+    }
+  };
+
+  const clearFailedAttempts = () => {
+    localStorage.removeItem(LOCKOUT_KEY);
+    setLockoutRemaining(0);
+  };
 
   const isLocalHost = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   React.useEffect(() => {
     if (!isLocalHost) {
-      // On GitHub Pages or remote URL, POS runs in cloud standalone mode
       setServerOnline(true);
       return;
     }
@@ -37,12 +92,11 @@ export const LoginScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [isLocalHost]);
 
-  // Physical keyboard support for PIN mode (in case touchscreen has issues)
+  // Physical keyboard support for PIN mode
   useEffect(() => {
-    if (mode !== 'PIN' || isLoading) return;
+    if (mode !== 'PIN' || isLoading || lockoutRemaining > 0) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If typing in an active input, let the input's onChange handle it
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -64,21 +118,22 @@ export const LoginScreen: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, pin, isLoading]);
+  }, [mode, pin, isLoading, lockoutRemaining]);
 
   const handlePinInput = (num: string) => {
+    if (lockoutRemaining > 0 || isLoading) return;
     if (pin.length < 6) {
       const newPin = pin + num;
       setPin(newPin);
       setError(null);
       if (newPin.length === 4) {
-        // Auto-submit when 4 digits reached
         submitPin(newPin);
       }
     }
   };
 
   const handlePinDelete = () => {
+    if (lockoutRemaining > 0 || isLoading) return;
     setPin(prev => prev.slice(0, -1));
   };
 
@@ -87,15 +142,19 @@ export const LoginScreen: React.FC = () => {
   };
 
   const submitPin = async (pinToSubmit: string) => {
+    if (lockoutRemaining > 0) return;
     setIsLoading(true);
     setError(null);
     try {
       await loginWithPin(pinToSubmit);
+      clearFailedAttempts();
     } catch (err: any) {
-      if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
-        setError('⚠️ POS Backend Server (Port 5000) or MySQL is offline. Please double-click "run_pos.bat" in the pos sys folder to start the system.');
+      if (err.message?.includes('Shift in Progress') || err.message?.includes('Access Denied')) {
+        setError(err.message);
+      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError('⚠️ POS Backend Server (Port 5000) or MySQL is offline. Please double-click "run_pos.bat" in the folder to start.');
       } else {
-        setError(err.message || 'Invalid PIN code. Please enter your authorized staff PIN.');
+        recordFailedAttempt();
       }
       setPin('');
     } finally {
@@ -105,6 +164,7 @@ export const LoginScreen: React.FC = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockoutRemaining > 0) return;
     if (!email.trim() || !password) {
       setError('Please enter both your email address and password.');
       return;
@@ -113,8 +173,13 @@ export const LoginScreen: React.FC = () => {
     setError(null);
     try {
       await loginWithCredentials(email.trim(), password);
+      clearFailedAttempts();
     } catch (err: any) {
-      setError(err.message || 'Login failed. Check email & password.');
+      if (err.message?.includes('Shift in Progress') || err.message?.includes('Access Denied')) {
+        setError(err.message);
+      } else {
+        recordFailedAttempt();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +256,32 @@ export const LoginScreen: React.FC = () => {
           </div>
         )}
 
-        {error && (
+        {logoutReason && (
+          <div className="mb-4 p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-semibold text-center flex items-center justify-center space-x-2">
+            <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{logoutReason}</span>
+          </div>
+        )}
+
+        {lockoutRemaining > 0 && (
+          <div className="mb-4 p-3.5 bg-red-500/20 border-2 border-red-500/60 rounded-2xl text-red-300 text-xs text-center space-y-1.5 animate-pulse">
+            <div className="flex items-center justify-center space-x-1.5 text-red-400 font-black uppercase tracking-wider text-[11px]">
+              <Shield className="w-4 h-4 text-red-400" />
+              <span>🚨 Brute Force Protection Active</span>
+            </div>
+            <div className="font-medium text-white text-xs">
+              3 failed login attempts reached. System is locked for:
+            </div>
+            <div className="text-xl font-mono font-black text-amber-400">
+              {Math.floor(lockoutRemaining / 60)}m {(lockoutRemaining % 60).toString().padStart(2, '0')}s
+            </div>
+            <div className="text-[10px] text-zinc-400">
+              Please wait for timer to expire before re-entering PIN.
+            </div>
+          </div>
+        )}
+
+        {error && !lockoutRemaining && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-xs font-semibold text-center animate-shake">
             {error}
           </div>
@@ -223,6 +313,7 @@ export const LoginScreen: React.FC = () => {
                   pattern="[0-9]*"
                   maxLength={6}
                   value={pin}
+                  disabled={isLoading || lockoutRemaining > 0}
                   onChange={e => {
                     const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setPin(cleaned);
@@ -237,9 +328,9 @@ export const LoginScreen: React.FC = () => {
                       submitPin(pin);
                     }
                   }}
-                  placeholder="Type PIN with keyboard & press Enter..."
+                  placeholder={lockoutRemaining > 0 ? "System locked (5m timeout)..." : "Type PIN with keyboard & press Enter..."}
                   autoFocus
-                  className="w-full bg-zinc-800 border border-zinc-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 px-4 text-center font-mono tracking-widest text-lg font-bold text-white placeholder:text-zinc-500 placeholder:text-xs placeholder:tracking-normal focus:outline-none transition shadow-inner"
+                  className="w-full bg-zinc-800 border border-zinc-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 px-4 text-center font-mono tracking-widest text-lg font-bold text-white placeholder:text-zinc-500 placeholder:text-xs placeholder:tracking-normal focus:outline-none transition shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -251,8 +342,8 @@ export const LoginScreen: React.FC = () => {
                   key={num}
                   type="button"
                   onClick={() => handlePinInput(num.toString())}
-                  disabled={isLoading}
-                  className="h-14 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/80 active:scale-95 text-xl font-black text-zinc-100 transition shadow-sm flex items-center justify-center"
+                  disabled={isLoading || lockoutRemaining > 0}
+                  className="h-14 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/80 active:scale-95 text-xl font-black text-zinc-100 transition shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {num}
                 </button>
@@ -260,24 +351,24 @@ export const LoginScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={handlePinClear}
-                disabled={isLoading}
-                className="h-14 rounded-2xl bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-400 transition flex items-center justify-center"
+                disabled={isLoading || lockoutRemaining > 0}
+                className="h-14 rounded-2xl bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-400 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CLEAR
               </button>
               <button
                 type="button"
                 onClick={() => handlePinInput('0')}
-                disabled={isLoading}
-                className="h-14 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/80 active:scale-95 text-xl font-black text-zinc-100 transition shadow-sm flex items-center justify-center"
+                disabled={isLoading || lockoutRemaining > 0}
+                className="h-14 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/80 active:scale-95 text-xl font-black text-zinc-100 transition shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handlePinDelete}
-                disabled={isLoading}
-                className="h-14 rounded-2xl bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition flex items-center justify-center"
+                disabled={isLoading || lockoutRemaining > 0}
+                className="h-14 rounded-2xl bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Delete className="w-5 h-5" />
               </button>
@@ -326,10 +417,16 @@ export const LoginScreen: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center space-x-2"
+              disabled={isLoading || lockoutRemaining > 0}
+              className="w-full py-3 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{isLoading ? 'Signing In...' : 'Sign In with Password'}</span>
+              <span>
+                {lockoutRemaining > 0
+                  ? `Locked (${lockoutRemaining}s)`
+                  : isLoading
+                  ? 'Signing In...'
+                  : 'Sign In with Password'}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
