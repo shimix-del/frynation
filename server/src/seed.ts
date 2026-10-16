@@ -376,7 +376,7 @@ async function main() {
       description: 'Chilled sparkling Krest Bitter Lemon soda',
       basePrice: 70,
       costPrice: 40,
-      imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80',
+      imageUrl: './images/krest.jpg',
       isAvailable: true,
       hasVariants: false,
     },

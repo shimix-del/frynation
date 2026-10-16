@@ -73,23 +73,23 @@ export const ShiftManager: React.FC = () => {
             <span>Shift & Cash Float Management</span>
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Cash drawer balancing, drops to safe, and daily Z-Reports
+            Cash drawer balancing, payouts, float additions, and daily Z-Reports
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           {activeShift ? (
             <>
               <button
                 onClick={() => setIsCashMovementModal(true)}
-                className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 rounded-2xl text-xs font-bold transition flex items-center space-x-1.5"
+                className="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 active:scale-95"
               >
                 <ArrowDownCircle className="w-4 h-4" />
-                <span>Cash Drop / Payout</span>
+                <span>Cash Movement</span>
               </button>
               <button
                 onClick={() => setIsCloseShiftModal(true)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-red-600/25"
+                className="flex-1 sm:flex-none justify-center px-4 py-2 bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-red-600/25"
               >
                 <Lock className="w-4 h-4" />
                 <span>Close Shift & Z-Report</span>
@@ -98,7 +98,7 @@ export const ShiftManager: React.FC = () => {
           ) : (
             <button
               onClick={() => setIsOpenShiftModal(true)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-emerald-600/25"
+              className="flex-1 sm:flex-none justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-emerald-600/25"
             >
               <Plus className="w-4 h-4" />
               <span>Open New Shift (Float)</span>
@@ -107,7 +107,8 @@ export const ShiftManager: React.FC = () => {
 
           <button
             onClick={fetchShiftData}
-            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl border border-zinc-700"
+            className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl border border-zinc-700 active:scale-95"
+            title="Refresh shift data"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -213,7 +214,7 @@ export const ShiftManager: React.FC = () => {
           {activeShift.cashMovements && activeShift.cashMovements.length > 0 && (
             <div className="pt-2 border-t border-zinc-800">
               <span className="text-xs font-bold text-zinc-300 block mb-2">
-                Shift Cash Drops & Payouts ({activeShift.cashMovements.length}):
+                Shift Cash Movements ({activeShift.cashMovements.length}):
               </span>
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {activeShift.cashMovements.map(m => (
@@ -224,14 +225,12 @@ export const ShiftManager: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <span
                         className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                          m.type === 'CASH_DROP'
-                            ? 'bg-amber-500/20 text-amber-300'
-                            : m.type === 'PAYOUT'
-                            ? 'bg-red-500/20 text-red-300'
-                            : 'bg-emerald-500/20 text-emerald-300'
+                          m.type === 'FLOAT_IN'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : 'bg-red-500/20 text-red-300'
                         }`}
                       >
-                        {m.type}
+                        {m.type === 'FLOAT_IN' ? 'FLOAT IN' : 'PAYOUT'}
                       </span>
                       <span className="text-zinc-300 font-medium">{m.reason}</span>
                     </div>

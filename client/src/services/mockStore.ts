@@ -228,7 +228,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Chilled sparkling Krest Bitter Lemon soda',
     basePrice: 70,
     costPrice: 40,
-    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80',
+    imageUrl: './images/krest.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[3],
@@ -252,7 +252,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v4_dishes_receipt_reports_2026';
+const STORE_VERSION = 'v5_krest_cash_movement_cleanup';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
@@ -725,6 +725,9 @@ export const mockStore = {
       });
       activeShift.totalCashSales = (activeShift.totalCashSales || 0) + cashAmt;
       activeShift.totalMpesaSales = (activeShift.totalMpesaSales || 0) + mpesaAmt;
+      const cashAdditions = activeShift.cashAdditions || 0;
+      const totalExpensesPaid = activeShift.totalExpensesPaid || 0;
+      activeShift.expectedCash = (activeShift.openingFloat || 0) + activeShift.totalCashSales + cashAdditions - totalExpensesPaid;
       if (!activeShift.orders) activeShift.orders = [];
       activeShift.orders.unshift(newOrder);
       setStored('activeShift', activeShift);
@@ -783,6 +786,18 @@ export const mockStore = {
         });
       });
       (active as any).itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
+
+      if (!active.cashMovements) active.cashMovements = [];
+      const cashAdditions = active.cashMovements
+        .filter(m => m.type === 'FLOAT_IN')
+        .reduce((sum, m) => sum + m.amount, 0);
+      const cashPayouts = active.cashMovements
+        .filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP')
+        .reduce((sum, m) => sum + m.amount, 0);
+      active.cashAdditions = cashAdditions;
+      active.cashDrops = cashPayouts;
+      active.totalExpensesPaid = Math.max(active.totalExpensesPaid || 0, cashPayouts);
+      active.expectedCash = (active.openingFloat || 0) + (active.totalCashSales || 0) + cashAdditions - active.totalExpensesPaid;
     }
 
     return { activeShift: active };
@@ -792,16 +807,21 @@ export const mockStore = {
     const user = getStored<any>('currentUser', initialUsers[2]);
     const branches = getStored<Branch[]>('branches', initialBranches);
     const branch = branches.find(b => b.id === data.branchId) || branches[0];
+    const floatAmt = Number(data.openingFloat) || 0;
 
     const shift: Shift = {
       id: `shift-${Date.now()}`,
       branchId: branch.id,
       cashierId: user.id,
-      openingFloat: Number(data.openingFloat),
+      openingFloat: floatAmt,
       totalCashSales: 0,
       totalMpesaSales: 0,
       totalCardSales: 0,
       totalExpensesPaid: 0,
+      cashAdditions: 0,
+      cashDrops: 0,
+      expectedCash: floatAmt,
+      cashMovements: [],
       status: 'OPEN',
       openedAt: new Date().toISOString(),
       closedAt: null,
@@ -820,8 +840,17 @@ export const mockStore = {
 
   closeShift: (data: any) => {
     const active = getStored<Shift | null>('activeShift', null);
-    const actual = Number(data.closingCashActual);
-    const expected = (active?.openingFloat || 0) + (active?.totalCashSales || 0);
+    const actual = Number(data.closingCashActual) || 0;
+    const movements = active?.cashMovements || [];
+    const cashAdditions = movements
+      .filter(m => m.type === 'FLOAT_IN')
+      .reduce((sum, m) => sum + m.amount, 0);
+    const cashPayouts = movements
+      .filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP')
+      .reduce((sum, m) => sum + m.amount, 0);
+    const expensesPaid = Math.max(active?.totalExpensesPaid || 0, cashPayouts);
+
+    const expected = (active?.openingFloat || 0) + (active?.totalCashSales || 0) + cashAdditions - expensesPaid;
     const variance = actual - expected;
 
     const zReport = {
@@ -835,11 +864,12 @@ export const mockStore = {
       totalMpesaSales: active?.totalMpesaSales || 0,
       totalCardSales: active?.totalCardSales || 0,
       totalGrossSales: (active?.totalCashSales || 0) + (active?.totalMpesaSales || 0) + (active?.totalCardSales || 0),
-      totalCashAdditions: 0,
-      totalCashDrops: 0,
+      totalCashAdditions: cashAdditions,
+      totalCashDrops: cashPayouts,
       expectedCashInDrawer: expected,
       actualCountedCash: actual,
       variance,
+      cashMovements: movements,
       totalOrdersCount: active?._count?.orders || (active as any)?.orders?.length || 0,
     };
 
@@ -852,6 +882,10 @@ export const mockStore = {
       closingCashActual: actual,
       closingCashExpected: expected,
       variance,
+      cashMovements: movements,
+      cashAdditions,
+      cashDrops: cashPayouts,
+      totalExpensesPaid: expensesPaid,
       notes: data.notes || active?.notes || null,
       branch: active?.branch || initialBranches[0],
       cashier: active?.cashier || { id: 'user-cashier1', name: 'Cashier' },
@@ -864,7 +898,44 @@ export const mockStore = {
     return { message: 'Shift closed successfully', shift: closedShiftRecord, zReport };
   },
 
-  addCashMovement: () => ({ success: true }),
+  addCashMovement: (data: any) => {
+    const active = getStored<Shift | null>('activeShift', null);
+    if (!active) {
+      return { success: false, error: 'No active shift found' };
+    }
+
+    const movement: any = {
+      id: `cm-${Date.now()}`,
+      shiftId: active.id,
+      branchId: active.branchId,
+      type: data.type, // 'FLOAT_IN' | 'PAYOUT'
+      amount: Number(data.amount) || 0,
+      reason: data.reason || (data.type === 'FLOAT_IN' ? 'Float In' : 'Payout'),
+      authorizedBy: data.authorizedBy || active.cashier?.name || 'Cashier',
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!active.cashMovements) {
+      active.cashMovements = [];
+    }
+    active.cashMovements.unshift(movement);
+
+    const cashAdditions = active.cashMovements
+      .filter(m => m.type === 'FLOAT_IN')
+      .reduce((sum, m) => sum + m.amount, 0);
+    const cashPayouts = active.cashMovements
+      .filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP')
+      .reduce((sum, m) => sum + m.amount, 0);
+
+    active.cashAdditions = cashAdditions;
+    active.cashDrops = cashPayouts;
+    active.totalExpensesPaid = Math.max(active.totalExpensesPaid || 0, cashPayouts);
+    active.expectedCash = (active.openingFloat || 0) + (active.totalCashSales || 0) + cashAdditions - active.totalExpensesPaid;
+
+    setStored('activeShift', active);
+    return { success: true, movement };
+  },
+
   getShiftHistory: (params?: { branchId?: string }) => {
     let history = getStored<Shift[]>('shiftHistory', []);
     if (params?.branchId) history = history.filter(s => s.branchId === params.branchId);
@@ -899,6 +970,17 @@ export const mockStore = {
 
     list.unshift(newExp);
     setStored('expenses', list);
+
+    if (newExp.paymentSource === 'CASH_DRAWER') {
+      const active = getStored<Shift | null>('activeShift', null);
+      if (active) {
+        active.totalExpensesPaid = (active.totalExpensesPaid || 0) + newExp.amount;
+        const cashAdditions = active.cashAdditions || 0;
+        active.expectedCash = (active.openingFloat || 0) + (active.totalCashSales || 0) + cashAdditions - active.totalExpensesPaid;
+        setStored('activeShift', active);
+      }
+    }
+
     return newExp;
   },
 

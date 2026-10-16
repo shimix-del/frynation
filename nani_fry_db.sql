@@ -519,7 +519,7 @@ INSERT IGNORE INTO `menu_items` (`id`, `category_id`, `name`, `description`, `ba
 ('item-fanta',        'cat-drinks',    'Fanta',         'Chilled vibrant orange Fanta soda',                                    70.00,  40.00,  'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80', 1, 0),
 ('item-sprite',       'cat-drinks',    'Sprite',        'Chilled crisp lemon-lime Sprite soda',                                 70.00,  40.00,  'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80', 1, 0),
 ('item-stoney',       'cat-drinks',    'Stoney',        'Chilled fiery Stoney Tangawizi ginger soda',                           70.00,  40.00,  './images/stoney.jpg', 1, 0),
-('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80', 1, 0);
+('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  './images/krest.jpg', 1, 0);
 
 -- ============================================================
 --  SEED DATA — Inventory / Stock items (Migadini branch)

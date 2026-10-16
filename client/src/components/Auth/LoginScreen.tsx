@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, Mail, Lock, Store, Shield, ArrowRight, Sparkles, Delete, Keyboard } from 'lucide-react';
+import { KeyRound, Mail, Lock, Store, Shield, ArrowRight, Sparkles, Delete } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 import naniLogo from '../../assets/logo.jpg';
@@ -214,17 +214,8 @@ export const LoginScreen: React.FC = () => {
               ))}
             </div>
 
-            {/* Direct Physical Keyboard Input Field (fallback when touchscreen has an issue) */}
+            {/* PIN Input Field */}
             <div className="mb-4">
-              <label className="block text-[11px] font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
-                <span className="flex items-center space-x-1.5">
-                  <Keyboard className="w-3.5 h-3.5 text-brand-400" />
-                  <span>Physical Keyboard / PIN Input:</span>
-                </span>
-                <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Keyboard Active
-                </span>
-              </label>
               <div className="relative">
                 <input
                   type="password"

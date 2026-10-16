@@ -19,7 +19,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
 }) => {
   if (!isOpen || !shift) return null;
 
-  const [type, setType] = useState<'CASH_DROP' | 'PAYOUT' | 'FLOAT_IN'>('CASH_DROP');
+  const [type, setType] = useState<'PAYOUT' | 'FLOAT_IN'>('PAYOUT');
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -40,7 +40,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
         shiftId: shift.id,
         type,
         amount: amt,
-        reason: reason || `${type.replace('_', ' ')} recorded by cashier`,
+        reason: reason || `${type === 'PAYOUT' ? 'Cash Payout' : 'Added Float'} recorded by cashier`,
       });
       onMovementAdded();
       onClose();
@@ -58,7 +58,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
           <div className="flex items-center space-x-2">
             <ArrowDownCircle className="w-5 h-5 text-amber-400" />
             <div>
-              <h3 className="font-bold text-white text-base">Cash Drop / Drawer Movement</h3>
+              <h3 className="font-bold text-white text-base">Drawer Cash Movement</h3>
               <p className="text-[11px] text-zinc-400">Shift #{shift.id.slice(-4)}</p>
             </div>
           </div>
@@ -77,45 +77,38 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
             </div>
           )}
 
-          {/* Movement Type */}
-          <div className="grid grid-cols-3 gap-2 bg-zinc-800 p-1 rounded-2xl border border-zinc-700">
-            <button
-              type="button"
-              onClick={() => setType('CASH_DROP')}
-              className={`py-2 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center ${
-                type === 'CASH_DROP'
-                  ? 'bg-amber-500 text-black shadow-md'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <span>Cash Drop</span>
-              <span className="text-[9px] opacity-80">(To Safe)</span>
-            </button>
-
+          {/* Movement Type: 2 options only */}
+          <div className="grid grid-cols-2 gap-2 bg-zinc-800 p-1.5 rounded-2xl border border-zinc-700">
             <button
               type="button"
               onClick={() => setType('PAYOUT')}
-              className={`py-2 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center ${
+              className={`py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center ${
                 type === 'PAYOUT'
-                  ? 'bg-red-500 text-white shadow-md'
+                  ? 'bg-red-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              <span>Payout</span>
-              <span className="text-[9px] opacity-80">(Drawer Out)</span>
+              <span className="flex items-center space-x-1">
+                <ArrowDownCircle className="w-3.5 h-3.5" />
+                <span>Payout</span>
+              </span>
+              <span className="text-[10px] opacity-80">(Drawer Out)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setType('FLOAT_IN')}
-              className={`py-2 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center ${
+              className={`py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center ${
                 type === 'FLOAT_IN'
-                  ? 'bg-emerald-500 text-white shadow-md'
+                  ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              <span>Add Float</span>
-              <span className="text-[9px] opacity-80">(Drawer In)</span>
+              <span className="flex items-center space-x-1">
+                <ArrowUpCircle className="w-3.5 h-3.5" />
+                <span>Add Float</span>
+              </span>
+              <span className="text-[10px] opacity-80">(Drawer In)</span>
             </button>
           </div>
 
@@ -127,8 +120,10 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
               type="number"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              placeholder="e.g. 5000"
+              placeholder="e.g. 500"
               required
+              min="1"
+              step="any"
               className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl py-2.5 px-4 text-lg font-black text-amber-400 focus:outline-none focus:border-amber-500"
             />
           </div>
@@ -142,11 +137,9 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder={
-                type === 'CASH_DROP'
-                  ? 'e.g. Mid-day excess cash drop to manager safe'
-                  : type === 'PAYOUT'
-                  ? 'e.g. Emergency ice purchase from shop'
-                  : 'e.g. Extra change float addition'
+                type === 'PAYOUT'
+                  ? 'e.g. Emergency ice purchase or daily bread delivery'
+                  : 'e.g. Added coins & loose change from manager'
               }
               required
               className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-brand-500"
@@ -164,9 +157,17 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-50 text-black text-xs font-black rounded-2xl shadow-lg shadow-amber-500/25 transition"
+              className={`flex-1 py-2.5 ${
+                type === 'PAYOUT'
+                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/25'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25'
+              } active:scale-95 disabled:opacity-50 text-xs font-black rounded-2xl shadow-lg transition`}
             >
-              {isLoading ? 'Recording...' : 'Save Cash Movement'}
+              {isLoading
+                ? 'Saving...'
+                : type === 'PAYOUT'
+                ? 'Save Payout (Out)'
+                : 'Save Float (In)'}
             </button>
           </div>
         </form>
