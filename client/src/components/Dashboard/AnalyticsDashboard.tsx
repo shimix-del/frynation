@@ -72,12 +72,13 @@ export const AnalyticsDashboard: React.FC = () => {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === '1@1@') {
+    const val = passwordInput.trim();
+    if (val === '1@1@' || val === '9878') {
       setIsUnlocked(true);
       setAuthError(null);
       setPasswordInput('');
     } else {
-      setAuthError('🚨 Incorrect Owner Password. Access denied.');
+      setAuthError('🚨 Incorrect Owner Password or PIN. Access denied.');
       setPasswordInput('');
     }
   };
@@ -341,8 +342,8 @@ export const AnalyticsDashboard: React.FC = () => {
           <form onSubmit={handleUnlock} className="space-y-4">
             <div className="relative text-left">
               <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
-                <span>Security Password</span>
-                <span className="text-[10px] text-zinc-500 font-normal">Case-sensitive</span>
+                <span>Owner Security Password or PIN</span>
+                <span className="text-[10px] text-zinc-500 font-normal">Confidential</span>
               </label>
               <div className="relative">
                 <input
@@ -352,7 +353,7 @@ export const AnalyticsDashboard: React.FC = () => {
                     setPasswordInput(e.target.value);
                     setAuthError(null);
                   }}
-                  placeholder="Enter owner password (1@1@)..."
+                  placeholder="Enter owner security password or PIN..."
                   autoFocus
                   required
                   className="w-full bg-zinc-800/90 border border-zinc-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl py-3 pl-4 pr-11 text-sm text-white placeholder-zinc-500 tracking-wider font-mono focus:outline-none transition shadow-inner"

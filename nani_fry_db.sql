@@ -485,10 +485,10 @@ INSERT IGNORE INTO `branches` (`id`, `name`, `code`, `address`, `phone`, `till_n
 --  NOTE: Replace password_hash with real bcrypt hashes in production
 -- ============================================================
 INSERT IGNORE INTO `users` (`id`, `branch_id`, `name`, `email`, `role`, `pin_code`, `password_hash`, `is_active`) VALUES
-('user-robina',   NULL,             'Robina',    'admin@nanifrys.co.ke',    'OWNER',   '9999', '$2b$10$placeholder_owner_hash',   1),
-('user-manager',  'branch-migadini','Manager',   'manager@nanifrys.co.ke',  'MANAGER', '1111', '$2b$10$placeholder_manager_hash', 1),
-('user-cashier1', 'branch-migadini','Cashier 1', 'cashier1@nanifrys.co.ke', 'CASHIER', '1234', '$2b$10$placeholder_cashier1_hash',1),
-('user-cashier2', 'branch-migadini','Cashier 2', 'cashier2@nanifrys.co.ke', 'CASHIER', '2345', '$2b$10$placeholder_cashier2_hash',1),
+('user-robina',   NULL,             'Robina',    'admin@nanifrys.co.ke',    'OWNER',   '9878', '$2b$10$placeholder_owner_hash',   1),
+('user-manager',  'branch-migadini','Manager',   'manager@nanifrys.co.ke',  'MANAGER', '5609', '$2b$10$placeholder_manager_hash', 1),
+('user-cashier1', 'branch-migadini','Cashier 1', 'cashier1@nanifrys.co.ke', 'CASHIER', '1298', '$2b$10$placeholder_cashier1_hash',1),
+('user-cashier2', 'branch-migadini','Cashier 2', 'cashier2@nanifrys.co.ke', 'CASHIER', '1349', '$2b$10$placeholder_cashier2_hash',1),
 ('user-cashier3', 'branch-migadini','Cashier 3', 'cashier3@nanifrys.co.ke', 'CASHIER', '3456', '$2b$10$placeholder_cashier3_hash',1),
 ('user-cashier4', 'branch-migadini','Cashier 4', 'cashier4@nanifrys.co.ke', 'CASHIER', '4567', '$2b$10$placeholder_cashier4_hash',1);
 

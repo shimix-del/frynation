@@ -94,9 +94,9 @@ export const ExpenseTracker: React.FC = () => {
   }, [isUnlocked]);
 
   const handleDelete = async (id: string) => {
-    const pin = prompt('Enter Security PIN (0099) to delete this expense:');
+    const pin = prompt('Enter Security PIN to delete this expense:');
     if (pin !== '0099') {
-      alert('🚨 Unauthorized: Security PIN 0099 is required to delete expenses.');
+      alert('🚨 Unauthorized: Invalid security PIN code.');
       return;
     }
     if (!confirm('Are you sure you want to delete this expense record?')) return;
@@ -136,7 +136,7 @@ export const ExpenseTracker: React.FC = () => {
           </div>
           <h2 className="text-xl font-black text-white tracking-tight">Daily Expense Security</h2>
           <p className="text-xs text-zinc-400 mt-1 mb-5">
-            Enter authorized 4-digit PIN (0099) to view and manage daily eatery expenses.
+            Enter authorized 4-digit PIN to view and manage daily eatery expenses.
           </p>
 
           {pinError && (

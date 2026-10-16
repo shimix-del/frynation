@@ -23,7 +23,7 @@ const initialUsers: any[] = [
     name: 'Robina',
     email: 'admin@nanifrys.co.ke',
     role: 'OWNER',
-    pinCode: '9999',
+    pinCode: '9878',
     branchId: null,
     isActive: true,
   },
@@ -32,7 +32,7 @@ const initialUsers: any[] = [
     name: 'Manager',
     email: 'manager@nanifrys.co.ke',
     role: 'MANAGER',
-    pinCode: '1111',
+    pinCode: '5609',
     branchId: 'branch-migadini',
     isActive: true,
   },
@@ -41,7 +41,7 @@ const initialUsers: any[] = [
     name: 'Cashier 1',
     email: 'cashier1@nanifrys.co.ke',
     role: 'CASHIER',
-    pinCode: '1234',
+    pinCode: '1298',
     branchId: 'branch-migadini',
     isActive: true,
   },
@@ -50,7 +50,7 @@ const initialUsers: any[] = [
     name: 'Cashier 2',
     email: 'cashier2@nanifrys.co.ke',
     role: 'CASHIER',
-    pinCode: '2345',
+    pinCode: '1349',
     branchId: 'branch-migadini',
     isActive: true,
   },
@@ -276,7 +276,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v8_water_images_and_pins';
+const STORE_VERSION = 'v9_confidential_pins_updated';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
