@@ -25,6 +25,10 @@ import {
   Shield,
   Eye,
   EyeOff,
+  KeyRound,
+  X,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -69,6 +73,14 @@ export const AnalyticsDashboard: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isPasswordsModalOpen, setIsPasswordsModalOpen] = useState<boolean>(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const handleCopyCode = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -430,6 +442,16 @@ export const AnalyticsDashboard: React.FC = () => {
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPasswordsModalOpen(true)}
+            className="px-3 py-1.5 sm:px-3 sm:py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            title="View All Staff Passwords & Security PINs"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <span>Staff Passwords &amp; PINs</span>
           </button>
 
           <button
@@ -985,6 +1007,276 @@ export const AnalyticsDashboard: React.FC = () => {
         isOpen={!!selectedOrderForReceipt}
         onClose={() => setSelectedOrderForReceipt(null)}
       />
+
+      {/* Owner Confidential Staff Passwords & Security PINs Vault Modal */}
+      {isPasswordsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/95 sticky top-0 z-10">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-black text-white text-base sm:text-lg">Staff Passwords &amp; Security PINs</h3>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase tracking-wider">
+                      Owner Only
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Confidential vault of all active staff PINs and operational security codes.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPasswordsModalOpen(false)}
+                className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Notice */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-xs text-amber-300 flex items-start space-x-2.5">
+                <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Confidential Owner Reference:</span> This vault shows all staff login PINs so you can manage your staff directly. Cashiers and managers cannot view this information.
+                </div>
+              </div>
+
+              {/* Staff Login PINs Section */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center space-x-2">
+                  <span>Staff Login PIN Codes</span>
+                  <span className="w-full h-px bg-zinc-800" />
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Owner */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-amber-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Robina (Owner)</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-1.5 py-0.2 rounded">OWNER</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">admin@nanifrys.co.ke • 20m timeout</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-amber-500/40 rounded-xl text-amber-400 tracking-widest shadow-inner">
+                        9878
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('9878', 'owner')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'owner' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Manager */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-purple-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Manager</span>
+                        <span className="text-[10px] bg-purple-500/20 text-purple-400 font-bold px-1.5 py-0.2 rounded">MANAGER</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">manager@nanifrys.co.ke • 5m timeout</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-purple-500/40 rounded-xl text-purple-300 tracking-widest shadow-inner">
+                        5609
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('5609', 'manager')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'manager' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashier 1 */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Cashier 1</span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.2 rounded">CASHIER</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">cashier1@nanifrys.co.ke • 2m timeout</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-emerald-500/40 rounded-xl text-emerald-400 tracking-widest shadow-inner">
+                        1298
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('1298', 'c1')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'c1' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashier 2 */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Cashier 2</span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.2 rounded">CASHIER</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">cashier2@nanifrys.co.ke • 2m timeout</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-emerald-500/40 rounded-xl text-emerald-400 tracking-widest shadow-inner">
+                        1349
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('1349', 'c2')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'c2' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashier 3 */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-zinc-700/60 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Cashier 3</span>
+                        <span className="text-[10px] bg-zinc-700 text-zinc-300 font-bold px-1.5 py-0.2 rounded">BACKUP</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">cashier3@nanifrys.co.ke</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-zinc-700 rounded-xl text-zinc-300 tracking-widest shadow-inner">
+                        3456
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('3456', 'c3')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'c3' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashier 4 */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-zinc-700/60 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-sm">Cashier 4</span>
+                        <span className="text-[10px] bg-zinc-700 text-zinc-300 font-bold px-1.5 py-0.2 rounded">BACKUP</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">cashier4@nanifrys.co.ke</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-zinc-700 rounded-xl text-zinc-300 tracking-widest shadow-inner">
+                        4567
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('4567', 'c4')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy PIN"
+                      >
+                        {copiedKey === 'c4' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Security Passwords Section */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center space-x-2">
+                  <span>System Security Passwords &amp; Operational PINs</span>
+                  <span className="w-full h-px bg-zinc-800" />
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Daily Expense PIN */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-red-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-white text-sm">Daily Eatery Expense PIN</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">Required to view, record, or delete daily expenses</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-red-500/40 rounded-xl text-red-400 tracking-widest shadow-inner">
+                        0099
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('0099', 'exp')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy Code"
+                      >
+                        {copiedKey === 'exp' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Analytics Protection Password */}
+                  <div className="p-3.5 bg-zinc-800/60 border border-amber-500/30 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-white text-sm">Sales &amp; Analytics Password</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">Required to unlock financial analytics (or PIN 9878)</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-base font-black px-2.5 py-1 bg-zinc-900 border border-amber-500/40 rounded-xl text-amber-300 tracking-wider shadow-inner">
+                        1@1@
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode('1@1@', 'analytics')}
+                        className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg border border-zinc-700 transition"
+                        title="Copy Password"
+                      >
+                        {copiedKey === 'analytics' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/90">
+              <span className="text-[11px] text-zinc-500 flex items-center space-x-1.5">
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Only accessible from the Owner Sales &amp; Financial Reports panel</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsPasswordsModalOpen(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold transition shadow-sm active:scale-95"
+              >
+                Close Vault
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
