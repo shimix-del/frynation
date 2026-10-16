@@ -38,12 +38,11 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       `Date: ${formatKenyaDateTime(order.createdAt)}\n` +
       `Branch: ${order.branch?.name || 'Migadini Main Shop'}\n` +
       `📞 Make Order / Call: 0143285625\n` +
-      `💳 Lipa na M-Pesa (Pochi la Biashara): 0143285625\n` +
       `---------------------------\n` +
       `${itemsText}\n` +
       `---------------------------\n` +
       `*Total: ${formatKES(order.totalAmount)}*\n` +
-      `Payment: ${order.payments?.map(p => `${p.paymentMethod === 'MPESA' ? 'M-PESA (POCHI)' : p.paymentMethod} ${p.mpesaCode ? `(${p.mpesaCode})` : ''}`).join(', ') || 'CASH'}\n` +
+      `${order.payments?.map(p => `PAID (${p.paymentMethod === 'MPESA' ? 'MPESA' : 'CASH'}): ${formatKES(p.amount)}${p.mpesaCode ? ` | REF: ${p.mpesaCode}` : ''}`).join('\n') || `PAID (CASH): ${formatKES(order.totalAmount)}`}\n` +
       `Asante Sana! Karibu Tena!`;
 
     const encoded = encodeURIComponent(message);
@@ -132,10 +131,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               <div className="text-[10px] font-bold text-zinc-800 mt-1">
                 CALL TO MAKE ORDER: <span className="font-mono text-black font-black">0143285625</span>
               </div>
-              <div className="text-[10px] font-bold mt-1 bg-zinc-100 p-1.5 rounded border border-zinc-300 text-black">
-                <div className="text-[9px] uppercase tracking-wide text-zinc-600">Lipa na M-Pesa (Pochi la Biashara):</div>
-                <div className="text-xs font-black font-mono tracking-wider">0143285625</div>
-              </div>
             </div>
 
             {/* Order Meta Info */}
@@ -213,27 +208,31 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             </div>
 
             {/* Payments */}
-            <div className="py-2 border-b border-dashed border-zinc-400 space-y-0.5 text-[10px]">
-              <div className="font-bold text-zinc-700">PAYMENT DETAILS:</div>
+            <div className="py-2 border-b border-dashed border-zinc-400 space-y-1 text-[11px]">
               {order.payments && order.payments.length > 0 ? (
                 order.payments.map((p, idx) => (
-                  <div key={idx} className="flex justify-between">
-                    <span>
-                      {p.paymentMethod === 'MPESA' ? 'LIPA M-PESA (POCHI)' : p.paymentMethod}{' '}
-                      {p.mpesaCode ? `(Ref: ${p.mpesaCode})` : ''}
-                    </span>
-                    <span className="font-bold">{formatKES(p.amount)}</span>
+                  <div key={idx} className="space-y-0.5">
+                    <div className="flex justify-between font-bold">
+                      <span>PAID ({p.paymentMethod === 'MPESA' ? 'MPESA' : 'CASH'}):</span>
+                      <span>{formatKES(p.amount)}</span>
+                    </div>
+                    {p.mpesaCode && (
+                      <div className="flex justify-between text-zinc-600 text-[10px]">
+                        <span>REF:</span>
+                        <span className="font-mono font-semibold">{p.mpesaCode}</span>
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (
-                <div className="flex justify-between">
-                  <span>CASH</span>
-                  <span className="font-bold">{formatKES(order.totalAmount)}</span>
+                <div className="flex justify-between font-bold">
+                  <span>PAID (CASH):</span>
+                  <span>{formatKES(order.totalAmount)}</span>
                 </div>
               )}
 
               {order.payments?.some(p => p.changeAmount && p.changeAmount > 0) && (
-                <div className="flex justify-between text-zinc-700 font-semibold pt-0.5">
+                <div className="flex justify-between text-zinc-700 font-semibold pt-0.5 text-[10px]">
                   <span>CHANGE RETURNED:</span>
                   <span>
                     {formatKES(

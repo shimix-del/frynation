@@ -15,6 +15,8 @@ import {
   Layers,
   X,
   Smartphone,
+  Printer,
+  Receipt,
 } from 'lucide-react';
 import { usePosCart } from '../../context/PosCartContext';
 import { formatKES } from '../../utils/currency';
@@ -22,12 +24,14 @@ import { formatKES } from '../../utils/currency';
 interface CartSidebarProps {
   onOpenPaymentModal: () => void;
   onOpenHeldOrders: () => void;
+  onOpenPastOrders?: () => void;
   onClose?: () => void;
 }
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({
   onOpenPaymentModal,
   onOpenHeldOrders,
+  onOpenPastOrders,
   onClose,
 }) => {
   const {
@@ -144,21 +148,35 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
           </div>
         </div>
 
-        {/* Held Orders Recall Button */}
-        {heldOrders.length > 0 && (
-          <button
-            onClick={onOpenHeldOrders}
-            className="w-full py-1.5 px-3 bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 rounded-xl text-xs font-bold flex items-center justify-between transition animate-pulse"
-          >
-            <span className="flex items-center space-x-1.5">
-              <PauseCircle className="w-4 h-4 text-amber-400" />
-              <span>{heldOrders.length} Parked / Held Order{heldOrders.length > 1 ? 's' : ''}</span>
-            </span>
-            <span className="text-[10px] bg-amber-500/30 px-2 py-0.5 rounded-full font-extrabold">
-              Resume &gt;
-            </span>
-          </button>
-        )}
+        {/* Held Orders Recall & Past Receipts Buttons */}
+        <div className="flex items-center space-x-2">
+          {heldOrders.length > 0 && (
+            <button
+              onClick={onOpenHeldOrders}
+              className="flex-1 py-1.5 px-3 bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 rounded-xl text-xs font-bold flex items-center justify-between transition animate-pulse"
+            >
+              <span className="flex items-center space-x-1.5 truncate">
+                <PauseCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">{heldOrders.length} Held</span>
+              </span>
+              <span className="text-[10px] bg-amber-500/30 px-1.5 py-0.5 rounded-full font-extrabold shrink-0">
+                Resume &gt;
+              </span>
+            </button>
+          )}
+
+          {onOpenPastOrders && (
+            <button
+              type="button"
+              onClick={onOpenPastOrders}
+              className={`${heldOrders.length > 0 ? '' : 'w-full'} py-1.5 px-3 bg-zinc-800/80 hover:bg-zinc-750 border border-zinc-700/80 text-zinc-300 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition`}
+              title="View past orders & reprint thermal receipts"
+            >
+              <Printer className="w-3.5 h-3.5 text-brand-400" />
+              <span>Past Receipts / Reprint</span>
+            </button>
+          )}
+        </div>
 
         {/* Table Selector (for Dine-In) or Customer Details */}
         {orderType === 'DINE_IN' ? (

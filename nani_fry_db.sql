@@ -506,19 +506,19 @@ INSERT IGNORE INTO `categories` (`id`, `name`, `code`, `sort_order`, `icon`) VAL
 --  SEED DATA — Menu items
 -- ============================================================
 INSERT IGNORE INTO `menu_items` (`id`, `category_id`, `name`, `description`, `base_price`, `cost_price`, `image_url`, `is_available`, `has_variants`) VALUES
-('item-chips',        'cat-fast-food', 'Chips',         'Crispy golden potato chips',                                           100.00, 45.00,  'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=500&q=80', 1, 0),
-('item-chips-mayai',  'cat-fast-food', 'Chips Mayai',   'Crispy chips and eggs bound in double-egg omelette (Zege)',            180.00, 80.00,  'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80', 1, 0),
+('item-chips',        'cat-fast-food', 'Chips',         'Crispy golden potato chips',                                           100.00, 45.00,  './images/chips.jpg', 1, 0),
+('item-chips-mayai',  'cat-fast-food', 'Chips Mayai',   'Crispy chips and eggs bound in double-egg omelette (Zege)',            180.00, 80.00,  './images/chips-mayai.jpg', 1, 0),
 ('item-chicken',      'cat-meat',      'Chicken',       'Seasoned golden deep-fried or grilled chicken portion',                250.00, 120.00, 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=500&q=80', 1, 0),
 ('item-pilau',        'cat-rice',      'Pilau',         'Authentic coastal Swahili spiced fragrant basmati pilau',              250.00, 110.00, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80', 1, 0),
 ('item-biriani',      'cat-rice',      'Biriani',       'Aromatic layered coastal Biriani rice with rich savory sauce',         350.00, 150.00, 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&q=80', 1, 0),
-('item-viazi-karai',  'cat-snacks',    'Viazi Karai',   'Crispy golden Swahili battered spiced potatoes',                       50.00,  20.00,  'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=500&q=80', 1, 0),
+('item-viazi-karai',  'cat-snacks',    'Viazi Karai',   'Crispy golden Swahili battered spiced potatoes',                       50.00,  20.00,  './images/viazi-karai.jpg', 1, 0),
 ('item-sausages',     'cat-snacks',    'Sausages',      'Deep-fried Kenyan butcher beef sausages',                              50.00,  25.00,  'https://images.unsplash.com/photo-1585325701165-351af916e581?w=500&q=80', 1, 0),
-('item-energy-drink', 'cat-drinks',    'Energy Drink',  'Chilled revitalizing energy drink',                                    70.00,  45.00,  'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=500&q=80', 1, 0),
+('item-energy-drink', 'cat-drinks',    'Energy Drink',  'Chilled revitalizing energy drink',                                    70.00,  45.00,  './images/energy-drink.jpg', 1, 0),
 ('item-fresh-juice',  'cat-drinks',    'Fresh Juice',   '100% pure freshly squeezed and blended tropical juice',                70.00,  35.00,  'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500&q=80', 1, 0),
 ('item-coca-cola',    'cat-drinks',    'Coca-Cola',     'Chilled classic Coca-Cola soda',                                       70.00,  40.00,  'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80', 1, 0),
 ('item-fanta',        'cat-drinks',    'Fanta',         'Chilled vibrant orange Fanta soda',                                    70.00,  40.00,  'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80', 1, 0),
 ('item-sprite',       'cat-drinks',    'Sprite',        'Chilled crisp lemon-lime Sprite soda',                                 70.00,  40.00,  'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80', 1, 0),
-('item-stoney',       'cat-drinks',    'Stoney',        'Chilled fiery Stoney Tangawizi ginger soda',                           70.00,  40.00,  'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80', 1, 0),
+('item-stoney',       'cat-drinks',    'Stoney',        'Chilled fiery Stoney Tangawizi ginger soda',                           70.00,  40.00,  './images/stoney.jpg', 1, 0),
 ('item-krest',        'cat-drinks',    'Krest',         'Chilled sparkling Krest Bitter Lemon soda',                            70.00,  40.00,  'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80', 1, 0);
 
 -- ============================================================

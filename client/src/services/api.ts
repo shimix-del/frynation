@@ -112,6 +112,8 @@ async function handleMockFallback<T>(endpoint: string, options: RequestInit): Pr
   if (path === '/shifts/current') return mockStore.getCurrentShift(params) as any;
   if (path === '/shifts/open') return mockStore.openShift(body) as any;
   if (path === '/shifts/close') return mockStore.closeShift(body) as any;
+  if (path.startsWith('/shifts/history')) return mockStore.getShiftHistory(params) as any;
+  if (path.startsWith('/shifts/cash-movement')) return mockStore.addCashMovement() as any;
   if (path === '/expenses' && method === 'GET') return mockStore.getExpenses(params) as any;
   if (path === '/expenses' && method === 'POST') return mockStore.createExpense(body) as any;
   if (path === '/reports/summary') return mockStore.getDashboardSummary(params) as any;

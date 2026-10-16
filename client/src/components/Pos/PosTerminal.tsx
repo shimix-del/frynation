@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight, Smartphone, Wallet, Plus } from 'lucide-react';
+import { Search, Sparkles, Filter, RefreshCw, AlertCircle, ShoppingBag, ArrowRight, Smartphone, Wallet, Plus, Printer, Receipt } from 'lucide-react';
 import { MenuCategoryBar } from './MenuCategoryBar';
 import { MenuItemCard } from './MenuItemCard';
 import { VariantModal } from './VariantModal';
 import { CartSidebar } from './CartSidebar';
 import { PaymentModal } from './PaymentModal';
 import { HeldOrdersModal } from './HeldOrdersModal';
+import { PastOrdersModal } from './PastOrdersModal';
 import { ThermalReceipt } from './ThermalReceipt';
 import { OfflineBanner } from './OfflineBanner';
 import { OpenShiftModal } from '../Shifts/OpenShiftModal';
@@ -33,6 +34,7 @@ export const PosTerminal: React.FC = () => {
   const [isVariantModalOpen, setIsVariantModalOpen] = useState<boolean>(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [isHeldOrdersModalOpen, setIsHeldOrdersModalOpen] = useState<boolean>(false);
+  const [isPastOrdersModalOpen, setIsPastOrdersModalOpen] = useState<boolean>(false);
 
   // Completed order receipt state
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -176,24 +178,35 @@ export const PosTerminal: React.FC = () => {
               />
             </div>
 
-            {/* Quick Search Input */}
-            <div className="relative w-full sm:w-60 md:w-64 shrink-0">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5 sm:top-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search chips, kuku, pilau..."
-                className="w-full bg-zinc-900 border border-zinc-700/80 rounded-2xl py-1.5 sm:py-2 pl-9 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 shadow-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
+            {/* Quick Search Input & Reprint Button */}
+            <div className="flex items-center space-x-2 shrink-0">
+              <div className="relative w-full sm:w-56 md:w-64">
+                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5 sm:top-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search chips, kuku, pilau..."
+                  className="w-full bg-zinc-900 border border-zinc-700/80 rounded-2xl py-1.5 sm:py-2 pl-9 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 shadow-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-2 text-xs text-zinc-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPastOrdersModalOpen(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 sm:py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-2xl border border-zinc-700/80 text-xs font-bold transition shadow-sm shrink-0 active:scale-95"
+                title="View past orders & reprint receipt"
+              >
+                <Printer className="w-3.5 h-3.5 text-brand-400" />
+                <span className="hidden sm:inline">Reprint</span>
+              </button>
             </div>
           </div>
 
@@ -236,6 +249,7 @@ export const PosTerminal: React.FC = () => {
           <CartSidebar
             onOpenPaymentModal={handleOpenPayment}
             onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
+            onOpenPastOrders={() => setIsPastOrdersModalOpen(true)}
             onClose={() => setIsMobileCartOpen(false)}
           />
         </div>
@@ -291,6 +305,17 @@ export const PosTerminal: React.FC = () => {
       <HeldOrdersModal
         isOpen={isHeldOrdersModalOpen}
         onClose={() => setIsHeldOrdersModalOpen(false)}
+      />
+
+      <PastOrdersModal
+        isOpen={isPastOrdersModalOpen}
+        onClose={() => setIsPastOrdersModalOpen(false)}
+        onSelectOrderForReprint={(orderToReprint) => {
+          setCompletedOrder(orderToReprint);
+          setStockWarnings([]);
+          setIsReceiptOpen(true);
+          setIsPastOrdersModalOpen(false);
+        }}
       />
 
       <ThermalReceipt

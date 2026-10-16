@@ -72,7 +72,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Crispy golden potato chips',
     basePrice: 100,
     costPrice: 45,
-    imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=500&q=80',
+    imageUrl: './images/chips.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[0],
@@ -84,7 +84,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Crispy chips and eggs bound in double-egg omelette (Zege)',
     basePrice: 180,
     costPrice: 80,
-    imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80',
+    imageUrl: './images/chips-mayai.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[0],
@@ -132,7 +132,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Crispy golden Swahili battered spiced potatoes',
     basePrice: 50,
     costPrice: 20,
-    imageUrl: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=500&q=80',
+    imageUrl: './images/viazi-karai.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[4],
@@ -156,7 +156,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Chilled revitalizing energy drink',
     basePrice: 70,
     costPrice: 45,
-    imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=500&q=80',
+    imageUrl: './images/energy-drink.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[3],
@@ -216,7 +216,7 @@ const initialMenuItems: MenuItem[] = [
     description: 'Chilled fiery Stoney Tangawizi ginger soda',
     basePrice: 70,
     costPrice: 40,
-    imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80',
+    imageUrl: './images/stoney.jpg',
     isAvailable: true,
     hasVariants: false,
     category: initialCategories[3],
@@ -252,7 +252,7 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const STORE_VERSION = 'v2_menu_2026_pochi_0143285625';
+const STORE_VERSION = 'v4_dishes_receipt_reports_2026';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
@@ -269,22 +269,140 @@ if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
       cashierId: 'user-cashier1',
       orderType: 'DINE_IN',
       tableNumber: 'T-04',
-      customerName: 'Customer',
+      customerName: 'Amina Mwangi',
+      customerPhone: '0712345678',
+      status: 'COMPLETED',
+      subtotal: 350,
+      discountAmount: 0,
+      taxAmount: 0,
+      totalAmount: 350,
+      createdAt: new Date().toISOString(),
+      branch: initialBranches[0],
+      cashier: { id: 'user-cashier1', name: 'Cashier 1' },
+      items: [
+        { menuItemId: 'item-chips', itemName: 'Chips', quantity: 1, unitPrice: 100, unitCost: 45, totalPrice: 100 },
+        { menuItemId: 'item-chicken', itemName: 'Chicken', quantity: 1, unitPrice: 250, unitCost: 120, totalPrice: 250 },
+      ],
+      payments: [
+        { amount: 350, paymentMethod: 'MPESA', mpesaCode: 'QHK8921XLA', status: 'COMPLETED' },
+      ],
+    },
+    {
+      id: 'ord-102',
+      orderNumber: 'ORD-20260926-1002',
+      branchId: 'branch-migadini',
+      cashierId: 'user-cashier1',
+      orderType: 'TAKEAWAY',
+      tableNumber: null,
+      customerName: 'John Otieno',
+      customerPhone: '0722001122',
+      status: 'COMPLETED',
+      subtotal: 250,
+      discountAmount: 0,
+      taxAmount: 0,
+      totalAmount: 250,
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      branch: initialBranches[0],
+      cashier: { id: 'user-cashier1', name: 'Cashier 1' },
+      items: [
+        { menuItemId: 'item-chips-mayai', itemName: 'Chips Mayai', quantity: 1, unitPrice: 180, unitCost: 80, totalPrice: 180 },
+        { menuItemId: 'item-stoney', itemName: 'Stoney', quantity: 1, unitPrice: 70, unitCost: 40, totalPrice: 70 },
+      ],
+      payments: [
+        { amount: 250, paymentMethod: 'CASH', cashTendered: 500, changeAmount: 250, status: 'COMPLETED' },
+      ],
+    },
+    {
+      id: 'ord-103',
+      orderNumber: 'ORD-20260926-1003',
+      branchId: 'branch-migadini',
+      cashierId: 'user-cashier2',
+      orderType: 'DINE_IN',
+      tableNumber: 'T-02',
+      customerName: 'Fatma Bakari',
+      customerPhone: '0733887766',
       status: 'COMPLETED',
       subtotal: 320,
       discountAmount: 0,
       taxAmount: 0,
       totalAmount: 320,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
       branch: initialBranches[0],
-      cashier: { id: 'user-cashier1', name: 'Cashier 1' },
+      cashier: { id: 'user-cashier2', name: 'Cashier 2' },
       items: [
         { menuItemId: 'item-pilau', itemName: 'Pilau', quantity: 1, unitPrice: 250, unitCost: 110, totalPrice: 250 },
         { menuItemId: 'item-coca-cola', itemName: 'Coca-Cola', quantity: 1, unitPrice: 70, unitCost: 40, totalPrice: 70 },
       ],
       payments: [
-        { amount: 320, paymentMethod: 'MPESA', mpesaCode: 'QHK8921XLA', status: 'COMPLETED' },
+        { amount: 320, paymentMethod: 'MPESA', mpesaCode: 'RAK72199BN', status: 'COMPLETED' },
       ],
+    },
+    {
+      id: 'ord-104',
+      orderNumber: 'ORD-20260926-1004',
+      branchId: 'branch-migadini',
+      cashierId: 'user-cashier1',
+      orderType: 'TAKEAWAY',
+      tableNumber: null,
+      customerName: 'Hamisi Juma',
+      customerPhone: null,
+      status: 'COMPLETED',
+      subtotal: 170,
+      discountAmount: 0,
+      taxAmount: 0,
+      totalAmount: 170,
+      createdAt: new Date(Date.now() - 10800000).toISOString(),
+      branch: initialBranches[0],
+      cashier: { id: 'user-cashier1', name: 'Cashier 1' },
+      items: [
+        { menuItemId: 'item-viazi-karai', itemName: 'Viazi Karai', quantity: 2, unitPrice: 50, unitCost: 20, totalPrice: 100 },
+        { menuItemId: 'item-energy-drink', itemName: 'Energy Drink', quantity: 1, unitPrice: 70, unitCost: 45, totalPrice: 70 },
+      ],
+      payments: [
+        { amount: 170, paymentMethod: 'CASH', cashTendered: 200, changeAmount: 30, status: 'COMPLETED' },
+      ],
+    },
+  ]);
+  setStored('shiftHistory', [
+    {
+      id: 'shift-prev-101',
+      branchId: 'branch-migadini',
+      cashierId: 'user-cashier1',
+      openingFloat: 2500,
+      totalCashSales: 9800,
+      totalMpesaSales: 16400,
+      totalCardSales: 0,
+      totalExpensesPaid: 1400,
+      status: 'CLOSED',
+      openedAt: new Date(Date.now() - 86400000).toISOString(),
+      closedAt: new Date(Date.now() - 50400000).toISOString(),
+      closingCashActual: 12300,
+      closingCashExpected: 12300,
+      variance: 0,
+      notes: 'Evening shift closed balanced. All cash drawer counted and verified.',
+      branch: initialBranches[0],
+      cashier: { id: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER' },
+      _count: { orders: 36 },
+    },
+    {
+      id: 'shift-prev-100',
+      branchId: 'branch-migadini',
+      cashierId: 'user-cashier2',
+      openingFloat: 2000,
+      totalCashSales: 8400,
+      totalMpesaSales: 14200,
+      totalCardSales: 0,
+      totalExpensesPaid: 2800,
+      status: 'CLOSED',
+      openedAt: new Date(Date.now() - 172800000).toISOString(),
+      closedAt: new Date(Date.now() - 136800000).toISOString(),
+      closingCashActual: 10400,
+      closingCashExpected: 10400,
+      variance: 0,
+      notes: 'Shift completed and reconciled with zero variance.',
+      branch: initialBranches[0],
+      cashier: { id: 'user-cashier2', name: 'Cashier 2', role: 'CASHIER' },
+      _count: { orders: 31 },
     },
   ]);
   setStored('expenses', [
@@ -722,15 +840,36 @@ export const mockStore = {
       expectedCashInDrawer: expected,
       actualCountedCash: actual,
       variance,
-      totalOrdersCount: active?._count?.orders || 0,
+      totalOrdersCount: active?._count?.orders || (active as any)?.orders?.length || 0,
     };
 
+    const history = getStored<Shift[]>('shiftHistory', []);
+    const closedShiftRecord: Shift = {
+      ...(active || {}),
+      id: active?.id || `shift-${Date.now()}`,
+      status: 'CLOSED',
+      closedAt: new Date().toISOString(),
+      closingCashActual: actual,
+      closingCashExpected: expected,
+      variance,
+      notes: data.notes || active?.notes || null,
+      branch: active?.branch || initialBranches[0],
+      cashier: active?.cashier || { id: 'user-cashier1', name: 'Cashier' },
+      _count: { orders: active?._count?.orders || (active as any)?.orders?.length || 0 },
+    } as Shift;
+
+    history.unshift(closedShiftRecord);
+    setStored('shiftHistory', history);
     setStored('activeShift', null);
-    return { message: 'Shift closed successfully', shift: active, zReport };
+    return { message: 'Shift closed successfully', shift: closedShiftRecord, zReport };
   },
 
   addCashMovement: () => ({ success: true }),
-  getShiftHistory: () => [],
+  getShiftHistory: (params?: { branchId?: string }) => {
+    let history = getStored<Shift[]>('shiftHistory', []);
+    if (params?.branchId) history = history.filter(s => s.branchId === params.branchId);
+    return history;
+  },
 
   getExpenses: (params?: { branchId?: string }) => {
     let list = getStored<Expense[]>('expenses', []);
