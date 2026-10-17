@@ -36,3 +36,7 @@ server/prisma/dev.db-journal
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Local deployment evidence and production backups must never be published.
+/evidence/
+/release/

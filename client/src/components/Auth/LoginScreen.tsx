@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, Delete } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getApiBaseUrl } from '../../services/api';
+import { ApiError, getApiBaseUrl } from '../../services/api';
 
 import naniLogo from '../../assets/logo.jpg';
 
@@ -76,7 +76,8 @@ export const LoginScreen: React.FC = () => {
       try {
         const apiBase = getApiBaseUrl();
         const res = await fetch(`${apiBase}/health`);
-        setServerOnline(res.ok);
+        const health = await res.json();
+        setServerOnline(res.ok && health.status === 'healthy' && health.database === 'connected');
       } catch {
         setServerOnline(false);
       }
@@ -145,8 +146,8 @@ export const LoginScreen: React.FC = () => {
     } catch (err: any) {
       if (err.message?.includes('Shift in Progress') || err.message?.includes('Access Denied')) {
         setError(err.message);
-      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
-        setError('⚠️ POS Backend Server (Port 5000) or MySQL is offline. Please double-click "run_pos.bat" in the folder to start.');
+      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError') || err.message?.includes('Load failed') || (err instanceof ApiError && err.status !== 401 && err.status !== 429)) {
+        setError('The POS service is unavailable. Please contact your administrator. Your PIN attempt was not counted.');
       } else {
         recordFailedAttempt();
       }
@@ -189,9 +190,9 @@ export const LoginScreen: React.FC = () => {
           <div className="mb-4 p-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-bold">Live Cloud POS (Offline-Ready)</span>
+              <span className="font-bold">Cloud POS</span>
             </div>
-            <span className="text-[11px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-medium">Online</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium">{serverOnline === null ? 'Checking connection' : serverOnline ? 'Connected' : 'Service unavailable'}</span>
           </div>
         )}
 

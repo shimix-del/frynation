@@ -5,16 +5,27 @@
 // ============================================================
 
 export function getApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, '');
   if (typeof window !== 'undefined') {
-    const custom = localStorage.getItem('nanifrys_custom_api_url');
-    if (custom) return custom.replace(/\/+$/, '');
+    // Keep development overrides away from the deployed production site.
+    if (import.meta.env.DEV) {
+      const custom = localStorage.getItem('nanifrys_custom_api_url');
+      if (custom) return custom.replace(/\/+$/, '');
+    }
 
-    if (window.location && window.location.hostname) {
+    if (import.meta.env.DEV && window.location && window.location.hostname) {
       const { protocol, hostname } = window.location;
       return `${protocol}//${hostname}:5000/api`;
     }
   }
-  return 'http://localhost:5000/api';
+  return '/api';
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+  }
 }
 
 function getAuthToken(): string | null {
@@ -24,8 +35,6 @@ function getAuthToken(): string | null {
 function getSelectedBranch(): string | null {
   return localStorage.getItem('nanifrys_pos_branch_id');
 }
-
-import { mockStore } from './mockStore';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
@@ -51,16 +60,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       headers,
     });
 
-    const data = await response.json().catch(() => ({}));
+    if (!response.headers.get('content-type')?.includes('application/json')) {
+      throw new ApiError('The service is unavailable. This request was not confirmed; check saved records before retrying.', response.status || 503);
+    }
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
+      throw new ApiError(data.error || data.message || `Request failed with status ${response.status}`, response.status);
     }
 
     return data as T;
   } catch (error: any) {
     // If running standalone (e.g. GitHub Pages without local backend running), seamlessly fallback to in-browser mockStore
     if (
+      import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true' &&
       typeof window !== 'undefined' &&
       (error.message?.includes('Failed to fetch') ||
         error.message?.includes('NetworkError') ||
@@ -75,6 +88,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // Router for mock fallback
 async function handleMockFallback<T>(endpoint: string, options: RequestInit): Promise<T> {
+  // Import only on an explicitly enabled development demo. Loading mockStore
+  // eagerly can reset browser-held records when its version changes.
+  const { mockStore } = await import('./mockStore');
   const method = (options.method || 'GET').toUpperCase();
   const body = options.body ? JSON.parse(options.body as string) : {};
   const [path, queryString] = endpoint.split('?');

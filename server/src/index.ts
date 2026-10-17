@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import prisma from './prisma.js';
 import authRoutes from './routes/auth.js';
 import branchRoutes from './routes/branches.js';
 import categoryRoutes from './routes/categories.js';
@@ -37,9 +38,16 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    res.status(503).json({ status: 'unavailable', database: 'unavailable' });
+    return;
+  }
   res.json({
     status: 'healthy',
+    database: 'connected',
     system: 'NANI FRYS Hotel & Restaurant POS Server',
     version: '1.0.0',
     timestamp: new Date().toISOString(),

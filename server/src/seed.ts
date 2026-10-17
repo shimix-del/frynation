@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DESTRUCTIVE_DEMO_SEED !== 'true') {
+    throw new Error('Demo seed deletes existing data. Use only on a disposable development database with ALLOW_DESTRUCTIVE_DEMO_SEED=true.');
+  }
   console.log('🌱 Seeding NANI FRYS database with restaurant data...');
 
   // Clean existing data
