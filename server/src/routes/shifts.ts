@@ -321,6 +321,8 @@ router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res:
       },
     }).catch(() => {});
 
+    const where: any = targetBranchId ? { branchId: targetBranchId } : {};
+
     const shifts = await prisma.shift.findMany({
       where,
       include: {

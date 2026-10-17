@@ -20,14 +20,9 @@ const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
+// Middlewares: Allow all cross-device network connections (laptop, phone, POS tablet)
 app.use(cors({
-  origin: [
-    'http://localhost',
-    'http://localhost:80',
-    'http://localhost:3000',
-    'http://127.0.0.1',
-  ],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-branch-id'],
@@ -83,9 +78,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🍟 NANI FRYS POS Server running on http://localhost:${PORT}`);
-  console.log(`🌍 Multi-branch POS & Inventory ready.`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🍟 NANI FRYS POS Server running on port ${PORT}`);
+  console.log(`🌍 Multi-device POS (Laptop, Phone, POS screen) synchronized on 0.0.0.0:${PORT}`);
 });
 
 export default app;

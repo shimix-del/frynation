@@ -38,24 +38,42 @@ export const ShiftManager: React.FC = () => {
   const [isCashMovementModal, setIsCashMovementModal] = useState<boolean>(false);
   const [selectedZReport, setSelectedZReport] = useState<any | null>(null);
 
-  const fetchShiftData = async () => {
-    setIsLoading(true);
+  const fetchShiftData = async (silent: boolean = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [currentRes, historyRes] = await Promise.all([
         api.getCurrentShift({ branchId: currentBranchId || undefined }),
         api.getShiftHistory({ branchId: currentBranchId || undefined }),
       ]);
-      setActiveShift(currentRes.activeShift);
-      setShiftHistory(historyRes);
+      setActiveShift(currentRes?.activeShift || null);
+      setShiftHistory(Array.isArray(historyRes) ? historyRes : []);
     } catch (err) {
       console.error('Failed to load shift data:', err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchShiftData();
+    fetchShiftData(false);
+
+    // Auto-sync active shift and drawer numbers across all devices every 10 seconds
+    const interval = setInterval(() => {
+      fetchShiftData(true);
+    }, 10000);
+
+    const onSyncTrigger = () => {
+      fetchShiftData(true);
+    };
+
+    window.addEventListener('focus', onSyncTrigger);
+    document.addEventListener('visibilitychange', onSyncTrigger);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onSyncTrigger);
+      document.removeEventListener('visibilitychange', onSyncTrigger);
+    };
   }, [currentBranchId]);
 
   const handleShiftClosed = (zReport: any) => {
@@ -106,7 +124,7 @@ export const ShiftManager: React.FC = () => {
           )}
 
           <button
-            onClick={fetchShiftData}
+            onClick={() => fetchShiftData(false)}
             className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl border border-zinc-700 active:scale-95"
             title="Refresh shift data"
           >

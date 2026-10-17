@@ -163,25 +163,71 @@ html:not(.dark) {
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-/* Thermal Receipt Print Styles for 58mm / 80mm ESC/POS Printers */
+/* ==========================================================
+   Thermal Receipt & Z-Report Direct Print Styles
+   Works seamlessly with 58mm & 80mm ESC/POS thermal printers
+   Prevents blank page ejection in Chromium / Chrome / Edge
+   ========================================================== */
 @media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
   body * {
     visibility: hidden;
   }
-  #thermal-receipt, #thermal-receipt * {
-    visibility: visible;
+
+  #thermal-receipt,
+  #thermal-receipt * {
+    visibility: visible !important;
   }
+
   #thermal-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: white !important;
-    color: black !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+    padding: 3mm 1mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    z-index: 9999999 !important;
+    overflow: visible !important;
+    transform: none !important;
   }
-  .no-print {
-    display: none !important;
+
+  #thermal-receipt * {
+    color: #000000 !important;
+    background-color: transparent !important;
+  }
+
+  #thermal-receipt .bg-black {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  #thermal-receipt .border-dashed {
+    border-style: dashed !important;
+    border-color: #000000 !important;
   }
 }

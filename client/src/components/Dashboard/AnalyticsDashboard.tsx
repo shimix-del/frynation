@@ -95,8 +95,8 @@ export const AnalyticsDashboard: React.FC = () => {
     }
   };
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
+  const fetchDashboardData = async (silent: boolean = false) => {
+    if (!silent) setIsLoading(true);
     setHasError(false);
     try {
       const [
@@ -147,7 +147,7 @@ export const AnalyticsDashboard: React.FC = () => {
       console.error('Failed to load dashboard data:', err);
       setHasError(true);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -173,7 +173,25 @@ export const AnalyticsDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(false);
+
+    // Continuous auto-sync (every 10s) across phone, laptop, and POS screen
+    const interval = setInterval(() => {
+      fetchDashboardData(true);
+    }, 10000);
+
+    const onSyncTrigger = () => {
+      fetchDashboardData(true);
+    };
+
+    window.addEventListener('focus', onSyncTrigger);
+    document.addEventListener('visibilitychange', onSyncTrigger);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onSyncTrigger);
+      document.removeEventListener('visibilitychange', onSyncTrigger);
+    };
   }, [currentBranchId]);
 
   const COLORS = ['#ea580c', '#00a859', '#3b82f6', '#eab308', '#a855f7', '#ec4899'];
@@ -437,7 +455,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
           <button
             type="button"
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData(false)}
             className="p-1.5 sm:p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl border border-zinc-700/80 transition active:scale-95"
             title="Refresh Data"
           >

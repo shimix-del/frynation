@@ -70,6 +70,21 @@ export const PosTerminal: React.FC = () => {
 
   useEffect(() => {
     fetchMenuData();
+
+    // Periodically sync shift status so changes made on phone/laptop reflect instantly
+    const interval = setInterval(() => {
+      fetchShiftStatus();
+    }, 15000);
+
+    const onFocus = () => {
+      fetchShiftStatus();
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [currentBranchId]);
 
   const handleOpenPayment = () => {

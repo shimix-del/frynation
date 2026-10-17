@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Printer, Share2, Check, MessageSquare } from 'lucide-react';
 import { Order } from '../../types';
 import { formatKES, formatKenyaDateTime } from '../../utils/currency';
+import { printReceiptElement } from '../../utils/printReceipt';
 import naniLogo from '../../assets/logo.jpg';
 
 interface ThermalReceiptProps {
@@ -22,7 +23,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   const [paperWidth, setPaperWidth] = useState<'58mm' | '80mm'>('80mm');
 
   const handlePrint = () => {
-    window.print();
+    printReceiptElement('thermal-receipt', paperWidth);
   };
 
   const handleWhatsAppShare = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, Delete } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiBaseUrl } from '../../services/api';
 
 import naniLogo from '../../assets/logo.jpg';
 
@@ -71,14 +72,10 @@ export const LoginScreen: React.FC = () => {
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   React.useEffect(() => {
-    if (!isLocalHost) {
-      setServerOnline(true);
-      return;
-    }
-
     const checkServer = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/health');
+        const apiBase = getApiBaseUrl();
+        const res = await fetch(`${apiBase}/health`);
         setServerOnline(res.ok);
       } catch {
         setServerOnline(false);
@@ -87,7 +84,7 @@ export const LoginScreen: React.FC = () => {
     checkServer();
     const interval = setInterval(checkServer, 5000);
     return () => clearInterval(interval);
-  }, [isLocalHost]);
+  }, []);
 
   // Physical keyboard support for PIN mode
   useEffect(() => {

@@ -1,9 +1,21 @@
 // ============================================================
 //  NANI FRYS POS — API Service
-//  Connects to local Node.js/Express server at :5000
+//  Connects to central Node.js/Express server on port 5000
+//  Dynamically matches caller IP/host (laptop, phone, POS screen)
 // ============================================================
 
-const API_BASE = 'http://localhost:5000/api';
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('nanifrys_custom_api_url');
+    if (custom) return custom.replace(/\/+$/, '');
+
+    if (window.location && window.location.hostname) {
+      const { protocol, hostname } = window.location;
+      return `${protocol}//${hostname}:5000/api`;
+    }
+  }
+  return 'http://localhost:5000/api';
+}
 
 function getAuthToken(): string | null {
   return localStorage.getItem('nanifrys_pos_token');
@@ -18,6 +30,7 @@ import { mockStore } from './mockStore';
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const branchId = getSelectedBranch();
+  const apiBase = getApiBaseUrl();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -33,7 +46,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetch(`${apiBase}${endpoint}`, {
       ...options,
       headers,
     });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Printer, FileSpreadsheet } from 'lucide-react';
 import { formatKES, formatKenyaDateTime } from '../../utils/currency';
+import { printReceiptElement } from '../../utils/printReceipt';
 
 interface ZReportPrintProps {
   zReport: any | null;
@@ -12,7 +13,7 @@ export const ZReportPrint: React.FC<ZReportPrintProps> = ({ zReport, isOpen, onC
   if (!isOpen || !zReport) return null;
 
   const handlePrint = () => {
-    window.print();
+    printReceiptElement('thermal-receipt', '80mm');
   };
 
   return (
