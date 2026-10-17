@@ -23,6 +23,8 @@ mkdir -p "$release_root/server" "$release_root/client"
 cp -R server/dist server/prisma server/node_modules "$release_root/server/"
 cp server/package.json server/package-lock.json "$release_root/server/"
 cp -R client/dist "$release_root/client/"
+mkdir -p /home/mombasam/nanifrys-runtime
+cp ops/passenger.cjs /home/mombasam/nanifrys-runtime/app.js
 # This helper only exports records already on the visitor's own browser.
 # Staging does not replace the working POS or change its data source.
 cp client/public/backup-local-data.html /home/mombasam/nanifrys/backup-local-data.html
