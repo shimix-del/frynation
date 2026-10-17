@@ -5,6 +5,9 @@ export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
 # Node's default Wasm optimization reserves a 10 GB virtual address cage,
 # exceeding this shared hosting account's limit during Prisma generation.
 export NODE_OPTIONS="--disable-wasm-trap-handler --max-old-space-size=1024"
+# esbuild otherwise sizes its Go thread pool to the shared server's CPU count.
+export GOMAXPROCS=2
+export UV_THREADPOOL_SIZE=2
 node -e 'if (Number(process.versions.node.split(".")[0]) !== 22) throw new Error("Node.js 22 is required")'
 commit="$(git rev-parse HEAD)"
 release_root="/home/mombasam/nanifrys-releases/$commit"
