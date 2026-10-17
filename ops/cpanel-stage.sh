@@ -22,6 +22,8 @@ node --test --test-isolation=none tests/api-production.test.mjs
 mkdir -p "$release_root/server" "$release_root/client"
 cp -R server/dist server/prisma server/node_modules "$release_root/server/"
 cp server/package.json server/package-lock.json "$release_root/server/"
+npm prune --prefix "$release_root/server" --omit=dev --omit=peer --ignore-scripts
+node -e 'if (typeof require(process.argv[1]).PrismaClient !== "function") process.exit(1)' "$release_root/server/node_modules/@prisma/client"
 cp -R client/dist "$release_root/client/"
 mkdir -p /home/mombasam/nanifrys-runtime
 cp ops/passenger.cjs /home/mombasam/nanifrys-runtime/app.js
