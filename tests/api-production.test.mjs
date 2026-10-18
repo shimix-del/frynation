@@ -36,6 +36,22 @@ test('production API confirms server responses without writing browser fallback 
     assert.deepEqual(await api.getOrders(), [{ id: 'sql-sale' }]);
     assert.equal(calls[0][0], '/api/orders?');
 
+    let finishRead;
+    let readCalls = 0;
+    globalThis.fetch = () => {
+      readCalls++;
+      return new Promise(resolve => { finishRead = resolve; });
+    };
+    const firstRead = api.getCurrentShift({ branchId: 'test-branch' });
+    const secondRead = api.getCurrentShift({ branchId: 'test-branch' });
+    assert.equal(readCalls, 1, 'navbar and sales screen share an in-flight shift read');
+    finishRead(new Response('{"activeShift":null}', { headers: { 'Content-Type': 'application/json' } }));
+    assert.deepEqual(await firstRead, await secondRead);
+    const freshRead = api.getCurrentShift({ branchId: 'test-branch' });
+    assert.equal(readCalls, 2, 'later reads still query SQL for fresh state');
+    finishRead(new Response('{"activeShift":null}', { headers: { 'Content-Type': 'application/json' } }));
+    await freshRead;
+
     globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
     await assert.rejects(api.createOrder({ items: [] }), /Failed to fetch/);
     await assert.rejects(api.login({ pinCode: '0000' }), /Failed to fetch/);

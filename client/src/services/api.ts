@@ -36,7 +36,7 @@ function getSelectedBranch(): string | null {
   return localStorage.getItem('nanifrys_pos_branch_id');
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function requestOnce<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const branchId = getSelectedBranch();
   const apiBase = getApiBaseUrl();
@@ -101,6 +101,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     clearTimeout(timeout);
     options.signal?.removeEventListener('abort', onAbort);
   }
+}
+
+// Share concurrent reads only; writes are never retried or cached here.
+const pendingReads = new Map<string, Promise<unknown>>();
+function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if ((options.method || 'GET').toUpperCase() !== 'GET' || options.signal) {
+    return requestOnce<T>(endpoint, options);
+  }
+  const key = JSON.stringify([getApiBaseUrl(), endpoint, getAuthToken(), getSelectedBranch()]);
+  const pending = pendingReads.get(key);
+  if (pending) return pending as Promise<T>;
+  const result = requestOnce<T>(endpoint, options);
+  pendingReads.set(key, result);
+  const clear = () => { if (pendingReads.get(key) === result) pendingReads.delete(key); };
+  result.then(clear, clear);
+  return result;
 }
 
 // Router for mock fallback

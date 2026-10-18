@@ -25,6 +25,7 @@ export const PosTerminal: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
   const [activeShift, setActiveShift] = useState<any | null>(null);
   const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState<boolean>(false);
@@ -52,17 +53,16 @@ export const PosTerminal: React.FC = () => {
 
   const fetchMenuData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
-      const [catsData, menuData, shiftRes] = await Promise.all([
+      const [catsData, menuData] = await Promise.all([
         api.getCategories(),
         api.getMenu(),
-        api.getCurrentShift({ branchId: currentBranchId || undefined }).catch(() => ({ activeShift: null })),
       ]);
       setCategories(catsData);
       setMenuItems(menuData);
-      setActiveShift(shiftRes?.activeShift || null);
-    } catch (err) {
-      console.error('Failed to load menu data:', err);
+    } catch (err: any) {
+      setLoadError(err.message || 'Unable to load dishes from SQL. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -70,11 +70,12 @@ export const PosTerminal: React.FC = () => {
 
   useEffect(() => {
     fetchMenuData();
+    fetchShiftStatus();
 
     // Periodically sync shift status so changes made on phone/laptop reflect instantly
     const interval = setInterval(() => {
-      fetchShiftStatus();
-    }, 15000);
+      if (!document.hidden) fetchShiftStatus();
+    }, 30000);
 
     const onFocus = () => {
       fetchShiftStatus();
@@ -232,6 +233,11 @@ export const PosTerminal: React.FC = () => {
               <div className="h-64 flex flex-col items-center justify-center text-zinc-400 space-y-3">
                 <RefreshCw className="w-7 h-7 animate-spin text-brand-500" />
                 <span className="text-xs font-semibold">Loading dishes...</span>
+              </div>
+            ) : loadError ? (
+              <div role="alert" className="p-6 text-sm text-amber-300">
+                <p>{loadError}</p>
+                <button onClick={fetchMenuData} className="mt-3 rounded-xl bg-zinc-800 px-4 py-2">Retry loading dishes</button>
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-zinc-500 space-y-2 text-center p-6">

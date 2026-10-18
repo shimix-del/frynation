@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener('offline', updateOfflineStatus);
     window.addEventListener('nanifrys_offline_queue_updated', updateOfflineStatus);
 
-    const interval = setInterval(fetchShiftStatus, 15000);
+    const interval = setInterval(() => { if (!document.hidden) void fetchShiftStatus(); }, 30000);
 
     return () => {
       window.removeEventListener('online', updateOfflineStatus);

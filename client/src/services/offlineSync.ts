@@ -72,9 +72,8 @@ export const offlineSync = {
         failed++;
         errors.push(`Order ${item.id}: ${err.message || 'Failed to sync'}`);
         item.retryCount++;
-        if (item.retryCount < 5) {
-          remainingQueue.push(item);
-        }
+        // Never discard a failed secondary copy because a retry limit elapsed.
+        remainingQueue.push(item);
       }
     }
 

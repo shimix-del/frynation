@@ -10,7 +10,7 @@ interface VariantModalProps {
   onAddToCart: (item: MenuItem, variant: MenuItemVariant | null, qty: number, lineNote: string) => void;
 }
 
-export const VariantModal: React.FC<VariantModalProps> = ({
+const VariantModalContent: React.FC<VariantModalProps> = ({
   item,
   isOpen,
   onClose,
@@ -176,3 +176,7 @@ export const VariantModal: React.FC<VariantModalProps> = ({
     </div>
   );
 };
+
+export const VariantModal: React.FC<VariantModalProps> = (props) => (
+  props.isOpen && props.item ? <VariantModalContent {...props} /> : null
+);

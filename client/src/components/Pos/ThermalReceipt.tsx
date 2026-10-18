@@ -12,7 +12,7 @@ interface ThermalReceiptProps {
   onClose: () => void;
 }
 
-export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
+const ThermalReceiptContent: React.FC<ThermalReceiptProps> = ({
   order,
   warnings = [],
   isOpen,
@@ -285,3 +285,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     </div>
   );
 };
+
+export const ThermalReceipt: React.FC<ThermalReceiptProps> = (props) => (
+  props.isOpen && props.order ? <ThermalReceiptContent {...props} /> : null
+);

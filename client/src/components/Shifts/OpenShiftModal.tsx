@@ -10,7 +10,7 @@ interface OpenShiftModalProps {
   onShiftOpened: () => void;
 }
 
-export const OpenShiftModal: React.FC<OpenShiftModalProps> = ({
+const OpenShiftModalContent: React.FC<OpenShiftModalProps> = ({
   isOpen,
   onClose,
   onShiftOpened,
@@ -133,3 +133,7 @@ export const OpenShiftModal: React.FC<OpenShiftModalProps> = ({
     </div>
   );
 };
+
+export const OpenShiftModal: React.FC<OpenShiftModalProps> = (props) => (
+  props.isOpen ? <OpenShiftModalContent {...props} /> : null
+);

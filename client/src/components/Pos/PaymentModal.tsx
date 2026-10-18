@@ -24,7 +24,7 @@ interface PaymentModalProps {
   onOrderCompleted: (order: Order, warnings: string[]) => void;
 }
 
-export const PaymentModal: React.FC<PaymentModalProps> = ({
+const PaymentModalContent: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   onOrderCompleted,
@@ -165,33 +165,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       onClose();
       onOrderCompleted(res.order, res.warnings || []);
     } catch (err: any) {
-      console.warn('Backend order submission failed, falling back to local offline queue:', err);
-      // Offline mode: enqueue locally so it syncs when backend is reachable
-      const offlineItem = offlineSync.enqueueOrder(orderPayload);
-      const mockCompletedOrder: any = {
-        id: offlineItem.id,
-        orderNumber: `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-        branchId: currentBranchId || '',
-        branch: currentBranch || undefined,
-        cashierId: user?.id || '',
-        cashier: { name: user?.name || 'Cashier' },
-        orderType,
-        tableNumber,
-        customerName,
-        customerPhone,
-        status: 'COMPLETED',
-        subtotal,
-        discountAmount,
-        taxAmount: 0,
-        totalAmount,
-        items: orderPayload.items.map(i => ({ ...i, totalPrice: i.quantity * i.unitPrice })),
-        payments: paymentsPayload,
-        createdAt: new Date().toISOString(),
-      };
-
-      clearCart();
-      onClose();
-      onOrderCompleted(mockCompletedOrder, ['Order saved locally in offline queue and will sync to central server.']);
+      // Keep the cart until SQL confirms the sale. A timed-out request may
+      // already be committed; never fabricate a completed local receipt.
+      setError(err.message || 'SQL did not confirm this sale. Check recent orders before retrying.');
     } finally {
       setIsSubmitting(false);
     }
@@ -495,3 +471,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     </div>
   );
 };
+
+export const PaymentModal: React.FC<PaymentModalProps> = (props) => (
+  props.isOpen ? <PaymentModalContent {...props} /> : null
+);

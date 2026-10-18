@@ -11,7 +11,7 @@ interface CloseShiftModalProps {
   onShiftClosed: (zReport: any) => void;
 }
 
-export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
+const CloseShiftModalContent: React.FC<CloseShiftModalProps> = ({
   shift,
   isOpen,
   onClose,
@@ -161,3 +161,7 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
     </div>
   );
 };
+
+export const CloseShiftModal: React.FC<CloseShiftModalProps> = (props) => (
+  props.isOpen && props.shift ? <CloseShiftModalContent {...props} /> : null
+);

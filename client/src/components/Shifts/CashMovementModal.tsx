@@ -11,7 +11,7 @@ interface CashMovementModalProps {
   onMovementAdded: () => void;
 }
 
-export const CashMovementModal: React.FC<CashMovementModalProps> = ({
+const CashMovementModalContent: React.FC<CashMovementModalProps> = ({
   shift,
   isOpen,
   onClose,
@@ -175,3 +175,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
     </div>
   );
 };
+
+export const CashMovementModal: React.FC<CashMovementModalProps> = (props) => (
+  props.isOpen && props.shift ? <CashMovementModalContent {...props} /> : null
+);
