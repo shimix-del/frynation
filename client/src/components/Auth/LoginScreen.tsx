@@ -72,19 +72,43 @@ export const LoginScreen: React.FC = () => {
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   React.useEffect(() => {
+    let disposed = false;
+    let inFlight = false;
+    let controller: AbortController | undefined;
+    let poll: ReturnType<typeof setTimeout>;
     const checkServer = async () => {
+      if (disposed || inFlight || document.hidden) return;
+      clearTimeout(poll);
+      inFlight = true;
+      controller = new AbortController();
+      const timeout = setTimeout(() => controller?.abort(), 4000);
       try {
-        const apiBase = getApiBaseUrl();
-        const res = await fetch(`${apiBase}/health`);
+        const res = await fetch(`${getApiBaseUrl()}/health`, { signal: controller.signal });
         const health = await res.json();
-        setServerOnline(res.ok && health.status === 'healthy' && health.database === 'connected');
+        if (!disposed) setServerOnline(res.ok && health.status === 'healthy' && health.database === 'connected');
       } catch {
-        setServerOnline(false);
+        if (!disposed) setServerOnline(false);
+      } finally {
+        clearTimeout(timeout);
+        inFlight = false;
+        if (!disposed) poll = setTimeout(checkServer, 30000);
       }
     };
-    checkServer();
-    const interval = setInterval(checkServer, 5000);
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      clearTimeout(poll);
+      if (document.hidden) controller?.abort();
+      else void checkServer();
+    };
+    void checkServer();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', checkServer);
+    return () => {
+      disposed = true;
+      clearTimeout(poll);
+      controller?.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', checkServer);
+    };
   }, []);
 
   // Physical keyboard support for PIN mode

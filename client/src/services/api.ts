@@ -54,9 +54,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['x-branch-id'] = branchId;
   }
 
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 12000);
+  const onAbort = () => controller.abort();
+  options.signal?.addEventListener('abort', onAbort, { once: true });
+  if (options.signal?.aborted) controller.abort();
+
   try {
     const response = await fetch(`${apiBase}${endpoint}`, {
       ...options,
+      signal: controller.signal,
       headers,
     });
 
@@ -71,6 +79,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     return data as T;
   } catch (error: any) {
+    if (timedOut) {
+      const isRead = ['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase());
+      throw new ApiError(isRead
+        ? 'The service took too long to respond. Please try again.'
+        : 'The request timed out. Saving was not confirmed; check saved records before retrying.', 503);
+    }
     // If running standalone (e.g. GitHub Pages without local backend running), seamlessly fallback to in-browser mockStore
     if (
       import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true' &&
@@ -83,6 +97,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       return handleMockFallback<T>(endpoint, options);
     }
     throw error;
+  } finally {
+    clearTimeout(timeout);
+    options.signal?.removeEventListener('abort', onAbort);
   }
 }
 

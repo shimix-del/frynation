@@ -33,7 +33,7 @@ app.use(express.json());
 
 // Request logger for development
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -41,7 +41,9 @@ app.use((req, res, next) => {
 app.get('/api/health', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-  } catch {
+  } catch (error: any) {
+    // Log a diagnostic code privately without credentials or query contents.
+    console.error('Database health failed:', error?.code || error?.name || 'UnknownError');
     res.status(503).json({ status: 'unavailable', database: 'unavailable' });
     return;
   }

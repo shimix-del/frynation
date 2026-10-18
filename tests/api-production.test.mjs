@@ -45,6 +45,29 @@ test('production API confirms server responses without writing browser fallback 
 
     globalThis.fetch = async () => new Response('{"error":"Invalid PIN"}', { status: 401, headers: { 'Content-Type': 'application/json' } });
     await assert.rejects(api.login({ pinCode: '0000' }), error => error instanceof ApiError && error.status === 401);
+
+    // A timed-out write is uncertain, never automatically repeated or saved locally.
+    const realSetTimeout = globalThis.setTimeout;
+    const realClearTimeout = globalThis.clearTimeout;
+    let expire;
+    let writeCalls = 0;
+    try {
+      globalThis.setTimeout = callback => { expire = callback; return 1; };
+      globalThis.clearTimeout = () => {};
+      globalThis.fetch = (_url, options) => {
+        writeCalls++;
+        return new Promise((_resolve, reject) => {
+          options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+      };
+      const pendingWrite = api.createOrder({ items: [] });
+      expire();
+      await assert.rejects(pendingWrite, error => error instanceof ApiError && error.status === 503 && /check saved records/.test(error.message));
+      assert.equal(writeCalls, 1);
+    } finally {
+      globalThis.setTimeout = realSetTimeout;
+      globalThis.clearTimeout = realClearTimeout;
+    }
     assert.deepEqual([...records], before, 'existing browser records survive all requests');
   } finally {
     for (const [key, descriptor] of Object.entries(original)) {
