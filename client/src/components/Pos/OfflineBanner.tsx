@@ -46,7 +46,7 @@ export const OfflineBanner: React.FC = () => {
         <WifiOff className="w-4 h-4 text-amber-400 animate-pulse" />
         <span>
           {!isOnline
-            ? 'Offline Mode Active — You can continue taking orders uninterrupted!'
+            ? 'Connection lost. Your cart stays on screen; SQL must confirm checkout.'
             : `Back Online! ${queue.length} order(s) pending sync to central server.`}
         </span>
       </div>

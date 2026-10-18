@@ -23,19 +23,32 @@ const bundle = fileURLToPath(new URL('../client/node_modules/.cache/nanifrys-cas
 await mkdir(fileURLToPath(new URL('../client/node_modules/.cache/', import.meta.url)), { recursive: true });
 try {
   await build({
-    stdin: { contents: dialogs.map(path => `export * from './src/components/${path}.tsx';`).join('\n'), resolveDir: fileURLToPath(new URL('../client/', import.meta.url)), loader: 'tsx' },
+    stdin: { contents: dialogs.map(path => `export * from './src/components/${path}.tsx';`).join('\n') + "\nexport { App } from './src/App.tsx';", resolveDir: fileURLToPath(new URL('../client/', import.meta.url)), loader: 'tsx' },
     outfile: bundle, bundle: true, platform: 'node', format: 'cjs', external: ['react', 'react/jsx-runtime'], loader: { '.jpg': 'dataurl' },
     plugins: [{ name: 'cashier-fixtures', setup(builder) {
       builder.onResolve({ filter: /context\/(AuthContext|BranchContext|PosCartContext)/ }, args => ({ path: args.path, namespace: 'fixture' }));
       builder.onResolve({ filter: /services\/api$/ }, args => ({ path: args.path, namespace: 'fixture' }));
+      builder.onResolve({ filter: /(?:Auth\/LoginScreen|\/AuthenticatedApp)$/ }, args => ({ path: args.path, namespace: 'fixture' }));
       builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: args.path.endsWith('/api')
         ? 'export const api = globalThis.__cashierFixture.api;'
-        : args.path.includes('AuthContext') ? 'export const useAuth = () => globalThis.__cashierFixture.auth;'
+        : args.path.endsWith('/LoginScreen') ? `import React from 'react'; export function LoginScreen() { const [marker] = React.useState(() => ++globalThis.__cashierFixture.loginMounts); return React.createElement('button', null, 'PIN screen ' + marker); }`
+        : args.path.endsWith('/AuthenticatedApp') ? 'export function AuthenticatedApp() { return null; }'
+        : args.path.includes('AuthContext') ? 'export const useAuth = () => globalThis.__cashierFixture.auth; export const AuthProvider = ({ children }) => children;'
         : args.path.includes('BranchContext') ? 'export const useBranch = () => globalThis.__cashierFixture.branch;'
         : 'export const usePosCart = () => globalThis.__cashierFixture.cart;' }));
     } }],
   });
   const components = require(bundle);
+  globalThis.__cashierFixture.loginMounts = 0;
+  let login;
+  await act(async () => { login = create(React.createElement(components.App)); });
+  globalThis.__cashierFixture.auth.isLoading = true;
+  await act(async () => { login.update(React.createElement(components.App)); });
+  assert.ok(JSON.stringify(login.toJSON()).includes('PIN screen 1'), 'a pending login keeps the PIN screen visible');
+  globalThis.__cashierFixture.auth.isLoading = false;
+  await act(async () => { login.update(React.createElement(components.App)); });
+  assert.equal(globalThis.__cashierFixture.loginMounts, 1, 'a failed login does not remount the PIN screen and discard its error');
+  await act(async () => { login.unmount(); });
   const order = { id: 'test', orderNumber: 'TEST', orderType: 'TAKEAWAY', items: [], payments: [], subtotal: 100, totalAmount: 100, discountAmount: 0, taxAmount: 0, createdAt: new Date().toISOString() };
   const props = { isOpen: false, onClose: noop, onShiftOpened: noop, onShiftClosed: noop, onMovementAdded: noop, onAddToCart: noop, onOrderCompleted: () => { completed++; }, item: { id: 'dish', name: 'Dish', basePrice: 100, variants: [] }, shift: { id: 'shift', openingFloat: 100, totalCashSales: 0 }, order };
   for (const path of dialogs) {
