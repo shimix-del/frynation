@@ -8,7 +8,7 @@ test('production API confirms server responses without writing browser fallback 
   const { outputText } = ts.transpileModule(source.replaceAll('import.meta.env', 'globalThis.__apiTestEnv'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   });
-  const original = Object.fromEntries(['window', 'localStorage', 'fetch', '__apiTestEnv'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const original = Object.fromEntries(['window', 'localStorage', 'fetch', 'navigator', '__apiTestEnv'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   const records = new Map([
     ['nanifrys_custom_api_url', 'http://old-server:5000/api'],
     ['nanifrys_standalone_orders', '[{"id":"existing-sale"}]'],
@@ -23,7 +23,7 @@ test('production API confirms server responses without writing browser fallback 
       setItem: () => { throw new Error('Production must not write demo records'); },
       removeItem: () => { throw new Error('Production must preserve existing records'); },
     };
-    const { api, ApiError, getApiBaseUrl } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+    const { api, ApiError, getApiBaseUrl, getServiceOnline } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
     assert.equal(getApiBaseUrl(), '/api', 'stale per-browser overrides cannot reroute production');
     globalThis.__apiTestEnv.VITE_API_BASE_URL = 'https://api.example.test/api/';
     assert.equal(getApiBaseUrl(), 'https://api.example.test/api');
@@ -34,6 +34,9 @@ test('production API confirms server responses without writing browser fallback 
       return new Response(JSON.stringify([{ id: 'sql-sale' }]), { headers: { 'Content-Type': 'application/json' } });
     };
     assert.deepEqual(await api.getOrders(), [{ id: 'sql-sale' }]);
+    assert.equal(getServiceOnline(), true, 'successful SQL API replies establish connectivity');
+    Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true });
+    assert.equal(getServiceOnline(), true, 'a browser offline hint cannot contradict a confirmed SQL reply');
     assert.equal(calls[0][0], '/api/orders?');
 
     let finishRead;
@@ -55,6 +58,7 @@ test('production API confirms server responses without writing browser fallback 
     globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
     await assert.rejects(api.createOrder({ items: [] }), /Failed to fetch/);
     await assert.rejects(api.login({ pinCode: '0000' }), /Failed to fetch/);
+    assert.equal(getServiceOnline(), false, 'network failure clears confirmed connectivity');
 
     globalThis.fetch = async () => new Response('<html>SPA fallback</html>', { headers: { 'Content-Type': 'text/html' } });
     await assert.rejects(api.createOrder({ items: [] }), /not confirmed/);

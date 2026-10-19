@@ -30,7 +30,7 @@ try {
       builder.onResolve({ filter: /services\/api$/ }, args => ({ path: args.path, namespace: 'fixture' }));
       builder.onResolve({ filter: /(?:Auth\/LoginScreen|\/AuthenticatedApp)$/ }, args => ({ path: args.path, namespace: 'fixture' }));
       builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: args.path.endsWith('/api')
-        ? 'export const api = globalThis.__cashierFixture.api;'
+        ? 'export const api = globalThis.__cashierFixture.api; export const getServiceOnline = () => true;'
         : args.path.endsWith('/LoginScreen') ? `import React from 'react'; export function LoginScreen() { const [marker] = React.useState(() => ++globalThis.__cashierFixture.loginMounts); return React.createElement('button', null, 'PIN screen ' + marker); }`
         : args.path.endsWith('/AuthenticatedApp') ? 'export function AuthenticatedApp() { return null; }'
         : args.path.includes('AuthContext') ? 'export const useAuth = () => globalThis.__cashierFixture.auth; export const AuthProvider = ({ children }) => children;'

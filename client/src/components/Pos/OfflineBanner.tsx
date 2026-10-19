@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { offlineSync, OfflineOrder } from '../../services/offlineSync';
+import { getServiceOnline } from '../../services/api';
 
 export const OfflineBanner: React.FC = () => {
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(getServiceOnline);
   const [queue, setQueue] = useState<OfflineOrder[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const updateState = () => {
-    setIsOnline(navigator.onLine);
+    setIsOnline(getServiceOnline());
     setQueue(offlineSync.getQueue());
   };
 
@@ -16,11 +17,13 @@ export const OfflineBanner: React.FC = () => {
     updateState();
     window.addEventListener('online', updateState);
     window.addEventListener('offline', updateState);
+    window.addEventListener('nanifrys_api_status', updateState);
     window.addEventListener('nanifrys_offline_queue_updated', updateState);
 
     return () => {
       window.removeEventListener('online', updateState);
       window.removeEventListener('offline', updateState);
+      window.removeEventListener('nanifrys_api_status', updateState);
       window.removeEventListener('nanifrys_offline_queue_updated', updateState);
     };
   }, []);

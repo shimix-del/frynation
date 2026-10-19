@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useBranch } from '../../context/BranchContext';
-import { api } from '../../services/api';
+import { api, getServiceOnline } from '../../services/api';
 import { offlineSync, OfflineOrder } from '../../services/offlineSync';
 import { Shift } from '../../types';
 import naniLogo from '../../assets/logo.jpg';
@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user, logout } = useAuth();
   const { branches, currentBranchId, currentBranch, setCurrentBranchId } = useBranch();
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(getServiceOnline);
   const [offlineQueue, setOfflineQueue] = useState<OfflineOrder[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -60,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const updateOfflineStatus = () => {
-    setIsOnline(navigator.onLine);
+    setIsOnline(getServiceOnline());
     setOfflineQueue(offlineSync.getQueue());
   };
 
@@ -70,6 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     window.addEventListener('online', updateOfflineStatus);
     window.addEventListener('offline', updateOfflineStatus);
+    window.addEventListener('nanifrys_api_status', updateOfflineStatus);
     window.addEventListener('nanifrys_offline_queue_updated', updateOfflineStatus);
 
     const interval = setInterval(() => { if (!document.hidden) void fetchShiftStatus(); }, 30000);
@@ -77,6 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => {
       window.removeEventListener('online', updateOfflineStatus);
       window.removeEventListener('offline', updateOfflineStatus);
+      window.removeEventListener('nanifrys_api_status', updateOfflineStatus);
       window.removeEventListener('nanifrys_offline_queue_updated', updateOfflineStatus);
       clearInterval(interval);
     };

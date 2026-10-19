@@ -28,6 +28,18 @@ export class ApiError extends Error {
   }
 }
 
+let serviceOnline: boolean | null = null;
+export function getServiceOnline(): boolean {
+  return serviceOnline ?? (typeof navigator === 'undefined' || navigator.onLine);
+}
+function recordServiceStatus(online: boolean) {
+  if (serviceOnline === online) return;
+  serviceOnline = online;
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new Event('nanifrys_api_status'));
+  }
+}
+
 function getAuthToken(): string | null {
   return localStorage.getItem('nanifrys_pos_token');
 }
@@ -77,8 +89,10 @@ async function requestOnce<T>(endpoint: string, options: RequestInit = {}): Prom
       throw new ApiError(data.error || data.message || `Request failed with status ${response.status}`, response.status);
     }
 
+    recordServiceStatus(true);
     return data as T;
   } catch (error: any) {
+    if (timedOut || !(error instanceof ApiError) || error.status >= 500) recordServiceStatus(false);
     if (timedOut) {
       const isRead = ['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase());
       throw new ApiError(isRead

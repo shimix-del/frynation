@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api, getServiceOnline } from './api';
 
 const OFFLINE_QUEUE_KEY = 'nanifrys_pos_offline_orders';
 
@@ -11,7 +11,7 @@ export interface OfflineOrder {
 
 export const offlineSync = {
   isOnline: (): boolean => {
-    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+    return getServiceOnline();
   },
 
   getQueue: (): OfflineOrder[] => {

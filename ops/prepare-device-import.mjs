@@ -11,7 +11,7 @@ const { Prisma } = require('@prisma/client');
 const models = new Map(Prisma.dmmf.datamodel.models.map(model => [model.name, model]));
 const hash = value => createHash('sha256').update(value).digest('hex');
 const canonical = value => JSON.stringify(value, Object.keys(value).sort());
-const quote = value => value === null ? 'NULL' : typeof value === 'boolean' ? (value ? '1' : '0') : typeof value === 'number' ? String(value) : `CONVERT(0x${Buffer.from(String(value), 'utf8').toString('hex')} USING utf8mb4)`;
+const quote = value => value === null ? 'NULL' : typeof value === 'boolean' ? (value ? '1' : '0') : typeof value === 'number' ? String(value) : `CONVERT(0x${Buffer.from(String(value), 'utf8').toString('hex')} USING utf8mb4) COLLATE utf8mb4_unicode_ci`;
 const idQuote = name => `\`${name}\``;
 
 export async function prepare(paths) {
@@ -95,7 +95,7 @@ export async function prepare(paths) {
   }
   // Foreign-key order. Existing rows must match exactly, including historical values.
   const order = ['Branch', 'User', 'Category', 'MenuItem', 'MenuItemVariant', 'StockItem', 'MenuItemRecipe', 'Shift', 'Order', 'OrderItem', 'Payment', 'CashMovement', 'Expense', 'StockTransfer', 'StockAudit'];
-  const sql = ['-- PRIVATE: import only into mombasam_nanifrys after taking a SQL backup.', '-- Keep phpMyAdmin stop-on-error enabled. Never continue after an assertion error.', 'USE `mombasam_nanifrys`;', 'SET NAMES utf8mb4;', 'START TRANSACTION;', 'CREATE TEMPORARY TABLE `nf_import_guard` (`ok` INT NOT NULL CHECK (`ok` = 1));'];
+  const sql = ['-- PRIVATE: import only into mombasam_nanifrys after taking a SQL backup.', '-- Keep phpMyAdmin stop-on-error enabled. Never continue after an assertion error.', 'USE `mombasam_nanifrys`;', 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;', 'START TRANSACTION;', 'CREATE TEMPORARY TABLE `nf_import_guard` (`ok` INT NOT NULL CHECK (`ok` = 1));'];
   for (const name of order) for (const row of tables.get(name)?.values() || []) {
     const same = Object.entries(row).map(([key, value]) => `${idQuote(key)} <=> ${quote(value)}`).join(' AND ');
     sql.push(`INSERT INTO nf_import_guard SELECT IF(EXISTS(SELECT 1 FROM ${idQuote(name)} WHERE id = ${quote(row.id)} AND NOT (${same})), 0, 1);`);
