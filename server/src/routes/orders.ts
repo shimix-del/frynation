@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../prisma.js';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.js';
 import { deductStockForOrder, restoreStockForOrder } from '../services/stockDeductionService.js';
@@ -140,152 +141,156 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    // Check for open shift for cashier/branch
-    const activeShift = await prisma.shift.findFirst({
-      where: {
-        branchId: targetBranchId,
-        status: 'OPEN',
-      },
-      orderBy: { openedAt: 'desc' },
-    });
-
-    // Calculate totals
-    let subtotal = 0;
-    const orderItemsData = items.map((item: any) => {
-      const lineTotal = item.quantity * item.unitPrice;
-      subtotal += lineTotal;
-      return {
-        menuItemId: item.menuItemId,
-        variantId: item.variantId || null,
-        itemName: item.itemName,
-        variantName: item.variantName || null,
-        quantity: parseInt(item.quantity, 10),
-        unitPrice: parseFloat(item.unitPrice),
-        unitCost: item.unitCost ? parseFloat(item.unitCost) : 0,
-        totalPrice: lineTotal,
-        notes: item.notes || null,
-      };
-    });
-
-    const discount = discountAmount ? parseFloat(discountAmount) : 0;
-    const totalAmount = Math.max(0, subtotal - discount);
-    const orderStatus = isHeld ? 'HELD' : 'COMPLETED';
-
-    // Unique Order Number: e.g. ORD-20260822-4821
-    const today = new Date();
-    const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const randPart = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `ORD-${datePart}-${randPart}`;
-
-    // Create Order with Items in a transaction
-    const newOrder = await prisma.order.create({
-      data: {
-        orderNumber,
-        branchId: targetBranchId,
-        cashierId: req.user!.id,
-        shiftId: activeShift?.id || null,
-        orderType: orderType || 'DINE_IN',
-        tableNumber: tableNumber || null,
-        customerName: customerName || null,
-        customerPhone: customerPhone || null,
-        status: orderStatus,
-        subtotal,
-        discountAmount: discount,
-        discountReason: discountReason || null,
-        totalAmount,
-        notes: notes || null,
-        isOfflineSynced: Boolean(isOfflineSynced),
-        items: {
-          create: orderItemsData,
+    // Keep the sale, payments, stock deductions, and shift totals atomic.
+    const result = await prisma.$transaction(async (tx) => {
+      // Check for open shift for cashier/branch
+      const activeShift = await tx.shift.findFirst({
+        where: {
+          branchId: targetBranchId,
+          status: 'OPEN',
         },
-      },
-      include: {
-        items: true,
-        branch: true,
-        cashier: { select: { id: true, name: true } },
-      },
-    });
+        orderBy: { openedAt: 'desc' },
+      });
 
-    // If order is completed, process payments and deduct inventory stock
-    let stockWarnings: string[] = [];
-    if (orderStatus === 'COMPLETED') {
-      // 1. Record Payments
-      if (payments && payments.length > 0) {
-        for (const p of payments) {
-          await prisma.payment.create({
+      // Calculate totals
+      let subtotal = 0;
+      const orderItemsData = items.map((item: any) => {
+        const lineTotal = item.quantity * item.unitPrice;
+        subtotal += lineTotal;
+        return {
+          menuItemId: item.menuItemId,
+          variantId: item.variantId || null,
+          itemName: item.itemName,
+          variantName: item.variantName || null,
+          quantity: parseInt(item.quantity, 10),
+          unitPrice: parseFloat(item.unitPrice),
+          unitCost: item.unitCost ? parseFloat(item.unitCost) : 0,
+          totalPrice: lineTotal,
+          notes: item.notes || null,
+        };
+      });
+
+      const discount = discountAmount ? parseFloat(discountAmount) : 0;
+      const totalAmount = Math.max(0, subtotal - discount);
+      const orderStatus = isHeld ? 'HELD' : 'COMPLETED';
+
+      // Use a long random suffix so busy days do not exhaust a 4-digit namespace.
+      const today = new Date();
+      const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
+      const randPart = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
+      const orderNumber = `ORD-${datePart}-${randPart}`;
+
+      // Create Order with Items in a transaction
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          branchId: targetBranchId,
+          cashierId: req.user!.id,
+          shiftId: activeShift?.id || null,
+          orderType: orderType || 'DINE_IN',
+          tableNumber: tableNumber || null,
+          customerName: customerName || null,
+          customerPhone: customerPhone || null,
+          status: orderStatus,
+          subtotal,
+          discountAmount: discount,
+          discountReason: discountReason || null,
+          totalAmount,
+          notes: notes || null,
+          isOfflineSynced: Boolean(isOfflineSynced),
+          items: {
+            create: orderItemsData,
+          },
+        },
+        include: {
+          items: true,
+          branch: true,
+          cashier: { select: { id: true, name: true } },
+        },
+      });
+
+      // If order is completed, process payments and deduct inventory stock
+      let stockWarnings: string[] = [];
+      if (orderStatus === 'COMPLETED') {
+        // 1. Record Payments
+        if (payments && payments.length > 0) {
+          for (const p of payments) {
+            await tx.payment.create({
+              data: {
+                orderId: newOrder.id,
+                branchId: targetBranchId,
+                amount: parseFloat(p.amount),
+                paymentMethod: p.paymentMethod || 'CASH',
+                mpesaCode: p.mpesaCode ? p.mpesaCode.toUpperCase().trim() : null,
+                cardRef: p.cardRef || null,
+                cashTendered: p.cashTendered ? parseFloat(p.cashTendered) : null,
+                changeAmount: p.changeAmount ? parseFloat(p.changeAmount) : null,
+                status: 'COMPLETED',
+              },
+            });
+          }
+        } else {
+          // Default to cash payment if not explicitly given
+          await tx.payment.create({
             data: {
               orderId: newOrder.id,
               branchId: targetBranchId,
-              amount: parseFloat(p.amount),
-              paymentMethod: p.paymentMethod || 'CASH',
-              mpesaCode: p.mpesaCode ? p.mpesaCode.toUpperCase().trim() : null,
-              cardRef: p.cardRef || null,
-              cashTendered: p.cashTendered ? parseFloat(p.cashTendered) : null,
-              changeAmount: p.changeAmount ? parseFloat(p.changeAmount) : null,
+              amount: totalAmount,
+              paymentMethod: 'CASH',
               status: 'COMPLETED',
             },
           });
         }
-      } else {
-        // Default to cash payment if not explicitly given
-        await prisma.payment.create({
-          data: {
-            orderId: newOrder.id,
-            branchId: targetBranchId,
-            amount: totalAmount,
-            paymentMethod: 'CASH',
-            status: 'COMPLETED',
-          },
-        });
+
+        // 2. Automatically Deduct Recipe & Packaged Stock Items
+        const stockResult = await deductStockForOrder(targetBranchId, items, tx);
+        stockWarnings = stockResult.warnings;
+
+        // 3. Update Shift Totals if open shift
+        if (activeShift) {
+          let cashInc = 0;
+          let mpesaInc = 0;
+          let cardInc = 0;
+
+          (payments || [{ paymentMethod: 'CASH', amount: totalAmount }]).forEach((p: any) => {
+            const amt = parseFloat(p.amount);
+            if (p.paymentMethod === 'CASH') cashInc += amt;
+            else if (p.paymentMethod === 'MPESA') mpesaInc += amt;
+            else if (p.paymentMethod === 'CARD') cardInc += amt;
+            else if (p.paymentMethod === 'SPLIT') {
+              if (p.mpesaCode) mpesaInc += amt;
+              else cashInc += amt;
+            }
+          });
+
+          await tx.shift.update({
+            where: { id: activeShift.id },
+            data: {
+              totalCashSales: { increment: cashInc },
+              totalMpesaSales: { increment: mpesaInc },
+              totalCardSales: { increment: cardInc },
+            },
+          });
+        }
       }
 
-      // 2. Automatically Deduct Recipe & Packaged Stock Items
-      const stockResult = await deductStockForOrder(targetBranchId, items);
-      stockWarnings = stockResult.warnings;
+      const completedOrder = await tx.order.findUnique({
+        where: { id: newOrder.id },
+        include: {
+          items: true,
+          payments: true,
+          branch: true,
+          cashier: { select: { id: true, name: true } },
+        },
+      });
 
-      // 3. Update Shift Totals if open shift
-      if (activeShift) {
-        let cashInc = 0;
-        let mpesaInc = 0;
-        let cardInc = 0;
-
-        (payments || [{ paymentMethod: 'CASH', amount: totalAmount }]).forEach((p: any) => {
-          const amt = parseFloat(p.amount);
-          if (p.paymentMethod === 'CASH') cashInc += amt;
-          else if (p.paymentMethod === 'MPESA') mpesaInc += amt;
-          else if (p.paymentMethod === 'CARD') cardInc += amt;
-          else if (p.paymentMethod === 'SPLIT') {
-            if (p.mpesaCode) mpesaInc += amt;
-            else cashInc += amt;
-          }
-        });
-
-        await prisma.shift.update({
-          where: { id: activeShift.id },
-          data: {
-            totalCashSales: { increment: cashInc },
-            totalMpesaSales: { increment: mpesaInc },
-            totalCardSales: { increment: cardInc },
-          },
-        });
-      }
-    }
-
-    const completedOrder = await prisma.order.findUnique({
-      where: { id: newOrder.id },
-      include: {
-        items: true,
-        payments: true,
-        branch: true,
-        cashier: { select: { id: true, name: true } },
-      },
-    });
-
-    res.status(201).json({
-      order: completedOrder,
-      warnings: stockWarnings,
-      message: isHeld ? 'Order parked/held successfully' : 'Order completed and stock updated',
-    });
+      return {
+        order: completedOrder,
+        warnings: stockWarnings,
+        message: isHeld ? 'Order parked/held successfully' : 'Order completed and stock updated',
+      };
+    }, { maxWait: 2000, timeout: 8000 });
+    res.status(201).json(result);
   } catch (error: any) {
     console.error('Order creation error:', error);
     res.status(500).json({ error: error.message });

@@ -1,4 +1,5 @@
 import prisma from '../prisma.js';
+import type { Prisma } from '@prisma/client';
 
 export interface StockDeductionResult {
   success: boolean;
@@ -23,14 +24,15 @@ export async function deductStockForOrder(
     variantId?: string | null;
     quantity: number;
     itemName: string;
-  }>
+  }>,
+  db: Prisma.TransactionClient = prisma
 ): Promise<StockDeductionResult> {
   const deductedItems: StockDeductionResult['deductedItems'] = [];
   const warnings: string[] = [];
 
   for (const item of items) {
     // 1. Check for recipe entries for this menu item or specific variant
-    const recipes = await prisma.menuItemRecipe.findMany({
+    const recipes = await db.menuItemRecipe.findMany({
       where: {
         menuItemId: item.menuItemId,
         OR: [
@@ -48,7 +50,7 @@ export async function deductStockForOrder(
         // Look up branch-specific stock item if recipe stockItem was a template or match by name
         let targetStockItem = recipe.stockItem;
         if (targetStockItem.branchId !== branchId) {
-          const branchItem = await prisma.stockItem.findFirst({
+          const branchItem = await db.stockItem.findFirst({
             where: {
               branchId: branchId,
               name: targetStockItem.name,
@@ -60,12 +62,8 @@ export async function deductStockForOrder(
         }
 
         const deductQty = recipe.quantityRequired * item.quantity;
-        const newStock = Math.max(0, targetStockItem.currentStock - deductQty);
-
-        const updated = await prisma.stockItem.update({
-          where: { id: targetStockItem.id },
-          data: { currentStock: newStock },
-        });
+        await db.$executeRaw`UPDATE StockItem SET currentStock = GREATEST(0, currentStock - ${deductQty}), updatedAt = NOW(3) WHERE id = ${targetStockItem.id}`;
+        const updated = await db.stockItem.findUniqueOrThrow({ where: { id: targetStockItem.id } });
 
         deductedItems.push({
           stockItemId: updated.id,
@@ -82,7 +80,7 @@ export async function deductStockForOrder(
       }
     } else {
       // 2. Direct unit item matching (e.g. packaged drinks like "Coca-Cola 300ml", "Dasani 500ml")
-      const directStockItem = await prisma.stockItem.findFirst({
+      const directStockItem = await db.stockItem.findFirst({
         where: {
           branchId: branchId,
           name: {
@@ -93,12 +91,8 @@ export async function deductStockForOrder(
 
       if (directStockItem) {
         const deductQty = item.quantity;
-        const newStock = Math.max(0, directStockItem.currentStock - deductQty);
-
-        const updated = await prisma.stockItem.update({
-          where: { id: directStockItem.id },
-          data: { currentStock: newStock },
-        });
+        await db.$executeRaw`UPDATE StockItem SET currentStock = GREATEST(0, currentStock - ${deductQty}), updatedAt = NOW(3) WHERE id = ${directStockItem.id}`;
+        const updated = await db.stockItem.findUniqueOrThrow({ where: { id: directStockItem.id } });
 
         deductedItems.push({
           stockItemId: updated.id,

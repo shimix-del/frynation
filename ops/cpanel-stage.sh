@@ -22,6 +22,7 @@ npm --prefix server run db:generate
 npm --prefix server run build
 npm --prefix client run build
 node tests/api-production.test.mjs
+node tests/checkout-transaction.test.mjs
 mkdir -p "$release_root/server" "$release_root/client"
 cp -R server/dist server/prisma server/node_modules "$release_root/server/"
 cp server/package.json server/package-lock.json "$release_root/server/"
