@@ -114,7 +114,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     const message = `*NANI'S FRY NATION*\n` +
       `TEL: ${storePhone}\n` +
       `POCHI LA BIASHARA: ${storePhone}\n` +
-      `PAY BILL: 247247 | ACC NO: ${storePhone}\n` +
       `---------------------------\n` +
       `M/S: ${order.customerName || 'CASH SALE'}\n` +
       `Cash Sale #: ${order.orderNumber}\n` +
@@ -130,8 +129,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       `MPESA CODE: ${mpesaRef}\n` +
       `---------------------------\n` +
       `Asante Sana • Karibu Tena\n` +
-      `Cashier: ${cashierName}\n` +
-      `Developed By Simba POS`;
+      `Cashier: ${cashierName}`;
 
     const encoded = encodeURIComponent(message);
     const phone = order.customerPhone ? order.customerPhone.replace(/[^0-9]/g, '') : '';
@@ -217,12 +215,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               </div>
               <div className="text-[10px] font-bold text-black">
                 POCHI LA BIASHARA: <span className="font-mono">{storePhone}</span>
-              </div>
-              <div className="text-[10px] font-bold text-black">
-                PAY BILL: <span className="font-mono">247247</span>
-              </div>
-              <div className="text-[10px] font-bold text-black">
-                ACC NO: <span className="font-mono">{storePhone}</span>
               </div>
             </div>
 
@@ -343,9 +335,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               <div className="font-bold tracking-wide">Asante Sana • Karibu Tena</div>
               <div className="text-[9px] text-black">
                 Cashier: <span className="font-semibold">{cashierName}</span>
-              </div>
-              <div className="text-[9px] font-bold tracking-widest pt-0.5 text-black">
-                Developed By Simba POS
               </div>
             </div>
           </div>
