@@ -158,7 +158,22 @@ router.put('/:id', authenticateToken, requireManagerOrOwner, async (req: Authent
       imageUrl,
       isAvailable,
       hasVariants,
+      variants,
     } = req.body;
+
+    if (variants && Array.isArray(variants)) {
+      await prisma.menuItemVariant.deleteMany({ where: { menuItemId: id } });
+      if (variants.length > 0) {
+        await prisma.menuItemVariant.createMany({
+          data: variants.map((v: any) => ({
+            menuItemId: id,
+            name: v.name,
+            price: parseFloat(v.price),
+            costPrice: v.costPrice ? parseFloat(v.costPrice) : 0,
+          })),
+        });
+      }
+    }
 
     const updated = await prisma.menuItem.update({
       where: { id },

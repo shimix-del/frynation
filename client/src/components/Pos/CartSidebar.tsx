@@ -196,26 +196,34 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <User className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" />
-              <input
-                type="text"
-                value={customerName}
-                onChange={e => setCustomerInfo(e.target.value, customerPhone)}
-                placeholder="Customer Name"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-7 pr-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
-              />
-            </div>
-            <div className="relative">
-              <Phone className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" />
-              <input
-                type="text"
-                value={customerPhone}
-                onChange={e => setCustomerInfo(customerName, e.target.value)}
-                placeholder="Phone (07...)"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-7 pr-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
-              />
+          <div className="space-y-1.5">
+            {orderType === 'DELIVERY' && (
+              <div className="flex items-center justify-between text-[10px] font-bold text-brand-400">
+                <span>Delivery Customer Info</span>
+                <span className="text-[9px] text-zinc-400 font-normal">Required for receipt & rider</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="relative">
+                <User className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={e => setCustomerInfo(e.target.value, customerPhone)}
+                  placeholder="Customer Name"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-7 pr-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+              <div className="relative">
+                <Phone className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  value={customerPhone}
+                  onChange={e => setCustomerInfo(customerName, e.target.value)}
+                  placeholder="Phone (07...)"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-7 pr-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
+                />
+              </div>
             </div>
           </div>
         )}

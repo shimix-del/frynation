@@ -268,12 +268,25 @@ async function main() {
     data: {
       categoryId: catSnacks.id,
       name: 'Viazi Karai',
-      description: 'Crispy golden Swahili battered spiced potatoes',
-      basePrice: 50,
-      costPrice: 20,
+      description: 'Crispy golden Swahili battered spiced potatoes (flexible portions KES 10 - 100+)',
+      basePrice: 10,
+      costPrice: 4,
       imageUrl: './images/viazi-karai.jpg',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Viazi ya 10 (KES 10)', price: 10, costPrice: 4 },
+          { name: 'Viazi ya 20 (KES 20)', price: 20, costPrice: 8 },
+          { name: 'Viazi ya 30 (KES 30)', price: 30, costPrice: 12 },
+          { name: 'Viazi ya 40 (KES 40)', price: 40, costPrice: 16 },
+          { name: 'Viazi ya 50 (KES 50 Plate)', price: 50, costPrice: 20 },
+          { name: 'Viazi ya 60 (KES 60)', price: 60, costPrice: 24 },
+          { name: 'Viazi ya 70 (KES 70)', price: 70, costPrice: 28 },
+          { name: 'Viazi ya 80 (KES 80)', price: 80, costPrice: 32 },
+          { name: 'Viazi ya 100 (KES 100)', price: 100, costPrice: 40 },
+        ],
+      },
     },
   });
 
@@ -322,11 +335,17 @@ async function main() {
       categoryId: catDrinks.id,
       name: 'Coca-Cola',
       description: 'Chilled classic Coca-Cola soda',
-      basePrice: 70,
-      costPrice: 40,
+      basePrice: 50,
+      costPrice: 30,
       imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Small (300ml)', price: 50, costPrice: 30 },
+          { name: 'Big (500ml)', price: 70, costPrice: 45 },
+        ],
+      },
     },
   });
 
@@ -335,11 +354,17 @@ async function main() {
       categoryId: catDrinks.id,
       name: 'Fanta',
       description: 'Chilled vibrant orange Fanta soda',
-      basePrice: 70,
-      costPrice: 40,
+      basePrice: 50,
+      costPrice: 30,
       imageUrl: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500&q=80',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Small (300ml)', price: 50, costPrice: 30 },
+          { name: 'Big (500ml)', price: 70, costPrice: 45 },
+        ],
+      },
     },
   });
 
@@ -348,11 +373,17 @@ async function main() {
       categoryId: catDrinks.id,
       name: 'Sprite',
       description: 'Chilled crisp lemon-lime Sprite soda',
-      basePrice: 70,
-      costPrice: 40,
+      basePrice: 50,
+      costPrice: 30,
       imageUrl: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500&q=80',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Small (300ml)', price: 50, costPrice: 30 },
+          { name: 'Big (500ml)', price: 70, costPrice: 45 },
+        ],
+      },
     },
   });
 
@@ -361,11 +392,17 @@ async function main() {
       categoryId: catDrinks.id,
       name: 'Stoney',
       description: 'Chilled fiery Stoney Tangawizi ginger soda',
-      basePrice: 70,
-      costPrice: 40,
+      basePrice: 50,
+      costPrice: 30,
       imageUrl: './images/stoney.jpg',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Small (300ml)', price: 50, costPrice: 30 },
+          { name: 'Big (500ml)', price: 70, costPrice: 45 },
+        ],
+      },
     },
   });
 
@@ -374,11 +411,17 @@ async function main() {
       categoryId: catDrinks.id,
       name: 'Krest',
       description: 'Chilled sparkling Krest Bitter Lemon soda',
-      basePrice: 70,
-      costPrice: 40,
+      basePrice: 50,
+      costPrice: 30,
       imageUrl: './images/krest.jpg',
       isAvailable: true,
-      hasVariants: false,
+      hasVariants: true,
+      variants: {
+        create: [
+          { name: 'Small (300ml)', price: 50, costPrice: 30 },
+          { name: 'Big (500ml)', price: 70, costPrice: 45 },
+        ],
+      },
     },
   });
 

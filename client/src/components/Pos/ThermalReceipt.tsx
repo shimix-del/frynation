@@ -38,7 +38,13 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       `Order: ${order.orderNumber}\n` +
       `Date: ${formatKenyaDateTime(order.createdAt)}\n` +
       `Branch: ${order.branch?.name || 'Migadini Main Shop'}\n` +
-      `📞 Make Order / Call: 0143285625\n` +
+      `Order Type: ${order.orderType}${order.tableNumber ? ` (${order.tableNumber})` : ''}\n` +
+      (order.customerName ? `Customer: ${order.customerName}\n` : '') +
+      (order.customerPhone ? `Customer Tel: ${order.customerPhone}\n` : '') +
+      `---------------------------\n` +
+      `*LIPA NA M-PESA (POCHI LA BIASHARA)*\n` +
+      `Pochi No: ${order.branch?.phone || '0143285625'}\n` +
+      `📞 Make Order / Call: ${order.branch?.phone || '0143285625'}\n` +
       `---------------------------\n` +
       `${itemsText}\n` +
       `---------------------------\n` +
@@ -130,7 +136,15 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 <div className="text-[10px] text-zinc-600">{order.branch.address}</div>
               )}
               <div className="text-[10px] font-bold text-zinc-800 mt-1">
-                CALL TO MAKE ORDER: <span className="font-mono text-black font-black">0143285625</span>
+                CALL TO MAKE ORDER: <span className="font-mono text-black font-black">{order.branch?.phone || '0143285625'}</span>
+              </div>
+              {/* Lipa na M-Pesa Pochi la Biashara */}
+              <div className="w-full mt-2 py-1.5 px-2 border border-black rounded text-center bg-zinc-50">
+                <div className="text-[10px] font-black uppercase tracking-wider">LIPA NA M-PESA</div>
+                <div className="text-[10px] font-bold text-zinc-800">POCHI LA BIASHARA</div>
+                <div className="text-xs font-black font-mono tracking-widest text-black mt-0.5">
+                  {order.branch?.phone || '0143285625'}
+                </div>
               </div>
             </div>
 
@@ -157,10 +171,33 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               {order.customerName && (
                 <div className="flex justify-between">
                   <span>CUSTOMER:</span>
-                  <span>{order.customerName}</span>
+                  <span className="font-bold">{order.customerName}</span>
+                </div>
+              )}
+              {order.customerPhone && (
+                <div className="flex justify-between">
+                  <span>CUSTOMER TEL:</span>
+                  <span className="font-bold font-mono">{order.customerPhone}</span>
                 </div>
               )}
             </div>
+
+            {/* Delivery Order Highlight Banner */}
+            {order.orderType === 'DELIVERY' && (
+              <div className="my-1.5 p-1.5 border border-dashed border-black bg-zinc-50 text-center">
+                <div className="font-black text-[11px] uppercase tracking-wide">*** DELIVERY ORDER ***</div>
+                {order.customerName && (
+                  <div className="text-[10px] font-bold mt-0.5">
+                    Customer: <span className="font-black">{order.customerName}</span>
+                  </div>
+                )}
+                {order.customerPhone && (
+                  <div className="text-[11px] font-black font-mono">
+                    Tel / Phone: {order.customerPhone}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Items Table */}
             <div className="py-2 border-b border-dashed border-zinc-400 space-y-1.5 text-[11px]">

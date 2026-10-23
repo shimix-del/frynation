@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Printer, Receipt, Calendar, User, Smartphone, Banknote, RefreshCw } from 'lucide-react';
+import { X, Search, Printer, Receipt, Calendar, User, Phone, Smartphone, Banknote, RefreshCw } from 'lucide-react';
 import { Order } from '../../types';
 import { api } from '../../services/api';
 import { formatKES, formatKenyaDateTime } from '../../utils/currency';
@@ -156,6 +156,15 @@ export const PastOrdersModal: React.FC<PastOrdersModalProps> = ({
                       <span className="flex items-center space-x-1">
                         <User className="w-3 h-3 text-zinc-500" />
                         <span className="text-zinc-200">{order.customerName}</span>
+                        {order.customerPhone && (
+                          <span className="text-zinc-400 font-mono">({order.customerPhone})</span>
+                        )}
+                      </span>
+                    )}
+                    {!order.customerName && order.customerPhone && (
+                      <span className="flex items-center space-x-1 text-zinc-300 font-mono">
+                        <Phone className="w-3 h-3 text-zinc-500" />
+                        <span>{order.customerPhone}</span>
                       </span>
                     )}
                     {order.orderType && (

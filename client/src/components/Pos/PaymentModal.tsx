@@ -238,6 +238,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         </div>
 
+        {/* Delivery details banner */}
+        {orderType === 'DELIVERY' && (
+          <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-amber-400">🛵 Delivery:</span>
+              <span className="text-zinc-200 font-semibold">{customerName || 'No Name'}</span>
+              <span className="text-zinc-300 font-mono font-bold">({customerPhone || 'No Phone'})</span>
+            </div>
+            {!customerPhone && (
+              <span className="text-[10px] bg-amber-500/25 text-amber-300 px-2 py-0.5 rounded font-bold">
+                Phone recommended for delivery
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Payment Methods Tabs */}
         <div className="p-3 bg-zinc-950/60 border-b border-zinc-800">
           <div className="grid grid-cols-4 gap-1.5 bg-zinc-900 p-1 rounded-2xl border border-zinc-800">
