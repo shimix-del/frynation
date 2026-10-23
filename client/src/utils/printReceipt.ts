@@ -114,6 +114,8 @@ export const printReceiptElement = (
           .text-xs { font-size: 11px !important; }
           .text-sm { font-size: 12.5px !important; }
           .text-base { font-size: 14px !important; }
+          .text-\\[8px\\] { font-size: 8px !important; }
+          .text-\\[9px\\] { font-size: 9px !important; }
           .text-\\[10px\\] { font-size: 10px !important; }
           .text-\\[11px\\] { font-size: 11px !important; }
           
@@ -133,11 +135,21 @@ export const printReceiptElement = (
           .w-full { width: 100% !important; }
           .w-1\\/2 { width: 50% !important; }
           .w-1\\/4 { width: 25% !important; }
+          .w-5\\/12 { width: 41.66% !important; }
+          .w-2\\/12 { width: 16.66% !important; }
+          .w-3\\/12 { width: 25% !important; }
+          .w-4\\/12 { width: 33.33% !important; }
           .pr-1 { padding-right: 4px !important; }
+          .truncate { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+          .underline { text-decoration: underline !important; }
+          .font-mono { font-family: "JetBrains Mono", Consolas, "Courier New", monospace !important; }
+          svg { display: block !important; margin: 0 auto !important; }
           
           /* Borders & Dividers */
           .border-b { border-bottom: 1px dashed #000000 !important; }
           .border-t { border-top: 1px dashed #000000 !important; }
+          .border-b-2 { border-bottom: 2px solid #000000 !important; }
+          .border-t-2 { border-top: 2px solid #000000 !important; }
           .border-dashed { border-style: dashed !important; border-color: #000000 !important; }
           .border-2 { border: 2px solid #000000 !important; }
           .rounded-full { border-radius: 9999px !important; }
