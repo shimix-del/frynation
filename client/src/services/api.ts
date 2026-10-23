@@ -101,6 +101,10 @@ async function handleMockFallback<T>(endpoint: string, options: RequestInit): Pr
   if (path === '/auth/me') return mockStore.getMe() as any;
   if (path === '/auth/users' && method === 'GET') return mockStore.getUsers() as any;
   if (path === '/auth/users' && method === 'POST') return mockStore.createUser(body) as any;
+  if (path.startsWith('/auth/users/') && (method === 'PUT' || method === 'PATCH')) {
+    const id = path.split('/')[3];
+    return mockStore.updateUser(id, body) as any;
+  }
   if (path === '/branches' && method === 'GET') return mockStore.getBranches() as any;
   if (path === '/categories' && method === 'GET') return mockStore.getCategories() as any;
   if (path === '/categories' && method === 'POST') return mockStore.createCategory(body) as any;
@@ -167,6 +171,12 @@ export const api = {
   createUser: (userData: any) =>
     request<any>('/auth/users', {
       method: 'POST',
+      body: JSON.stringify(userData),
+    }),
+
+  updateUser: (id: string, userData: any) =>
+    request<any>(`/auth/users/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(userData),
     }),
 

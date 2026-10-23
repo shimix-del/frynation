@@ -22,6 +22,7 @@ const initialUsers: any[] = [
     id: 'user-robina',
     name: 'Robina',
     email: 'admin@nanifrys.co.ke',
+    phone: '0143285625',
     role: 'OWNER',
     pinCode: '9878',
     branchId: null,
@@ -31,6 +32,7 @@ const initialUsers: any[] = [
     id: 'user-manager',
     name: 'Manager',
     email: 'manager@nanifrys.co.ke',
+    phone: '0712345678',
     role: 'MANAGER',
     pinCode: '5609',
     branchId: 'branch-migadini',
@@ -40,6 +42,7 @@ const initialUsers: any[] = [
     id: 'user-cashier1',
     name: 'Cashier 1',
     email: 'cashier1@nanifrys.co.ke',
+    phone: '0723456789',
     role: 'CASHIER',
     pinCode: '1298',
     branchId: 'branch-migadini',
@@ -49,6 +52,7 @@ const initialUsers: any[] = [
     id: 'user-cashier2',
     name: 'Cashier 2',
     email: 'cashier2@nanifrys.co.ke',
+    phone: '0734567890',
     role: 'CASHIER',
     pinCode: '1349',
     branchId: 'branch-migadini',
@@ -556,6 +560,17 @@ export const mockStore = {
     users.push(newUser);
     setStored('users', users);
     return newUser;
+  },
+
+  updateUser: (id: string, userData: any) => {
+    const users = getStored<any[]>('users', initialUsers);
+    const idx = users.findIndex(u => u.id === id);
+    if (idx !== -1) {
+      users[idx] = { ...users[idx], ...userData };
+      setStored('users', users);
+      return users[idx];
+    }
+    return userData;
   },
 
   getBranches: () => getStored<Branch[]>('branches', initialBranches),

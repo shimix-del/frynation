@@ -234,9 +234,63 @@ router.post('/users', authenticateToken, requireManagerOrOwner, async (req: Auth
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        phone: newUser.phone,
         role: newUser.role,
         pinCode: newUser.pinCode,
         branchName: newUser.branch?.name || 'Central HQ',
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update staff member (email, phone, name, role, etc.)
+router.put('/users/:id', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const { name, email, phone, role, pinCode, branchId, isActive } = req.body;
+
+    const existingUser = await prisma.user.findUnique({ where: { id } });
+    if (!existingUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Check unique email if email is being changed
+    if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
+      const emailExists = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+      if (emailExists) {
+        res.status(400).json({ error: 'Email already in use by another user' });
+        return;
+      }
+    }
+
+    const updatedUser: any = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(email ? { email: email.toLowerCase() } : {}),
+        ...(phone !== undefined ? { phone: phone ? phone.trim() : null } : {}),
+        ...(role ? { role } : {}),
+        ...(pinCode ? { pinCode: pinCode.toString() } : {}),
+        ...(branchId !== undefined ? { branchId: branchId || null } : {}),
+        ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
+      },
+      include: { branch: true },
+    });
+
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        branchId: updatedUser.branchId,
+        branchName: updatedUser.branch?.name || 'Central HQ',
+        isActive: updatedUser.isActive,
       },
     });
   } catch (error: any) {
