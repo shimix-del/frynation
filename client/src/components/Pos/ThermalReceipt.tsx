@@ -139,9 +139,10 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 CALL TO MAKE ORDER: <span className="font-mono text-black font-black">{order.branch?.phone || '0143285625'}</span>
               </div>
               {/* Lipa na M-Pesa Pochi la Biashara */}
-              <div className="w-full mt-2 py-1.5 px-2 border border-black rounded text-center bg-zinc-50">
-                <div className="text-[10px] font-black uppercase tracking-wider">LIPA NA M-PESA</div>
-                <div className="text-[10px] font-bold text-zinc-800">POCHI LA BIASHARA</div>
+              <div className="w-full mt-1.5 pt-1.5 border-t border-dashed border-zinc-400 text-center">
+                <div className="text-[10px] font-black uppercase tracking-wider text-black">
+                  LIPA NA M-PESA • POCHI LA BIASHARA
+                </div>
                 <div className="text-xs font-black font-mono tracking-widest text-black mt-0.5">
                   {order.branch?.phone || '0143285625'}
                 </div>
@@ -181,23 +182,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Delivery Order Highlight Banner */}
-            {order.orderType === 'DELIVERY' && (
-              <div className="my-1.5 p-1.5 border border-dashed border-black bg-zinc-50 text-center">
-                <div className="font-black text-[11px] uppercase tracking-wide">*** DELIVERY ORDER ***</div>
-                {order.customerName && (
-                  <div className="text-[10px] font-bold mt-0.5">
-                    Customer: <span className="font-black">{order.customerName}</span>
-                  </div>
-                )}
-                {order.customerPhone && (
-                  <div className="text-[11px] font-black font-mono">
-                    Tel / Phone: {order.customerPhone}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Items Table */}
             <div className="py-2 border-b border-dashed border-zinc-400 space-y-1.5 text-[11px]">
