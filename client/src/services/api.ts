@@ -4,6 +4,10 @@
 //  Dynamically matches caller IP/host (laptop, phone, POS screen)
 // ============================================================
 
+export function isGitHubPages(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
+}
+
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('nanifrys_custom_api_url');
@@ -11,6 +15,10 @@ export function getApiBaseUrl(): string {
 
     if (window.location && window.location.hostname) {
       const { protocol, hostname } = window.location;
+      // GitHub Pages has no backend on port 5000
+      if (hostname.endsWith('github.io')) {
+        return '';
+      }
       return `${protocol}//${hostname}:5000/api`;
     }
   }
@@ -28,9 +36,21 @@ function getSelectedBranch(): string | null {
 import { mockStore } from './mockStore';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const custom = typeof window !== 'undefined' ? localStorage.getItem('nanifrys_custom_api_url') : null;
+  const isGh = isGitHubPages();
+
+  // If on GitHub Pages without custom remote backend, seamlessly run standalone in-browser store
+  if (isGh && !custom) {
+    return handleMockFallback<T>(endpoint, options);
+  }
+
   const token = getAuthToken();
   const branchId = getSelectedBranch();
   const apiBase = getApiBaseUrl();
+
+  if (!apiBase) {
+    return handleMockFallback<T>(endpoint, options);
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -59,17 +79,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     return data as T;
   } catch (error: any) {
-    // If running standalone (e.g. GitHub Pages without local backend running), seamlessly fallback to in-browser mockStore
-    if (
-      typeof window !== 'undefined' &&
-      (error.message?.includes('Failed to fetch') ||
-        error.message?.includes('NetworkError') ||
-        error.message?.includes('Load failed'))
-    ) {
-      console.warn(`[POS Standalone] Backend unavailable for ${endpoint}. Falling back to in-browser store.`);
-      return handleMockFallback<T>(endpoint, options);
-    }
-    throw error;
+    // If running standalone or backend is unreachable, gracefully fallback to in-browser mockStore
+    console.warn(`[POS Standalone] Backend unavailable for ${endpoint} (${error.message}). Falling back to in-browser store.`);
+    return handleMockFallback<T>(endpoint, options);
   }
 }
 

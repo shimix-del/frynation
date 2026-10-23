@@ -75,6 +75,10 @@ export const LoginScreen: React.FC = () => {
     const checkServer = async () => {
       try {
         const apiBase = getApiBaseUrl();
+        if (!apiBase) {
+          setServerOnline(true);
+          return;
+        }
         const res = await fetch(`${apiBase}/health`);
         setServerOnline(res.ok);
       } catch {
