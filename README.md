@@ -1,119 +1,77 @@
-# 🍟 NANI FRYS - Multi-Branch Hotel, Fast Food & Restaurant Management POS
+# Nani Frys POS
 
-A responsive, ultra-fast, multi-branch web Point of Sale (POS) and inventory management system designed specifically for Kenyan food eateries/restaurants ("hotels" selling Chips, Kuku, Sausages, Pilau, Biryani, Sodas, and fresh Juices).
+Nani Frys uses React/Vite, a Node.js/Express backend and Prisma with MySQL/MariaDB.
+The Windows shop installation and the Truehost database both use the database
+name **mombasam_nanifrys**. There are 15 business tables and one sync metadata
+ table, NaniReplicaState. SQLite/PostgreSQL instructions and demo seed logins are
+not applicable to this deployment.
 
----
+## Install the main shop computer
 
-## 🌟 Key Capabilities & Merged Business Features
+Follow [the Windows installation guide](ops/windows/README.md). The prepared
+64-bit Windows 10/11 package includes the Node.js 22 runtime. XAMPP supplies the
+local MariaDB server. The desktop launcher opens the app at
+http://127.0.0.1:5050 after the database and app server are ready.
 
-1. **Multi-Branch Architecture & Scoping**
-   - **Central Owner Roll-Up Dashboard**: Real-time sales, profitability, and stock levels aggregated across all branches (e.g. Migadini Main Shop, Branch 2) with single-branch filtering.
-   - **Inter-Branch Stock Transfers**: Track inventory dispatched, in transit, and received between branches with full audit trails.
-   - **Branch Isolation**: Cashiers and Branch Managers operate scoped to their assigned `branch_id`.
+For existing live data, use the separate PRIVATE database transfer ZIP. Extract
+its nanifrys-live-database folder alongside nanifrys-shop-installer, and run
+**Install with existing data.cmd** inside the database folder. The installer
+creates the matching schema and imports the reviewed data-only SQL file. It
+refuses an existing database rather than overwriting records.
 
-2. **Dual Access Roles & Rapid Cashier PIN Switch**
-   - **Owner / Admin**: Full financial P&L access, all branches, menu creation, recipe Bill of Materials (BOM), staff management.
-   - **Branch Manager**: Branch reports, stock intake, daily expense logging, discounts approval, and cashier shift audits.
-   - **Cashier / Waiter**: Touchscreen-optimized POS terminal, order parking/holding, M-Pesa / Cash payments, split payments, and 4-digit PIN fast login.
+Do not run the demo seed against live, imported or shop data. Do not publish
+staff PINs, SQL data dumps, database passwords or pairing secrets in Git.
 
-3. **Touch POS Cashier Screen**
-   - **Kenyan Food Categorization**: Fast Foods (Chips, Sausages), Kuku & Meat (Choma, Fry, Kienyeji), Swahili Meals (Pilau, Biryani, Mukimo), Drinks (Sodas, Water, Fresh Juices), Pasua Snacks (Smokie Pasua, Mayai).
-   - **Portion & Variant Sizing**: 1/4 Kuku, 1/2 Kuku, Full Kuku; Plain Pilau vs Beef Pilau vs Kuku Pilau.
-   - **Order Types**: Dine-In (with Table #), Takeaway, and Delivery.
-   - **Park / Hold Orders**: 1-click park current cart to attend to next customer, and resume later.
-   - **Discounts**: KES fixed amount or percentage discount with mandatory reason logging.
-   - **Multi-Payment Checkout**:
-     - Cash with quick bill buttons (+100, +200, +500, +1000, +2000, exact) and automatic change computation.
-     - M-Pesa Buy Goods Till & Paybill reference, customer phone, transaction code verification, and STK push prompt simulator.
-     - Split Payment (e.g. KES 400 M-Pesa + KES 150 Cash).
-     - Card / Bank slip.
-   - **Thermal Receipt Engine**: Standard 58mm & 80mm ESC/POS layout with instant thermal print and 1-click WhatsApp receipt sharing.
+## Ownership and synchronization
 
-4. **Dual-Tier Inventory Engine & Automated Stock Deduction**
-   - **Direct Unit Counting**: Packaged beverages (Coca-Cola, Sprite, Fanta, Dasani Water) auto-deducted per unit.
-   - **Recipe Bill of Materials (BOM) Auto-Deduction**: Raw stock auto-deducted on each sale (e.g. 1 Plate Chips = 0.35kg Potatoes + 0.05L Oil; 1 Plate Pilau = 0.2kg Rice + 0.15kg Beef + 0.03L Oil).
-   - **Restock Intake**: Record supplier name, delivery invoice, unit purchase cost, and quantity added.
-   - **Stock Reconciliation & Audit Tool**: Compare physical counted stock against system expected stock, calculate shrinkage variance, and log reasons (Theft, Spoilage, Wastage).
+After a planned cutover, the shop computer owns sales, payments, inventory,
+shifts, expenses, menu and staff changes. The hosted database is a reporting
+copy and rejects ordinary writes. The local server uploads changes automatically
+every 20 minutes and retries connection failures. No phpMyAdmin upload is needed.
 
-5. **Shift & Cash Float Management (Z-Reports)**
-   - Opening cash float input.
-   - Mid-shift cash drops to safe and emergency payouts.
-   - Shift closing with cash drawer count verification -> Cash Over/Short variance calculation -> printable Z-Report.
+Both sides use [the same Prisma schema](server/prisma/schema.prisma). The
+[additive sync-table SQL](ops/replica-schema.sql) can prepare an existing hosted
+database without rebuilding business tables. New empty hosted databases may
+use server/prisma/cpanel-initial.sql. Existing tables use utf8mb4_unicode_ci;
+match the database default to this for XAMPP compatibility.
 
-6. **Daily Expense Tracker & Real Net Profit (P&L)**
-   - Log market produce (Wakulima tomatoes/onions), gas cylinder refills, cooking oil jerrycans, casual wages, boda boda transport.
-   - Real Net Operating Profit calculation: `Net Profit = Gross Sales - COGS (Recipe costs) - Total Expenses`.
+Protocol version 2 checks an application schema fingerprint. A staged local base
+must also match the fresh cloud business fingerprint before activation. Changed
+or stale bases stop for review without silently replacing local records. Data
+sync uses retained batch IDs, atomic cloud commits, row conflict checks and exact
+acknowledgements, so a lost response can be retried without duplicate payments.
+Backlogs above 5,000 changed records and removed rows require review.
 
-7. **Offline Reliability & Local Storage Queue**
-   - LocalStorage / IndexedDB queue allows order processing during internet dips with automatic central synchronization upon reconnection.
+Cloud receiver configuration and private pairing must be completed on the actual
+shop machine before trading. The domain never connects directly to a remote
+localhost address. Its status panel shows the latest committed shop upload.
 
----
+## Offline access and backups
 
-## 🚀 Quick Start Guide
+Staff sign in against local SQL without internet. Activation stores salted PIN
+hashes; staff PINs are not returned by profile or staff-list APIs. The owner can
+change staff access locally, and inactive users immediately lose API access.
 
-### Prerequisites
-- Node.js (v18+ or v20+)
-- npm (v9+)
+The Windows supervisor starts at sign-in and from the desktop icon, monitors the
+database, and restarts the app if necessary. The computer must stay on and awake.
+Hourly backups are stored outside htdocs with checksums. Choose a separate drive
+for protection against a failed shop disk. The restore checker validates a backup
+and imports it into a new recovery database, never over the trading database.
 
-### Installation & Database Setup
-```bash
-# 1. Install server dependencies & seed database
-cd "d:/pos sys/server"
-npm install
-npx prisma db push
-npm run db:seed
+## Source builds and checks
 
-# 2. Install client dependencies
-cd "d:/pos sys/client"
-npm install
-```
+Use Node.js 22. Install dependencies from the lockfiles, generate the Prisma client,
+and build the server and client. Production requires private DATABASE_URL and
+JWT_SECRET values. The client uses the same-origin /api service and has no
+production browser mock fallback.
 
-### Running the Application
+Regression checks: tests/api-production.test.mjs, tests/checkout-transaction.test.mjs,
+tests/cashier-dialogs.test.mjs and tests/device-import.test.mjs.
+The local XAMPP integration test tests/shop-replica.test.mjs creates isolated
+nanifrys_test_* databases and verifies staged-base pairing, schema rejection,
+offline staff access, sales/payment/stock consistency, lost acknowledgements,
+duplicate retries, conflicts and backups. It does not target hosted business data.
 
-In terminal 1 (Backend Server):
-```bash
-cd "d:/pos sys/server"
-npm run dev
-# Server running at http://localhost:5000
-```
-
-In terminal 2 (Frontend Client):
-```bash
-cd "d:/pos sys/client"
-npm run dev
-# Web POS running at http://localhost:3000
-```
-
----
-
-## 🔑 Demo Logins & Fast 4-Digit PINs
-
-| Role | Name | Email | Password | 4-Digit PIN | Branch Scope |
-|---|---|---|---|---|---|
-| **Owner** | Robina | `admin@nanifrys.co.ke` | `admin123` | `9999` | All Branches (Central HQ) |
-| **Manager** | Manager | `manager@nanifrys.co.ke` | `manager123` | `1111` | Migadini Main Shop |
-| **Cashier** | Cashier 1 | `cashier1@nanifrys.co.ke` | `cashier123` | `1234` | Migadini Main Shop |
-| **Cashier** | Cashier 2 | `cashier2@nanifrys.co.ke` | `cashier123` | `2345` | Migadini Main Shop |
-| **Cashier** | Cashier 3 | `cashier3@nanifrys.co.ke` | `cashier123` | `3456` | Migadini Main Shop |
-| **Cashier** | Cashier 4 | `cashier4@nanifrys.co.ke` | `cashier123` | `4567` | Migadini Main Shop |
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts, Custom Thermal Print CSS, Offline Sync Queue.
-- **Backend**: Node.js, Express, TypeScript, Prisma ORM, JWT, bcryptjs.
-- **Database**: SQLite (default local zero-config) with 1-line connection switch to PostgreSQL / Supabase for cloud production.
-- **Localization**: Kenyan Shillings (KES / Ksh), M-Pesa integration points, 58mm/80mm receipt templates, WhatsApp web share.
-
----
-
-## 📦 Deployment Options
-
-### Option A: Local Restaurant POS Appliance (Zero Hosting Cost)
-Run the server and client locally on a touchscreen PC, mini-PC, or laptop behind the counter. Other cashier tablets/phones connect via the restaurant's local Wi-Fi router IP (e.g. `http://192.168.1.100:3000`).
-
-### Option B: Cloud Deployment (Multi-Branch Rollup)
-1. **Database**: Create a free PostgreSQL database on [Supabase](https://supabase.com) or [Neon](https://neon.tech). Set `DATABASE_URL="postgresql://..."` in server `.env`.
-2. **Backend**: Deploy `server/` to [Railway](https://railway.app) or [Render](https://render.com).
-3. **Frontend**: Deploy `client/` to [Vercel](https://vercel.com) or [Netlify](https://netlify.com) pointing API requests to your backend URL.
+The cPanel Git task builds a versioned release before activation. Keep private
+credentials outside the document root. Do not switch cloud writes off until the
+actual shop is ready for its initial verified import and planned changeover.
