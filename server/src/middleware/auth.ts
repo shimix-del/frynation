@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'node:crypto';
 import prisma from '../prisma.js';
 import { JWT_SECRET } from '../config.js';
 
@@ -30,7 +31,7 @@ export const authenticateToken = async (
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; credentialTag?: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
@@ -40,10 +41,11 @@ export const authenticateToken = async (
         role: true,
         branchId: true,
         isActive: true,
+        pinCode: true,
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || (decoded.credentialTag && decoded.credentialTag !== createHash('sha256').update(user.pinCode).digest('hex'))) {
       res.status(401).json({ error: 'User is inactive or not found' });
       return;
     }

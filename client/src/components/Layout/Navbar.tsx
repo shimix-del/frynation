@@ -17,6 +17,7 @@ import { api, getServiceOnline } from '../../services/api';
 import { offlineSync, OfflineOrder } from '../../services/offlineSync';
 import { Shift } from '../../types';
 import naniLogo from '../../assets/logo.jpg';
+import { ShopStatus } from './ShopStatus';
 
 interface NavbarProps {
   onOpenShiftModal: () => void;
@@ -137,6 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Center Controls: Branch Selector & Active Shift */}
+      <ShopStatus />
       <div className="flex items-center space-x-1 sm:space-x-2">
         {/* Multi-Branch Selector */}
         <div className="relative flex items-center bg-zinc-800/80 border border-zinc-700/80 rounded-xl px-1.5 sm:px-2.5 py-1">

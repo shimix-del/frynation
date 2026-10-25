@@ -13,6 +13,10 @@ import orderRoutes from './routes/orders.js';
 import shiftRoutes from './routes/shifts.js';
 import expenseRoutes from './routes/expenses.js';
 import reportRoutes from './routes/reports.js';
+import replicaRoutes from './replica/routes.js';
+import { initializeReplica, readState } from './replica/state.js';
+import { startShopWorker, systemStatus } from './replica/worker.js';
+import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -28,7 +32,28 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-branch-id'],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
+app.use('/api/replica', replicaRoutes);
+app.get('/api/system/status', authenticateToken, async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ ...systemStatus, localDatabase: 'connected',
+    ready: process.env.SITE_MODE !== 'shop' || !!await readState('enrolled'),
+    ownership: process.env.SITE_MODE === 'shop' ? 'All shop changes are made on this computer' : 'Hosted system',
+    syncIntervalMinutes: 20, backupIntervalMinutes: 60 });
+});
+app.use('/api', async (req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/auth/login') return next();
+  if (process.env.SITE_MODE === 'cloud' && process.env.REPLICA_CLOUD_READONLY === 'true') {
+    res.status(409).json({ error: 'The shop computer owns changes. Use the shop POS; this domain is a reporting copy.' }); return;
+  }
+  if (process.env.SITE_MODE === 'shop' && !await readState('enrolled')) {
+    res.status(503).json({ error: 'Shop setup is incomplete. Fresh cloud data must be paired before trading.' }); return;
+  }
+  if (process.env.SITE_MODE === 'shop' && req.method === 'DELETE') {
+    res.status(409).json({ error: 'Permanent deletion is disabled on the shop replica. Deactivate or cancel the record to retain its history.' }); return;
+  }
+  next();
+});
 
 
 // Request logger for development
@@ -88,9 +113,14 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(Number(PORT), '0.0.0.0', () => {
+async function start() {
+  if (['shop', 'cloud'].includes(process.env.SITE_MODE || '')) await initializeReplica();
+  app.listen(Number(PORT), process.env.BIND_HOST || '0.0.0.0', () => {
   console.log(`🍟 NANI FRYS POS Server running on port ${PORT}`);
   console.log(`🌍 Multi-device POS (Laptop, Phone, POS screen) synchronized on 0.0.0.0:${PORT}`);
-});
+  });
+  if (process.env.SITE_MODE === 'shop') await startShopWorker();
+}
+start().catch(() => { console.error('Startup failed: check private database configuration.'); process.exitCode = 1; });
 
 export default app;

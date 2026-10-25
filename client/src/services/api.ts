@@ -214,6 +214,7 @@ export const api = {
   getMe: () => request<any>('/auth/me'),
 
   getUsers: () => request<any[]>('/auth/users'),
+  updateUser: (id: string, changes: any) => request<any>(`/auth/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(changes) }),
 
   createUser: (userData: any) =>
     request<any>('/auth/users', {

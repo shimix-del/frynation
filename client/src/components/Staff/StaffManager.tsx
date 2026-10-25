@@ -20,6 +20,8 @@ export const StaffManager: React.FC = () => {
   const [pinCode, setPinCode] = useState<string>('');
   const [branchId, setBranchId] = useState<string>(branches[0]?.id || '');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [staffActive, setStaffActive] = useState(true);
 
   // Add branch modal state
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
@@ -50,14 +52,17 @@ export const StaffManager: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await api.createUser({
+      const changes = {
         name,
         email,
         phone,
         role,
-        pinCode,
+        ...(pinCode ? { pinCode } : {}),
+        ...(editingId ? { isActive: staffActive } : {}),
         branchId: role === 'OWNER' ? null : branchId,
-      });
+      };
+      if (editingId) await api.updateUser(editingId, changes);
+      else await api.createUser(changes);
       setIsStaffModalOpen(false);
       setName('');
       setEmail('');
@@ -123,7 +128,7 @@ export const StaffManager: React.FC = () => {
           )}
 
           <button
-            onClick={() => setIsStaffModalOpen(true)}
+            onClick={() => { setEditingId(null); setName(''); setEmail(''); setPhone(''); setPinCode(''); setRole('CASHIER'); setStaffActive(true); setIsStaffModalOpen(true); }}
             className="px-4 py-2 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-brand-500/25"
           >
             <Plus className="w-4 h-4" />
@@ -190,7 +195,7 @@ export const StaffManager: React.FC = () => {
                 <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Branch</th>
                 <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">Email</th>
                 <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">Phone</th>
-                <th className="py-2.5 sm:py-3 px-2 sm:px-4">PIN</th>
+                <th className="py-2.5 sm:py-3 px-2 sm:px-4">Access</th>
                 <th className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">Status</th>
               </tr>
             </thead>
@@ -220,13 +225,14 @@ export const StaffManager: React.FC = () => {
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden md:table-cell">{u.email}</td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 hidden lg:table-cell">{u.phone || '-'}</td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-mono font-bold text-brand-400">
-                    <span className="bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-700 text-xs">
-                      {u.pinCode}
-                    </span>
+                    {currentUser?.role === 'OWNER' && <button className="bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 text-xs" onClick={() => {
+                      setEditingId(u.id); setName(u.name); setEmail(u.email); setPhone(u.phone || '');
+                      setRole(u.role); setBranchId(u.branchId || ''); setPinCode(''); setStaffActive(u.isActive !== false); setIsStaffModalOpen(true);
+                    }}>Edit access</button>}
                   </td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
-                      Active
+                      {u.isActive !== false ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                 </tr>
@@ -241,7 +247,7 @@ export const StaffManager: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
             <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/90">
-              <h3 className="font-bold text-white text-base">Add New Staff Member</h3>
+              <h3 className="font-bold text-white text-base">{editingId ? 'Edit Staff Access' : 'Add New Staff Member'}</h3>
               <button
                 onClick={() => setIsStaffModalOpen(false)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800"
@@ -304,20 +310,22 @@ export const StaffManager: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1">
-                    4-Digit POS PIN *
+                    {editingId ? 'New PIN (leave blank to keep current)' : '4-Digit POS PIN *'}
                   </label>
                   <input
-                    type="text"
-                    maxLength={6}
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
                     value={pinCode}
                     onChange={e => setPinCode(e.target.value)}
                     placeholder="e.g. 5678"
-                    required
+                    required={!editingId}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-3.5 py-2 text-xs text-brand-400 font-mono font-black focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
 
+              {editingId && <label className="flex gap-2 text-sm text-zinc-200"><input type="checkbox" checked={staffActive} onChange={e => setStaffActive(e.target.checked)} />Allow staff login</label>}
               {role !== 'OWNER' && (
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1">Branch *</label>
@@ -349,7 +357,7 @@ export const StaffManager: React.FC = () => {
                   disabled={isSaving}
                   className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-2xl shadow-lg"
                 >
-                  {isSaving ? 'Saving...' : 'Create Staff'}
+                  {isSaving ? 'Saving...' : editingId ? 'Save Access' : 'Create Staff'}
                 </button>
               </div>
             </form>
