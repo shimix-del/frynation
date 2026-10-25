@@ -332,3 +332,11 @@ ALTER TABLE `StockAudit` ADD CONSTRAINT `StockAudit_branchId_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `StockAudit` ADD CONSTRAINT `StockAudit_stockItemId_fkey` FOREIGN KEY (`stockItemId`) REFERENCES `StockItem`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Sync checkpoints have the same schema on shop and cloud. No business seed.
+CREATE TABLE `NaniReplicaState` (
+    `id` VARCHAR(191) NOT NULL,
+    `body` LONGTEXT NOT NULL,
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+INSERT IGNORE INTO `NaniReplicaState` (`id`, `body`) VALUES ('receiver-lock', '{}');

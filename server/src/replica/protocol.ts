@@ -13,6 +13,14 @@ export function canonical(value: any): string {
   return JSON.stringify(value);
 }
 export const digest = (v: any) => createHash('sha256').update(canonical(v)).digest('hex');
+export const protocolVersion = 2;
+export const schemaFingerprint = digest(Prisma.dmmf.datamodel.models.map(model => ({
+  name: model.name, databaseName: model.dbName || model.name, uniqueFields: model.uniqueFields,
+  fields: model.fields.map(field => ({ name: field.name, kind: field.kind, type: field.type,
+    required: field.isRequired, list: field.isList, id: field.isId, unique: field.isUnique,
+    databaseName: field.dbName || field.name, from: field.relationFromFields, to: field.relationToFields,
+    onDelete: field.relationOnDelete })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
+})).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 export const delegate = (db: any, model: string) => db[model[0].toLowerCase() + model.slice(1)];
 export const rowKey = (model: string, id: string) => `row:${model}:${id}`;
 export function hydrate(model: string, row: any) {

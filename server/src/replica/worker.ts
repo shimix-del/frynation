@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import prisma from '../prisma.js';
-import { models, snapshot, digest, rowKey, Change } from './protocol.js';
+import { models, snapshot, digest, rowKey, Change, protocolVersion, schemaFingerprint } from './protocol.js';
 import { readState, writeState } from './state.js';
 
 export const systemStatus: any = { mode: process.env.SITE_MODE || 'hosted', lastSync: null,
@@ -64,7 +64,7 @@ export async function syncOnce() {
     const changes = await collectChanges();
     systemStatus.pendingChanges = changes.length;
     if (!changes.length) { systemStatus.syncState = 'up-to-date'; return; }
-    pending = { version: 1, id: randomUUID(), shopId: process.env.REPLICA_SHOP_ID, changes };
+    pending = { version: protocolVersion, schemaFingerprint, id: randomUUID(), shopId: process.env.REPLICA_SHOP_ID, changes };
     // The batch remains in local SQL until its exact acknowledgement is saved.
     await writeState('pending-batch', pending);
   }

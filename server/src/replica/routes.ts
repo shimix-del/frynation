@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import prisma from '../prisma.js';
-import { applyChanges, digest, snapshot } from './protocol.js';
+import { applyChanges, digest, snapshot, protocolVersion, schemaFingerprint } from './protocol.js';
 import { readState, writeState } from './state.js';
 
 const router = Router();
@@ -18,14 +18,15 @@ router.get('/snapshot', async (_req, res) => {
   try {
     const rows = await prisma.$transaction(tx => snapshot(tx), { timeout: 60000, isolationLevel: 'RepeatableRead' });
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ version: 1, shopId: process.env.REPLICA_SHOP_ID, fingerprint: digest(rows), rows });
+    res.json({ version: protocolVersion, schemaFingerprint, shopId: process.env.REPLICA_SHOP_ID, fingerprint: digest(rows), rows });
   } catch { res.status(503).json({ error: 'Snapshot unavailable' }); }
 });
 router.post('/batch', async (req, res) => {
   const batch = req.body;
-  if (batch.shopId !== process.env.REPLICA_SHOP_ID || !/^[a-f0-9-]{36}$/.test(batch.id || '') || batch.version !== 1) {
+  if (batch.shopId !== process.env.REPLICA_SHOP_ID || !/^[a-f0-9-]{36}$/.test(batch.id || '') || batch.version !== protocolVersion) {
     res.status(400).json({ error: 'Invalid replica identity' }); return;
   }
+  if (batch.schemaFingerprint !== schemaFingerprint) { res.status(409).json({ error: 'SCHEMA_MISMATCH: update both applications before syncing' }); return; }
   try {
     const fingerprint = digest(batch);
     const result = await prisma.$transaction(async tx => {
@@ -39,6 +40,7 @@ router.post('/batch', async (req, res) => {
       await applyChanges(tx, batch.changes);
       const accepted = { id: batch.id, fingerprint, acceptedAt: new Date().toISOString() };
       await writeState('batch:' + batch.id, accepted, tx);
+      await writeState('receiver-last', { ...accepted, shopId: batch.shopId, recordChanges: batch.changes.length }, tx);
       return accepted;
     }, { timeout: 30000, isolationLevel: 'Serializable' });
     res.json(result);

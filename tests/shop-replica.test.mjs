@@ -30,8 +30,9 @@ const prisma = require('../server/dist/prisma.js').default;
 const { initializeReplica, writeState, readState } = require('../server/dist/replica/state.js');
 const { snapshot, digest, rowKey } = require('../server/dist/replica/protocol.js');
 const { syncOnce, backupNow, systemStatus } = require('../server/dist/replica/worker.js');
+const { bootstrapShop } = require('../server/dist/replica/bootstrap.js');
 await initializeReplica();
-await cloud.$executeRawUnsafe('CREATE TABLE NaniReplicaState (id VARCHAR(191) PRIMARY KEY, body LONGTEXT NOT NULL) ENGINE=InnoDB');
+await cloud.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS NaniReplicaState (id VARCHAR(191) PRIMARY KEY, body LONGTEXT NOT NULL) ENGINE=InnoDB');
 await writeState('receiver-lock', {}, cloud);
 const pin = String(1000 + Math.floor(Math.random() * 9000));
 for (const db of [prisma, cloud]) {
@@ -51,7 +52,7 @@ const recipe = await prisma.menuItemRecipe.create({ data: { id: 'test-recipe', m
 await cloud.menuItemRecipe.create({ data: recipe });
 const base = await snapshot(prisma);
 for (const [model, rows] of Object.entries(base)) for (const row of rows) await writeState(rowKey(model, row.id), { hash: digest(row) });
-await writeState('enrolled', { test: true });
+await writeState('staged-base', { fingerprint: digest(base) });
 const common = { ...process.env, NODE_ENV: 'production', JWT_SECRET: randomBytes(48).toString('hex'), BIND_HOST: '127.0.0.1' };
 const processes = [];
 function start(database, port, mode) {
@@ -69,6 +70,14 @@ try {
     }
     assert.ok(healthy, 'isolated API startup');
   }
+  globalThis.fetch = async (address, options) => actualFetch(String(address).replace('https://cloud.test', 'http://127.0.0.1:15501'), options);
+  await prisma.branch.update({ where: { id: branch.id }, data: { name: 'Changed staged base' } });
+  await assert.rejects(bootstrapShop(), /staged base has changed/);
+  assert.equal(await readState('enrolled'), null, 'changed base cannot silently activate');
+  await prisma.branch.update({ where: { id: branch.id }, data: branch });
+  await bootstrapShop();
+  assert.ok(await readState('enrolled'), 'matching staged data activates without re-inserting records');
+  globalThis.fetch = actualFetch;
   const login = await actualFetch('http://127.0.0.1:15502/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pinCode: pin }) });
   assert.equal(login.status, 200, 'salted PIN login needs no internet');
   const auth = await login.json();
@@ -94,6 +103,9 @@ try {
   await assert.rejects(syncOnce());
   const durable = await readState('pending-batch');
   assert.ok(durable?.id, 'pending batch survives internet failure in SQL');
+  const mismatched = await actualFetch('http://127.0.0.1:15501/api/replica/batch', { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...durable, id: randomUUID(), schemaFingerprint: 'wrong-schema' }) });
+  assert.equal(mismatched.status, 409, 'different application schemas cannot exchange data');
+  assert.equal(await cloud.order.count(), 0, 'schema mismatch commits no business records');
   let loseAcknowledgement = true;
   globalThis.fetch = async (address, options) => {
     const response = await actualFetch(String(address).replace('https://cloud.test', 'http://127.0.0.1:15501'), options);
@@ -110,6 +122,8 @@ try {
   assert.equal(await readState('pending-batch'), null, 'retry exact batch is acknowledged once');
   const receipts = await cloud.$queryRaw`SELECT id FROM NaniReplicaState WHERE id LIKE 'batch:%'`;
   assert.equal(receipts.length, 1);
+  const received = await readState('receiver-last', cloud);
+  assert.equal(received.id, durable.id, 'hosted status records the committed shop batch');
   assert.equal(await cloud.payment.count(), 1, 'lost acknowledgement retry does not duplicate payment');
   await prisma.branch.update({ where: { id: branch.id }, data: { name: 'Shop edit' } });
   await cloud.branch.update({ where: { id: branch.id }, data: { name: 'Conflicting manual cloud edit' } });
@@ -126,6 +140,7 @@ try {
   assert.equal(systemStatus.backupState, 'saved');
   const latestBackup = await readState('last-backup');
   const report = { passed: true, shopDatabase: shopName, cloudDatabase: cloudName,
+    schemaMismatchBlocked: true, stagedBaseMismatchBlocked: true, stagedBasePairingWithoutDuplicates: true, hostedReceiptStatus: true,
     offlineSaltedPinLogin: true, immediateOfflineStaffDeactivation: true, localSalePaymentAndStock: true, cloudWritesBlocked: true, durableInternetFailure: true,
     lostAcknowledgementAndDuplicateRetry: true, conflictsDoNotOverwrite: true,
     backupFile: path.join(process.env.BACKUP_DIRECTORY, latestBackup.file) };

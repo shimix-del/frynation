@@ -36,10 +36,18 @@ app.use(express.json({ limit: '8mb' }));
 app.use('/api/replica', replicaRoutes);
 app.get('/api/system/status', authenticateToken, async (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ ...systemStatus, localDatabase: 'connected',
+  try {
+    const cloud = process.env.SITE_MODE === 'cloud';
+    const received = cloud ? await readState('receiver-last') : null;
+    res.json({ ...systemStatus, ...(cloud ? {
+      lastSync: received?.acceptedAt || null, pendingChanges: null,
+      syncState: process.env.REPLICA_CLOUD_READONLY !== 'true' ? 'not-active' : received ? 'shop-upload-received' : 'waiting-for-shop',
+      lastReceivedChanges: received?.recordChanges || 0,
+    } : {}), localDatabase: 'connected',
     ready: process.env.SITE_MODE !== 'shop' || !!await readState('enrolled'),
-    ownership: process.env.SITE_MODE === 'shop' ? 'All shop changes are made on this computer' : 'Hosted system',
+    ownership: process.env.SITE_MODE === 'shop' ? 'All shop changes are made on this computer' : cloud ? 'Shop uploads; hosted reporting copy' : 'Hosted system',
     syncIntervalMinutes: 20, backupIntervalMinutes: 60 });
+  } catch { res.status(503).json({ error: 'System status is temporarily unavailable' }); }
 });
 app.use('/api', async (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/auth/login') return next();

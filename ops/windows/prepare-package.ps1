@@ -22,7 +22,7 @@ call "%~dp0ops\windows\Install Nani Frys.cmd"
 '@ | Set-Content -LiteralPath "$Destination\Install Nani Frys.cmd" -Encoding ASCII
 Copy-Item -LiteralPath "$PSScriptRoot\README.md" -Destination "$Destination\READ-ME-FIRST.md"
 $commit = & git -C $source rev-parse HEAD
-@{ sourceCommit=$commit; preparedAt=(Get-Date).ToString('o'); target='Windows 10 main shop computer'; privateCredentialsIncluded=$false; cloudModeChanged=$false } | ConvertTo-Json | Set-Content -LiteralPath "$Destination\package-info.json" -Encoding UTF8
+@{ sourceCommit=$commit; preparedAt=(Get-Date).ToString('o'); target='Windows 10 or 11 x64 main shop computer'; database='mombasam_nanifrys'; privateCredentialsIncluded=$false; cloudModeChanged=$false } | ConvertTo-Json | Set-Content -LiteralPath "$Destination\package-info.json" -Encoding UTF8
 $forbidden = Get-ChildItem -LiteralPath $Destination -Recurse -Force -File | Where-Object { $_.Name -in @('.env','shop.env','backup.cnf','private-backend-credentials.json') }
 if ($forbidden) { throw 'Unexpected private configuration found. Do not distribute this package.' }
 Write-Output "Prepared shop installation package: $Destination"

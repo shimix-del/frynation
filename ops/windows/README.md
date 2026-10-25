@@ -1,6 +1,6 @@
 # Nani Frys main shop installation
 
-This package is for ONE designated 64-bit Windows 10 main shop computer. It uses
+This package is for ONE designated 64-bit Windows 10 or Windows 11 main shop computer. It uses
 XAMPP MariaDB and a Node backend, not Apache/PHP for the application. Node serves
 the built touchscreen frontend at http://127.0.0.1:5050. Apache access to the
 installation folder is explicitly denied. Other XAMPP applications are untouched.
@@ -13,10 +13,19 @@ installation folder is explicitly denied. Other XAMPP applications are untouched
 2. Run `ops/windows/Install Nani Frys.cmd` as the Windows account that will operate
    the till. Windows may require administrator assistance for the scheduled task.
    Installation refuses an existing application folder, configuration, or database.
-3. The installer creates `C:\xampp\htdocs\nanifrys`, a new `nanifrys_shop`
+3. The installer creates `C:\xampp\htdocs\nanifrys`, a new `mombasam_nanifrys`
    database, a private database account, and private configuration/backups under
    `C:\ProgramData\NaniFrys`. Do not copy these private files into the public
-   web directory or Git. Do not reuse preparation-computer credentials.
+   web directory or Git. Do not reuse preparation-computer credentials. The
+   database name and all business table/record names match the hosted database.
+   SQL account passwords remain separate on each computer.
+   A private reviewed data-only export may be staged at installation with
+   `install.ps1 -BaseDataFile <mombasam_nanifrys-data-only.sql>`. Its checksum must
+   match, and the installer refuses any existing database. Staging does not enable
+   trading or upload anything; cloud pairing must still confirm the base is current.
+   For the supplied private SQL bundle, extract its `nanifrys-live-database` folder
+   alongside `nanifrys-shop-installer` and run **Install with existing data.cmd**
+   inside the database folder. Do not run both install launchers.
 4. Prepare the cloud receiver from this same reviewed application version. Before
    switching ownership, export and verify a fresh live SQL backup. Using database
    administrator access, create `NaniReplicaState` from `ops/replica-schema.sql`.
@@ -28,7 +37,9 @@ installation folder is explicitly denied. Other XAMPP applications are untouched
    are blocked, and wait for existing requests to finish. Leave the cloud read-only.
    Run `ops/windows/pair-shop.ps1` on the shop. It fetches a consistent fresh
    snapshot over HTTPS and imports all business rows atomically, preserving IDs.
-   Nonempty local databases are never replaced automatically. PINs become salted
+   A nonempty staged base must match the current cloud fingerprint exactly; if
+   either side has changed, activation stops and no local records are replaced.
+   Nonempty unrecognized local databases are never replaced automatically. PINs become salted
    bcrypt hashes locally and are propagated securely to the cloud by sync.
 6. Open **Nani Frys POS** from the desktop. Verify the current staff PIN, real menu,
    correct balances/stock, printing, backup and sync status. Run marked tests and
@@ -51,6 +62,9 @@ installation folder is explicitly denied. Other XAMPP applications are untouched
   every minute. Related changes commit together in one batch. A durable pending batch retains its
   ID after restart or a lost acknowledgement; the receiver applies it once only.
   Version conflicts halt a batch instead of silently overwriting data.
+  Both applications exchange a schema fingerprint as well: incompatible versions
+  cannot activate or send a batch. The hosted header shows the last committed
+  upload received from the shop; it never claims to read a remote localhost URL.
   A backlog above 5,000 changed records requires operator review; data stays local.
 - HTTP DELETE operations are blocked locally. Cancel orders or deactivate records.
   Current middleware does not convert every catalogue delete action to deactivate;

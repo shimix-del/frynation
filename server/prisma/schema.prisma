@@ -7,6 +7,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Identical table on shop and hosted databases; contents are machine-specific
+// checkpoints/acknowledgements and never replace business rows.
+model NaniReplicaState {
+  id   String @id @db.VarChar(191)
+  body String @db.LongText
+}
+
 model Branch {
   id             String          @id @default(cuid())
   name           String
