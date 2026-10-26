@@ -30,9 +30,11 @@ app.use(cors({
 app.use(express.json());
 
 
-// Request logger for development
+// Request logger (clean, skips static assets and background health checks)
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  if (req.originalUrl !== '/api/health' && !req.originalUrl.startsWith('/assets')) {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  }
   next();
 });
 
