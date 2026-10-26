@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, Printer, Share2 } from 'lucide-react';
 import { Order } from '../../types';
 import { printReceiptElement } from '../../utils/printReceipt';
-import naniLogo from '../../assets/logo.jpg';
 
 interface ThermalReceiptProps {
   order: Order | null;
@@ -113,6 +112,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
 
     const message = `*NANI'S FRY NATION*\n` +
       `TEL: ${storePhone}\n` +
+      `LIPA NA MPESA\n` +
       `POCHI LA BIASHARA: ${storePhone}\n` +
       `---------------------------\n` +
       `M/S: ${order.customerName || 'CASH SALE'}\n` +
@@ -203,15 +203,13 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
           >
             {/* Header: Store Name & Contacts matching exact layout */}
             <div className="text-center space-y-0.5 pb-1 text-black">
-              <img
-                src={naniLogo}
-                alt="Nani's Fry Nation"
-                className="w-16 h-16 rounded-full object-cover border-2 border-black mx-auto mb-1 block"
-              />
               <div className="font-black text-sm tracking-wider uppercase text-black">NANI'S FRY NATION</div>
               <div className="text-[10px] font-semibold text-black uppercase">{branchName}</div>
               <div className="text-[10px] font-bold text-black">
                 TEL: <span className="font-mono">{storePhone}</span>
+              </div>
+              <div className="text-[10px] font-bold text-black">
+                LIPA NA MPESA
               </div>
               <div className="text-[10px] font-bold text-black">
                 POCHI LA BIASHARA: <span className="font-mono">{storePhone}</span>
