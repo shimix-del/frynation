@@ -968,6 +968,7 @@ export const mockStore = {
       actualCountedCash: actual,
       variance,
       cashMovements: movements,
+      itemsSold: (active as any)?.itemsSold || [],
       totalOrdersCount: active?._count?.orders || (active as any)?.orders?.length || 0,
     };
 
@@ -981,6 +982,7 @@ export const mockStore = {
       closingCashExpected: expected,
       variance,
       cashMovements: movements,
+      itemsSold: (active as any)?.itemsSold || [],
       cashAdditions,
       cashDrops: cashPayouts,
       totalExpensesPaid: expensesPaid,

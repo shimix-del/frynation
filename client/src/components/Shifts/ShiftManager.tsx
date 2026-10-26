@@ -350,12 +350,14 @@ export const ShiftManager: React.FC = () => {
                           totalCardSales: shift.totalCardSales,
                           totalGrossSales: gross,
                           cashMovements: movements,
+                          itemsSold: shift.itemsSold || [],
                           totalCashAdditions: additions,
                           totalCashDrops: drops,
                           expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales + additions - drops),
                           actualCountedCash: shift.closingCashActual || shift.closingCashExpected,
                           variance: shift.variance || 0,
                           totalOrdersCount: shift._count?.orders || 0,
+                          notes: shift.notes || null,
                         });
                       }}
                       className="w-full py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 active:scale-95 shadow-sm"
@@ -436,12 +438,14 @@ export const ShiftManager: React.FC = () => {
                             totalCardSales: shift.totalCardSales,
                             totalGrossSales: shift.totalCashSales + shift.totalMpesaSales + (shift.totalCardSales || 0),
                             cashMovements: movements,
+                            itemsSold: shift.itemsSold || [],
                             totalCashAdditions: additions,
                             totalCashDrops: drops,
                             expectedCashInDrawer: shift.closingCashExpected || (shift.openingFloat + shift.totalCashSales + additions - drops),
                             actualCountedCash: shift.closingCashActual || shift.closingCashExpected,
                             variance: shift.variance || 0,
                             totalOrdersCount: shift._count?.orders || 0,
+                            notes: shift.notes || null,
                           });
                         }}
                         className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold rounded-xl border border-zinc-700 transition"

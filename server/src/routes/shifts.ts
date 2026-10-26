@@ -225,8 +225,8 @@ router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: 
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
       include: {
-        cashMovements: true,
-        orders: { where: { status: 'COMPLETED' }, include: { payments: true } },
+        cashMovements: { orderBy: { createdAt: 'desc' } },
+        orders: { where: { status: 'COMPLETED' }, include: { payments: true, items: true } },
         expenses: true,
         branch: true,
         cashier: { select: { id: true, name: true, role: true } },
@@ -252,6 +252,27 @@ router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: 
     const expectedCash = shift.openingFloat + shift.totalCashSales + cashAdditions - cashDrops;
     const variance = actualCount - expectedCash; // Negative = Shortage, Positive = Overage
 
+    // Aggregate food items sold
+    const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
+    shift.orders?.forEach(order => {
+      order.items?.forEach(item => {
+        const key = `${item.itemName}___${item.variantName || ''}`;
+        const existing = itemMap.get(key);
+        if (existing) {
+          existing.quantity += item.quantity;
+          existing.totalPrice += item.totalPrice;
+        } else {
+          itemMap.set(key, {
+            itemName: item.itemName,
+            variantName: item.variantName || null,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+          });
+        }
+      });
+    });
+    const itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
+
     const closedShift = await prisma.shift.update({
       where: { id: shiftId },
       data: {
@@ -265,7 +286,7 @@ router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: 
       include: {
         branch: true,
         cashier: { select: { id: true, name: true } },
-        cashMovements: true,
+        cashMovements: { orderBy: { createdAt: 'desc' } },
       },
     });
 
@@ -284,6 +305,7 @@ router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: 
       totalCardSales: closedShift.totalCardSales,
       totalGrossSales: closedShift.totalCashSales + closedShift.totalMpesaSales + closedShift.totalCardSales,
       cashMovements: shift.cashMovements,
+      itemsSold,
       totalCashDrops: cashDrops,
       totalCashAdditions: cashAdditions,
       expectedCashInDrawer: expectedCash,
@@ -328,13 +350,43 @@ router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res:
       include: {
         branch: true,
         cashier: { select: { id: true, name: true } },
+        cashMovements: { orderBy: { createdAt: 'desc' } },
+        orders: {
+          where: { status: 'COMPLETED' },
+          include: { items: true },
+        },
         _count: { select: { orders: true } },
       },
       orderBy: { openedAt: 'desc' },
       take: parseInt(limit as string, 10) || 30,
     });
 
-    res.json(shifts);
+    const enrichedShifts = shifts.map(s => {
+      const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
+      s.orders?.forEach(order => {
+        order.items?.forEach(item => {
+          const key = `${item.itemName}___${item.variantName || ''}`;
+          const existing = itemMap.get(key);
+          if (existing) {
+            existing.quantity += item.quantity;
+            existing.totalPrice += item.totalPrice;
+          } else {
+            itemMap.set(key, {
+              itemName: item.itemName,
+              variantName: item.variantName || null,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+            });
+          }
+        });
+      });
+      return {
+        ...s,
+        itemsSold: Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity),
+      };
+    });
+
+    res.json(enrichedShifts);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

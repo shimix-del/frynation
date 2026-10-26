@@ -19,7 +19,17 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
 }) => {
   if (!isOpen || !shift) return null;
 
-  const expectedCash = shift.expectedCash || (shift.openingFloat + shift.totalCashSales);
+  const movements = shift.cashMovements || [];
+  const cashAdditions = movements
+    .filter(m => m.type === 'FLOAT_IN')
+    .reduce((sum, m) => sum + m.amount, 0);
+  const cashDrops = movements
+    .filter(m => m.type === 'PAYOUT' || (m as any).type === 'CASH_DROP')
+    .reduce((sum, m) => sum + m.amount, 0);
+  const expectedCash = shift.expectedCash !== undefined
+    ? shift.expectedCash
+    : (shift.openingFloat + shift.totalCashSales + cashAdditions - cashDrops);
+
   const [closingCashActual, setClosingCashActual] = useState<string>(expectedCash.toString());
   const [notes, setNotes] = useState<string>('End of shift cash drawer counted and closed');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -38,7 +48,20 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
         closingCashActual: actualCount,
         notes,
       });
-      onShiftClosed(res.zReport);
+
+      const zRep = res.zReport || {};
+      const finalMovements = (zRep.cashMovements && zRep.cashMovements.length > 0)
+        ? zRep.cashMovements
+        : movements;
+      const finalItems = (zRep.itemsSold && zRep.itemsSold.length > 0)
+        ? zRep.itemsSold
+        : (shift.itemsSold || []);
+
+      onShiftClosed({
+        ...zRep,
+        cashMovements: finalMovements,
+        itemsSold: finalItems,
+      });
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to close shift');
@@ -74,7 +97,7 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
           )}
 
           {/* Shift Summary Card */}
-          <div className="p-3 bg-zinc-800/70 rounded-2xl border border-zinc-750 space-y-1 text-xs">
+          <div className="p-3 bg-zinc-800/70 rounded-2xl border border-zinc-750 space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-zinc-400">Opening Float:</span>
               <span className="font-bold text-zinc-200">{formatKES(shift.openingFloat)}</span>
@@ -87,9 +110,53 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
               <span className="text-zinc-400">Total M-Pesa Sales:</span>
               <span className="font-bold text-safari-mpesa">{formatKES(shift.totalMpesaSales)}</span>
             </div>
-            <div className="flex justify-between pt-1 border-t border-zinc-700/80 font-black">
+
+            {cashAdditions > 0 && (
+              <div className="flex justify-between text-emerald-400 font-semibold">
+                <span>(+) Extra Float In:</span>
+                <span>+{formatKES(cashAdditions)}</span>
+              </div>
+            )}
+
+            {cashDrops > 0 && (
+              <div className="flex justify-between text-red-400 font-semibold">
+                <span>(-) Cash Payouts / Drops:</span>
+                <span>-{formatKES(cashDrops)}</span>
+              </div>
+            )}
+
+            {/* List of individual cash movements with reason / explanation */}
+            {movements.length > 0 && (
+              <div className="pt-2 border-t border-zinc-700/60 space-y-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 block">
+                  Logged Cash Movements ({movements.length}):
+                </span>
+                <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                  {movements.map((m, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-zinc-900/80 px-2.5 py-1.5 rounded-xl border border-zinc-750 flex items-center justify-between text-[11px]"
+                    >
+                      <div className="truncate pr-2">
+                        <span className={`font-black ${m.type === 'FLOAT_IN' ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {m.type === 'FLOAT_IN' ? '[+] FLOAT IN' : '[-] PAYOUT'}:{' '}
+                        </span>
+                        <span className="text-zinc-200 font-medium">
+                          {m.reason || (m.type === 'FLOAT_IN' ? 'Drawer In' : 'Payout')}
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold shrink-0 text-white">
+                        {m.type === 'FLOAT_IN' ? '+' : '-'}{formatKES(m.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-1.5 border-t border-zinc-700/80 font-black">
               <span className="text-zinc-300">Expected Cash in Drawer:</span>
-              <span className="text-amber-400 text-sm">{formatKES(expectedCash)}</span>
+              <span className="text-amber-400 text-sm font-mono">{formatKES(expectedCash)}</span>
             </div>
           </div>
 

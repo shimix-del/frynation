@@ -91,6 +91,8 @@ export const printReceiptElement = (
           /* Flex & layout helpers */
           .flex { display: flex !important; }
           .flex-col { flex-direction: column !important; }
+          .flex-1 { flex: 1 1 0% !important; }
+          .shrink-0 { flex-shrink: 0 !important; }
           .items-center { align-items: center !important; }
           .items-start { align-items: flex-start !important; }
           .justify-between { justify-content: space-between !important; }
@@ -151,6 +153,7 @@ export const printReceiptElement = (
           .border-b-2 { border-bottom: 2px solid #000000 !important; }
           .border-t-2 { border-top: 2px solid #000000 !important; }
           .border-dashed { border-style: dashed !important; border-color: #000000 !important; }
+          .border-dotted { border-style: dotted !important; border-color: #000000 !important; }
           .border-2 { border: 2px solid #000000 !important; }
           .rounded-full { border-radius: 9999px !important; }
           .rounded-sm { border-radius: 2px !important; }
@@ -161,6 +164,7 @@ export const printReceiptElement = (
           .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
           .py-2\\.5 { padding-top: 5px !important; padding-bottom: 5px !important; }
           .py-0\\.5 { padding-top: 1px !important; padding-bottom: 1px !important; }
+          .pb-1 { padding-bottom: 2px !important; }
           .pb-2 { padding-bottom: 4px !important; }
           .pb-3 { padding-bottom: 6px !important; }
           .pt-0\\.5 { padding-top: 1px !important; }
