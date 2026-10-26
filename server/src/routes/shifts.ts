@@ -329,23 +329,14 @@ router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: 
 // List past shifts
 router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { branchId, limit = 30 } = req.query;
+    const { branchId, limit = 50 } = req.query;
     const targetBranchId = req.user?.role === 'OWNER' && branchId && branchId !== 'all'
       ? (branchId as string)
       : (req.user?.role === 'OWNER' && (!branchId || branchId === 'all') ? undefined : req.user?.branchId || undefined);
 
-    // Auto-purge closed shifts and Z-reports older than 3 weeks (21 days) to prevent database congestion
-    const threeWeeksAgo = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
-    await prisma.shift.deleteMany({
-      where: {
-        status: 'CLOSED',
-        closedAt: { lt: threeWeeksAgo },
-      },
-    }).catch(() => {});
-
     const where: any = targetBranchId ? { branchId: targetBranchId } : {};
 
-    const shifts = await prisma.shift.findMany({
+    let shifts = await prisma.shift.findMany({
       where,
       include: {
         branch: true,
@@ -358,8 +349,26 @@ router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res:
         _count: { select: { orders: true } },
       },
       orderBy: { openedAt: 'desc' },
-      take: parseInt(limit as string, 10) || 30,
+      take: parseInt(limit as string, 10) || 50,
     });
+
+    // Fallback: If user filtered by a specific branch and 0 shifts found, fall back to querying all shifts so past records are never hidden
+    if (shifts.length === 0 && targetBranchId) {
+      shifts = await prisma.shift.findMany({
+        include: {
+          branch: true,
+          cashier: { select: { id: true, name: true } },
+          cashMovements: { orderBy: { createdAt: 'desc' } },
+          orders: {
+            where: { status: 'COMPLETED' },
+            include: { items: true },
+          },
+          _count: { select: { orders: true } },
+        },
+        orderBy: { openedAt: 'desc' },
+        take: parseInt(limit as string, 10) || 50,
+      });
+    }
 
     const enrichedShifts = shifts.map(s => {
       const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();

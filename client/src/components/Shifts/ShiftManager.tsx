@@ -41,10 +41,18 @@ export const ShiftManager: React.FC = () => {
   const fetchShiftData = async (silent: boolean = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const [currentRes, historyRes] = await Promise.all([
+      let [currentRes, historyRes] = await Promise.all([
         api.getCurrentShift({ branchId: currentBranchId || undefined }),
         api.getShiftHistory({ branchId: currentBranchId || undefined }),
       ]);
+      if ((!historyRes || (Array.isArray(historyRes) && historyRes.length === 0)) && currentBranchId) {
+        try {
+          const allHistory = await api.getShiftHistory();
+          if (Array.isArray(allHistory) && allHistory.length > 0) {
+            historyRes = allHistory;
+          }
+        } catch (_) {}
+      }
       setActiveShift(currentRes?.activeShift || null);
       setShiftHistory(Array.isArray(historyRes) ? historyRes : []);
     } catch (err) {
@@ -293,9 +301,9 @@ export const ShiftManager: React.FC = () => {
                 <div key={shift.id} className="bg-zinc-850 border border-zinc-750 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
                   <div className="flex items-center justify-between border-b border-zinc-750 pb-2">
                     <div>
-                      <div className="font-bold text-white text-xs">{shift.cashier?.name}</div>
+                      <div className="font-bold text-white text-xs">{shift.cashier?.name || 'Cashier'}</div>
                       <div className="text-[10px] text-zinc-400">
-                        {formatKenyaDateTime(shift.openedAt).split(' ')[0]} • {shift.branch?.name || 'Main Shop'}
+                        {shift.openedAt ? formatKenyaDateTime(shift.openedAt).split(' ')[0] : 'N/A'} • {shift.branch?.name || 'Main Shop'}
                       </div>
                     </div>
                     <span
@@ -389,13 +397,20 @@ export const ShiftManager: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
-              {shiftHistory.map(shift => (
+              {shiftHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center text-zinc-500 text-xs">
+                    No closed shifts recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                shiftHistory.map(shift => (
                 <tr key={shift.id} className="hover:bg-zinc-800/40">
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-zinc-400 text-[11px]">
-                    {formatKenyaDateTime(shift.openedAt).split(' ')[0]}
+                    {shift.openedAt ? formatKenyaDateTime(shift.openedAt).split(' ')[0] : 'N/A'}
                   </td>
-                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-white hidden sm:table-cell">{shift.branch?.name}</td>
-                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-zinc-100">{shift.cashier?.name.split(' ')[0]}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-white hidden sm:table-cell">{shift.branch?.name || 'Main Branch'}</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-semibold text-zinc-100">{shift.cashier?.name ? shift.cashier.name.split(' ')[0] : 'Cashier'}</td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 hidden md:table-cell">{formatKES(shift.openingFloat)}</td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-emerald-400 hidden lg:table-cell">{formatKES(shift.totalCashSales)}</td>
                   <td className="py-2.5 sm:py-3 px-2 sm:px-4 font-bold text-safari-mpesa hidden lg:table-cell">{formatKES(shift.totalMpesaSales)}</td>
@@ -455,7 +470,7 @@ export const ShiftManager: React.FC = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

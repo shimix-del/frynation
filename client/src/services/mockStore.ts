@@ -311,18 +311,106 @@ function setStored<T>(key: string, val: T): void {
   }
 }
 
-const THREE_WEEKS_MS = 21 * 24 * 60 * 60 * 1000;
+const ONE_HUNDRED_EIGHTY_DAYS_MS = 180 * 24 * 60 * 60 * 1000;
 
 function purgeExpiredZReportsAndShifts(history: Shift[]): Shift[] {
-  const cutoff = Date.now() - THREE_WEEKS_MS;
+  const cutoff = Date.now() - ONE_HUNDRED_EIGHTY_DAYS_MS;
   return history.filter(shift => {
     if (shift.status === 'OPEN') return true;
     const shiftTimestamp = new Date(shift.closedAt || shift.openedAt || (shift as any).createdAt || 0).getTime();
-    return shiftTimestamp >= cutoff;
+    return !shiftTimestamp || shiftTimestamp >= cutoff;
   });
 }
 
-const STORE_VERSION = 'v10_zreport_3week_purge';
+const initialShiftHistory: Shift[] = [
+  {
+    id: 'shift-prev-101',
+    branchId: 'branch-migadini',
+    cashierId: 'user-cashier1',
+    openingFloat: 2500,
+    totalCashSales: 9800,
+    totalMpesaSales: 16400,
+    totalCardSales: 0,
+    totalExpensesPaid: 1400,
+    status: 'CLOSED',
+    openedAt: new Date(Date.now() - 86400000).toISOString(),
+    closedAt: new Date(Date.now() - 50400000).toISOString(),
+    closingCashActual: 12300,
+    closingCashExpected: 12300,
+    variance: 0,
+    notes: 'Evening shift closed balanced. All cash drawer counted and verified.',
+    branch: initialBranches[0],
+    cashier: { id: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER' },
+    cashMovements: [
+      {
+        id: 'mov-1',
+        shiftId: 'shift-prev-101',
+        branchId: 'branch-migadini',
+        type: 'PAYOUT',
+        amount: 500,
+        reason: 'token',
+        authorizedBy: 'Robina',
+        createdAt: new Date(Date.now() - 75000000).toISOString(),
+      },
+      {
+        id: 'mov-2',
+        shiftId: 'shift-prev-101',
+        branchId: 'branch-migadini',
+        type: 'PAYOUT',
+        amount: 900,
+        reason: 'vegetables from market',
+        authorizedBy: 'Robina',
+        createdAt: new Date(Date.now() - 65000000).toISOString(),
+      },
+    ],
+    itemsSold: [
+      { itemName: 'Chips', variantName: null, quantity: 24, totalPrice: 2400 },
+      { itemName: 'Chicken', variantName: '1/4 Kuku', quantity: 18, totalPrice: 4500 },
+      { itemName: 'Viazi Karai', variantName: null, quantity: 30, totalPrice: 1500 },
+      { itemName: 'Soda', variantName: 'Big', quantity: 12, totalPrice: 840 },
+    ],
+    _count: { orders: 36 },
+  },
+  {
+    id: 'shift-prev-100',
+    branchId: 'branch-migadini',
+    cashierId: 'user-cashier2',
+    openingFloat: 2000,
+    totalCashSales: 8400,
+    totalMpesaSales: 14200,
+    totalCardSales: 0,
+    totalExpensesPaid: 2800,
+    status: 'CLOSED',
+    openedAt: new Date(Date.now() - 172800000).toISOString(),
+    closedAt: new Date(Date.now() - 136800000).toISOString(),
+    closingCashActual: 10400,
+    closingCashExpected: 10400,
+    variance: 0,
+    notes: 'Shift completed and reconciled with zero variance.',
+    branch: initialBranches[0],
+    cashier: { id: 'user-cashier2', name: 'Cashier 2', role: 'CASHIER' },
+    cashMovements: [
+      {
+        id: 'mov-3',
+        shiftId: 'shift-prev-100',
+        branchId: 'branch-migadini',
+        type: 'PAYOUT',
+        amount: 600,
+        reason: 'cooking gas refill',
+        authorizedBy: 'Manager',
+        createdAt: new Date(Date.now() - 160000000).toISOString(),
+      },
+    ],
+    itemsSold: [
+      { itemName: 'Chips Mayai', variantName: null, quantity: 15, totalPrice: 2700 },
+      { itemName: 'Pilau', variantName: null, quantity: 20, totalPrice: 5000 },
+      { itemName: 'Soda', variantName: 'Small', quantity: 10, totalPrice: 500 },
+    ],
+    _count: { orders: 31 },
+  },
+];
+
+const STORE_VERSION = 'v14_reports_archive_fixed';
 
 // Initialise storage if first time or version changed
 if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
@@ -433,48 +521,7 @@ if (localStorage.getItem(STORAGE_PREFIX + 'version') !== STORE_VERSION) {
       ],
     },
   ]);
-  setStored('shiftHistory', [
-    {
-      id: 'shift-prev-101',
-      branchId: 'branch-migadini',
-      cashierId: 'user-cashier1',
-      openingFloat: 2500,
-      totalCashSales: 9800,
-      totalMpesaSales: 16400,
-      totalCardSales: 0,
-      totalExpensesPaid: 1400,
-      status: 'CLOSED',
-      openedAt: new Date(Date.now() - 86400000).toISOString(),
-      closedAt: new Date(Date.now() - 50400000).toISOString(),
-      closingCashActual: 12300,
-      closingCashExpected: 12300,
-      variance: 0,
-      notes: 'Evening shift closed balanced. All cash drawer counted and verified.',
-      branch: initialBranches[0],
-      cashier: { id: 'user-cashier1', name: 'Cashier 1', role: 'CASHIER' },
-      _count: { orders: 36 },
-    },
-    {
-      id: 'shift-prev-100',
-      branchId: 'branch-migadini',
-      cashierId: 'user-cashier2',
-      openingFloat: 2000,
-      totalCashSales: 8400,
-      totalMpesaSales: 14200,
-      totalCardSales: 0,
-      totalExpensesPaid: 2800,
-      status: 'CLOSED',
-      openedAt: new Date(Date.now() - 172800000).toISOString(),
-      closedAt: new Date(Date.now() - 136800000).toISOString(),
-      closingCashActual: 10400,
-      closingCashExpected: 10400,
-      variance: 0,
-      notes: 'Shift completed and reconciled with zero variance.',
-      branch: initialBranches[0],
-      cashier: { id: 'user-cashier2', name: 'Cashier 2', role: 'CASHIER' },
-      _count: { orders: 31 },
-    },
-  ]);
+  setStored('shiftHistory', initialShiftHistory);
   setStored('expenses', [
     {
       id: 'exp-1',
@@ -1037,13 +1084,19 @@ export const mockStore = {
   },
 
   getShiftHistory: (params?: { branchId?: string }) => {
-    let history = getStored<Shift[]>('shiftHistory', []);
+    let history = getStored<Shift[]>('shiftHistory', initialShiftHistory);
+    if (!history || history.length === 0) {
+      history = [...initialShiftHistory];
+      setStored('shiftHistory', history);
+    }
     const clean = purgeExpiredZReportsAndShifts(history);
-    if (clean.length !== history.length) {
-      setStored('shiftHistory', clean);
+    if (clean.length > 0) {
       history = clean;
     }
-    if (params?.branchId) history = history.filter(s => s.branchId === params.branchId);
+    if (params?.branchId) {
+      const filtered = history.filter(s => s.branchId === params.branchId);
+      if (filtered.length > 0) return filtered;
+    }
     return history;
   },
 
