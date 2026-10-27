@@ -10,12 +10,11 @@ node ops/frontend-artifacts.cjs verify
 npm ci --prefix server --include=dev --ignore-scripts
 npm --prefix server run db:generate
 npm --prefix server run build
-node --test --test-concurrency=1 tests/client.test.mjs tests/server.test.mjs
-node ops/frontend-artifacts.cjs stage client/dist
+NODE_ENV=test node --test --test-concurrency=1 tests/client.test.mjs tests/server.test.mjs
 mkdir -p "$release_root/server" "$release_root/client" /home/mombasam/nanifrys-runtime
 cp -R server/dist server/prisma server/node_modules "$release_root/server/"
 cp server/package.json server/package-lock.json "$release_root/server/"
-cp -R client/dist "$release_root/client/"
+node ops/frontend-artifacts.cjs stage "$release_root/client/dist"
 # The upgrade script first creates a private backup and never resets business tables.
 DOTENV_CONFIG_PATH=/home/mombasam/nanifrys-runtime/.env node ops/upgrade-database.cjs
 node ops/update-public-routing.cjs
@@ -28,7 +27,7 @@ web_root="/home/mombasam/nanifrys"
 if [ -f "$web_root/index.html" ]; then
   cp -p "$web_root/index.html" "$release_root/previous-index.html"
 fi
-for file in client/dist/*; do
+for file in "$release_root/client/dist"/*; do
   if [ -d "$file" ]; then
     mkdir -p "$web_root/$(basename "$file")"
     cp -R "$file"/. "$web_root/$(basename "$file")/"
@@ -36,7 +35,7 @@ for file in client/dist/*; do
     cp "$file" "$web_root/"
   fi
 done
-cp client/dist/index.html "$web_root/index.html.new"
+cp "$release_root/client/dist/index.html" "$web_root/index.html.new"
 mv "$web_root/index.html.new" "$web_root/index.html"
 # Atomic release pointer; retain the previous release for rollback.
 if [ -f /home/mombasam/nanifrys-runtime/current-release ]; then
