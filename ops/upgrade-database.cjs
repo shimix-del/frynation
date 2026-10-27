@@ -19,6 +19,8 @@ async function main(){
  for(const migration of ['202610260001_integrity_activity','202610270001_two_way_terminals']){
   const text=fs.readFileSync(path.join(__dirname,'../server/prisma/migrations',migration,'migration.sql'),'utf8');
   for(let statement of text.split(';').map(s=>s.replace(/^--.*$/gm,'').trim()).filter(Boolean)){
+   const table=statement.match(/^CREATE TABLE `([^`]+)`/i);
+   if(table&&found.has(table[1].toLowerCase()))continue;
    const column=statement.match(/^ALTER TABLE `([^`]+)` ADD COLUMN `([^`]+)`/i);
    if(column){const present=await db.$queryRaw`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=${column[1]} AND COLUMN_NAME=${column[2]}`;if(present.length)continue;}
    const index=statement.match(/^CREATE UNIQUE INDEX `([^`]+)` ON `([^`]+)`/i);
@@ -28,7 +30,8 @@ async function main(){
    await db.$executeRawUnsafe(statement);
   }
  }
- await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS NaniReplicaState (id VARCHAR(191) PRIMARY KEY,body LONGTEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+ if(!found.has('nanireplicastate'))await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS NaniReplicaState (id VARCHAR(191) PRIMARY KEY,body LONGTEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+ await db.$queryRawUnsafe('SELECT id, body FROM NaniReplicaState LIMIT 1');
  for(const model of Prisma.dmmf.datamodel.models)await db[model.name[0].toLowerCase()+model.name.slice(1)].findFirst();
  console.log('Additive schema upgrade verified; backup: '+file);
 }
