@@ -18,6 +18,7 @@ cp server/package.json server/package-lock.json "$release_root/server/"
 cp -R client/dist "$release_root/client/"
 # The upgrade script first creates a private backup and never resets business tables.
 DOTENV_CONFIG_PATH=/home/mombasam/nanifrys-runtime/.env node ops/upgrade-database.cjs
+node ops/update-public-routing.cjs
 cp ops/passenger.cjs /home/mombasam/nanifrys-runtime/app.js
 printf '%s\n' "$commit" > "$release_root/READY"
 # The Passenger application is mounted at /api; Apache serves the website from

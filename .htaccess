@@ -8,6 +8,7 @@ DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteRule ^\.well-known(?:/|$) - [L]
   # Keep application source, dependency folders, and private files off Apache.
   RewriteRule (^|/)\. - [F,L]
   RewriteRule ^(?:server|tests|ops|docs|node_modules|client/src|client/node_modules)(?:/|$) - [F,L,NC]
