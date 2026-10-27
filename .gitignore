@@ -6,6 +6,13 @@ node_modules/
 # Build Outputs
 dist/
 build/
+*.tsbuildinfo
+/core
+/core.[0-9]*
+/client/core
+/client/core.[0-9]*
+/server/core
+/server/core.[0-9]*
 
 # Logs
 npm-debug.log*
