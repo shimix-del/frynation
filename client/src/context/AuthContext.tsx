@@ -35,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = (reason?: any) => {
+    if (activeUserRef.current) void api.recordLogout().catch(() => {});
     localStorage.removeItem('nanifrys_pos_token');
     localStorage.removeItem('simba_pos_token');
     if (activeUserRef.current) {

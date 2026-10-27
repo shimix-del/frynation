@@ -5,7 +5,7 @@ export function formatKES(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return 'KES 0';
   }
-  return `KES ${Math.round(amount).toLocaleString('en-KE')}`;
+  return `KES ${amount.toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
 }
 
 export function formatKESDecimals(amount: number | null | undefined): string {
@@ -28,6 +28,7 @@ export function formatKenyaDateTime(dateString?: string | Date | null): string {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone: 'Africa/Nairobi',
   });
 }
 
@@ -38,5 +39,6 @@ export function formatKenyaTimeOnly(dateString?: string | Date | null): string {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone: 'Africa/Nairobi',
   });
 }

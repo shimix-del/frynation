@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const branches = await prisma.branch.findMany({
+      where: req.user?.role === 'OWNER' ? {} : { id: req.user!.branchId! },
       orderBy: { createdAt: 'asc' },
       include: {
         _count: {
@@ -33,7 +34,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
     const branch = await prisma.branch.findUnique({
       where: { id },
       include: {
-        users: { select: { id: true, name: true, role: true, pinCode: true, isActive: true } },
+        users: { select: { id: true, name: true, role: true, isActive: true } },
       },
     });
 

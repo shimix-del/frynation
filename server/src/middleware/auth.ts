@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kenya_pos_secure_secret_key_2026_jwt_token';
+import { JWT_SECRET } from '../security.js';
 
 export interface AuthUser {
   id: string;
@@ -67,9 +67,12 @@ export const authenticateToken = async (
       req.branchScopeId = user.branchId;
     }
 
+    if (!await enforceScope(req, res)) return;
     next();
   } catch (err) {
-    res.status(403).json({ error: 'Invalid or expired token' });
+    if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+    } else res.status(503).json({ error: 'Authentication service unavailable. Please retry.' });
   }
 };
 
@@ -93,3 +96,27 @@ export const requireRole = (allowedRoles: string[]) => {
 
 export const requireOwner = requireRole(['OWNER']);
 export const requireManagerOrOwner = requireRole(['OWNER', 'MANAGER']);
+
+async function enforceScope(req: AuthenticatedRequest, res: Response): Promise<boolean> {
+  const user = req.user!;
+  if (user.role === 'OWNER') return true;
+  const deny = () => { res.status(403).json({ error: 'Access denied for this branch or action' }); return false; };
+  if (!user.branchId) return deny();
+  for (const requested of [req.body?.branchId, req.query.branchId, req.headers['x-branch-id'], req.body?.sourceBranchId]) {
+    if (requested && requested !== user.branchId) return deny();
+  }
+  if (req.baseUrl.endsWith('/auth') && req.path.startsWith('/users')) return deny();
+  if (req.baseUrl.endsWith('/reports') && (user.role === 'CASHIER' || req.path === '/branch-comparison')) return deny();
+  if (req.baseUrl.endsWith('/recipes') && req.method !== 'GET') return deny();
+  if (req.baseUrl.endsWith('/branches') && req.params.id && req.params.id !== user.branchId) return deny();
+  let record: any;
+  if (req.baseUrl.endsWith('/orders') && req.params.id) record = await prisma.order.findUnique({ where: { id: String(req.params.id) } });
+  if (req.baseUrl.endsWith('/inventory') && (req.params.id || req.body?.stockItemId)) record = await prisma.stockItem.findUnique({ where: { id: String(req.params.id || req.body.stockItemId) } });
+  if (req.baseUrl.endsWith('/expenses') && req.params.id) record = await prisma.expense.findUnique({ where: { id: String(req.params.id) } });
+  if (req.baseUrl.endsWith('/shifts') && req.body?.shiftId) {
+    record = await prisma.shift.findUnique({ where: { id: String(req.body.shiftId) } });
+    if (record && user.role === 'CASHIER' && record.cashierId !== user.id) return deny();
+  }
+  if (record && record.branchId !== user.branchId) return deny();
+  return true;
+}

@@ -9,7 +9,9 @@
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx src/seed.ts"
+    "db:seed": "tsx src/seed.ts",
+    "db:migrate": "prisma migrate deploy",
+    "setup:owner": "tsx src/setupOwner.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

@@ -5,13 +5,16 @@ import prisma from '../prisma.js';
 import { authenticateToken, AuthenticatedRequest, requireOwner, requireManagerOrOwner } from '../middleware/auth.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'kenya_pos_secure_secret_key_2026_jwt_token';
+import { JWT_SECRET, matchesPin, terminalId } from '../security.js';
+import { readState } from '../replica/state.js';
+import { logActivity } from '../services/activityService.js';
 
 const failedAttemptsMap = new Map<string, { count: number; lockedUntil: number }>();
 
 // Login with Email/Password or PIN Code
 router.post('/login', async (req, res): Promise<void> => {
   try {
+    if(process.env.SITE_MODE==='shop'&&!await readState('enrolled')){res.status(503).json({error:'Shop setup is pending verified pairing with the live database'});return;}
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
     const lockoutKey = `auth_lockout_${clientIp}`;
     const attemptRecord = failedAttemptsMap.get(lockoutKey);
@@ -30,17 +33,17 @@ router.post('/login', async (req, res): Promise<void> => {
 
     if (pinCode) {
       // PIN code login (for fast cashier touchscreen POS login)
-      user = await prisma.user.findFirst({
-        where: {
-          pinCode: pinCode.toString().trim(),
-          isActive: true,
-          ...(branchId && branchId !== 'all' ? { OR: [{ branchId }, { role: 'OWNER' }] } : {}),
-        },
-        include: { branch: true },
-      });
+      const candidates = await prisma.user.findMany({ where: { isActive: true,
+        ...(branchId && branchId !== 'all' ? { OR: [{ branchId }, { role: 'OWNER' }] } : {}) }, include: { branch: true } });
+      for (const candidate of candidates) {
+        if (await matchesPin(String(pinCode).trim(), candidate.pinCode)) {
+          if(user){res.status(409).json({error:'This PIN is assigned to multiple accounts. An owner must resolve it using email login.'});return;}
+          user = candidate;
+        }
+      }
 
       if (!user) {
-        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        const curCount = (attemptRecord && attemptRecord.lockedUntil > 0 && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
         if (curCount >= 3) {
           failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
           res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
@@ -57,7 +60,7 @@ router.post('/login', async (req, res): Promise<void> => {
       });
 
       if (!user || !user.isActive) {
-        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        const curCount = (attemptRecord && attemptRecord.lockedUntil > 0 && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
         if (curCount >= 3) {
           failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
           res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
@@ -70,7 +73,7 @@ router.post('/login', async (req, res): Promise<void> => {
 
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
-        const curCount = (attemptRecord && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
+        const curCount = (attemptRecord && attemptRecord.lockedUntil > 0 && attemptRecord.lockedUntil <= Date.now() ? 0 : attemptRecord?.count || 0) + 1;
         if (curCount >= 3) {
           failedAttemptsMap.set(lockoutKey, { count: 3, lockedUntil: Date.now() + 5 * 60 * 1000 });
           res.status(429).json({ error: '3 failed attempts exceeded. Access blocked for 5 minutes.' });
@@ -85,6 +88,10 @@ router.post('/login', async (req, res): Promise<void> => {
       return;
     }
 
+    if (process.env.SITE_MODE !== 'cloud' && !user.pinCode.startsWith('$2')) {
+      await prisma.user.update({ where: { id: user.id }, data: { pinCode: await bcrypt.hash(user.pinCode, 10) } });
+    }
+    const loginShift = await prisma.shift.findFirst({ where: { status: 'OPEN', terminalId, ...(user.branchId ? { branchId: user.branchId } : { cashierId: user.id }) } });
     // Reset failed attempts on success
     failedAttemptsMap.delete(lockoutKey);
 
@@ -92,7 +99,7 @@ router.post('/login', async (req, res): Promise<void> => {
     if (user.role === 'CASHIER') {
       const activeShift = await prisma.shift.findFirst({
         where: {
-          status: 'OPEN',
+          status: 'OPEN', terminalId,
           ...(user.branchId ? { branchId: user.branchId } : {}),
         },
         include: { cashier: true },
@@ -106,6 +113,8 @@ router.post('/login', async (req, res): Promise<void> => {
         return;
       }
     }
+
+    await logActivity(prisma, { ...user, role: user.role as any }, 'LOGIN', 'USER', user.id, user.branchId, loginShift?.id || null);
 
     const token = jwt.sign(
       {
@@ -156,7 +165,6 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
       email: user.email,
       phone: user.phone,
       role: user.role,
-      pinCode: user.pinCode,
       branchId: user.branchId,
       branchName: user.branch?.name || 'All Branches (Central HQ)',
       branch: user.branch,
@@ -167,7 +175,7 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
 });
 
 // List all staff members
-router.get('/users', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/users', authenticateToken, requireOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const whereClause = req.user?.role === 'OWNER' ? {} : { branchId: req.user?.branchId };
 
@@ -184,7 +192,6 @@ router.get('/users', authenticateToken, requireManagerOrOwner, async (req: Authe
         email: u.email,
         phone: u.phone,
         role: u.role,
-        pinCode: u.pinCode,
         branchId: u.branchId,
         branchName: u.branch?.name || 'Central HQ',
         isActive: u.isActive,
@@ -197,7 +204,7 @@ router.get('/users', authenticateToken, requireManagerOrOwner, async (req: Authe
 });
 
 // Create new staff member
-router.post('/users', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/users', authenticateToken, requireOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { name, email, phone, role, pinCode, password, branchId } = req.body;
 
@@ -206,6 +213,12 @@ router.post('/users', authenticateToken, requireManagerOrOwner, async (req: Auth
       return;
     }
 
+    if (!['OWNER', 'MANAGER', 'CASHIER'].includes(role || 'CASHIER') || !/^\d{4}$/.test(String(pinCode)) || ((role || 'CASHIER') !== 'OWNER' && !branchId)) {
+      res.status(400).json({ error: 'Valid role, four-digit PIN, and assigned branch are required' }); return;
+    }
+    for (const other of await prisma.user.findMany()) {
+      if (await matchesPin(String(pinCode), other.pinCode)) { res.status(400).json({ error: 'PIN already assigned' }); return; }
+    }
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
       res.status(400).json({ error: 'User with this email already exists' });
@@ -221,13 +234,14 @@ router.post('/users', authenticateToken, requireManagerOrOwner, async (req: Auth
         email: email.toLowerCase(),
         phone: phone || null,
         role: role || 'CASHIER',
-        pinCode: pinCode.toString(),
+        pinCode: await bcrypt.hash(String(pinCode), 10),
         passwordHash,
         branchId: branchId || (req.user?.role === 'OWNER' ? null : req.user?.branchId),
       },
       include: { branch: true },
     });
 
+    await logActivity(prisma, req.user!, 'STAFF_CREATED', 'USER', newUser.id, newUser.branchId, null, { role: newUser.role });
     res.status(201).json({
       message: 'Staff member created',
       user: {
@@ -236,7 +250,6 @@ router.post('/users', authenticateToken, requireManagerOrOwner, async (req: Auth
         email: newUser.email,
         phone: newUser.phone,
         role: newUser.role,
-        pinCode: newUser.pinCode,
         branchName: newUser.branch?.name || 'Central HQ',
       },
     });
@@ -246,7 +259,7 @@ router.post('/users', authenticateToken, requireManagerOrOwner, async (req: Auth
 });
 
 // Update staff member (email, phone, name, role, etc.)
-router.put('/users/:id', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/users/:id', authenticateToken, requireOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
     const { name, email, phone, role, pinCode, branchId, isActive } = req.body;
@@ -257,6 +270,12 @@ router.put('/users/:id', authenticateToken, requireManagerOrOwner, async (req: A
       return;
     }
 
+    if ((role && !['OWNER', 'MANAGER', 'CASHIER'].includes(role)) || (pinCode && !/^\d{4}$/.test(String(pinCode))) || ((role || existingUser.role) !== 'OWNER' && !(branchId === undefined ? existingUser.branchId : branchId))) {
+      res.status(400).json({ error: 'Valid role, PIN, and assigned branch are required' }); return;
+    }
+    if (pinCode) for (const other of await prisma.user.findMany({ where: { id: { not: id } } })) {
+      if (await matchesPin(String(pinCode), other.pinCode)) { res.status(400).json({ error: 'PIN already assigned' }); return; }
+    }
     // Check unique email if email is being changed
     if (email && email.toLowerCase() !== existingUser.email.toLowerCase()) {
       const emailExists = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -273,13 +292,14 @@ router.put('/users/:id', authenticateToken, requireManagerOrOwner, async (req: A
         ...(email ? { email: email.toLowerCase() } : {}),
         ...(phone !== undefined ? { phone: phone ? phone.trim() : null } : {}),
         ...(role ? { role } : {}),
-        ...(pinCode ? { pinCode: pinCode.toString() } : {}),
+        ...(pinCode ? { pinCode: await bcrypt.hash(String(pinCode), 10) } : {}),
         ...(branchId !== undefined ? { branchId: branchId || null } : {}),
         ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
       },
       include: { branch: true },
     });
 
+    await logActivity(prisma, req.user!, 'STAFF_UPDATED', 'USER', id, updatedUser.branchId, null, { role: updatedUser.role, isActive: updatedUser.isActive });
     res.json({
       message: 'User updated successfully',
       user: {
@@ -296,6 +316,15 @@ router.put('/users/:id', authenticateToken, requireManagerOrOwner, async (req: A
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
+});
+
+router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const branchId = req.branchScopeId || req.user!.branchId;
+    const shift = branchId ? await prisma.shift.findFirst({ where: { branchId, status: 'OPEN', terminalId } }) : null;
+    await logActivity(prisma, req.user!, 'LOGOUT', 'USER', req.user!.id, branchId || null, shift?.id || null);
+    res.json({ message: 'Logout recorded' });
+  } catch { res.status(503).json({ error: 'Could not record logout' }); }
 });
 
 export default router;

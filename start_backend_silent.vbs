@@ -1,3 +1,3 @@
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.CurrentDirectory = "C:\xampp\htdocs\pos sys\server"
-WshShell.Run "cmd.exe /c npm run dev", 0, False
+root = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
+WshShell.Run "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File """ & root & "\ops\windows\start-supervisor.ps1""", 0, False

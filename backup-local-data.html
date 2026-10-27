@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Nani Frys — Save device records</title>
+<style>body{font:17px system-ui;background:#18181b;color:#fafafa;max-width:620px;margin:8vh auto;padding:24px;line-height:1.6}h1{color:#fbbf24}button{font:inherit;padding:14px 22px;background:#f97316;color:#18181b;border:0;border-radius:10px;cursor:pointer}input{display:block;font:inherit;padding:10px;margin:8px 0 20px;width:90%}#status{white-space:pre-wrap}</style></head>
+<body><h1>Save this device’s records</h1>
+<p>Open this page in the same browser and profile you used for Nani Frys sales. Repeat on every device used for sales, stock, shifts, or expenses.</p>
+<p>This saves a backup to your device. It does not change your records or send them to a server. The backup can contain customer details and staff PINs; keep it private and share it only for the database migration.</p>
+<label for="device">Device name</label><input id="device" placeholder="For example: counter laptop">
+<button id="save" type="button">Download device backup</button><p id="status" role="status"></p>
+<script>
+'use strict';
+document.getElementById('save').addEventListener('click',()=>{
+  const status=document.getElementById('status');
+  try {
+    const records={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key && /^(nanifrys_|simba_)/.test(key) && !/token|active_session|auth_lockout/i.test(key)) records[key]=localStorage.getItem(key);
+    }
+    const payload={format:'nanifrys-device-backup-v1',origin:location.origin,exportedAt:new Date().toISOString(),device:document.getElementById('device').value.trim()||'unnamed-device',records};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a'); link.href=url;
+    link.download='nanifrys-device-'+payload.device.replace(/[^a-zA-Z0-9_-]/g,'-')+'-'+Date.now()+'.json';
+    document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    status.textContent=Object.keys(records).length+' saved record groups. Keep this file for reconciliation. Repeat for every browser profile used for sales.';
+  } catch {status.textContent='This browser could not export its records. Keep the browser data intact and contact your administrator.';}
+});
+</script></body></html>

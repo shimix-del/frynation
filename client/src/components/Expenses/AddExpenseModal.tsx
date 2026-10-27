@@ -46,10 +46,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       return;
     }
 
-    if (securityPin.trim() !== '0099') {
-      setError('🚨 Security Authorization Failed: Invalid security PIN code.');
-      return;
-    }
+
 
     setIsLoading(true);
     setError(null);
@@ -208,34 +205,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 onChange={e => setReceiptNumber(e.target.value)}
                 placeholder="e.g. TOT-8921"
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-brand-500"
-              />
-            </div>
-          </div>
-
-          {/* Security Authorization PIN */}
-          <div className="bg-zinc-800/80 p-3 rounded-2xl border border-zinc-700/80">
-            <label className="block text-xs font-bold text-zinc-200 mb-1.5 flex items-center justify-between">
-              <span className="flex items-center space-x-1.5">
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <span>Security Authorization PIN *</span>
-              </span>
-              <span className="text-[10px] text-zinc-400 font-medium">4 Digits</span>
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
-              <input
-                type="password"
-                maxLength={4}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={securityPin}
-                onChange={e => {
-                  setSecurityPin(e.target.value.replace(/\D/g, '').slice(0, 4));
-                  setError(null);
-                }}
-                placeholder="Enter 4-digit security PIN"
-                required
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl py-2 pl-9 pr-3 text-center text-sm font-mono tracking-widest text-white focus:outline-none focus:border-amber-400"
               />
             </div>
           </div>

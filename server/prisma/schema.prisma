@@ -131,6 +131,7 @@ model MenuItemRecipe {
 
 model Order {
   id               String           @id @default(cuid())
+  clientRequestId  String?          @unique
   orderNumber      String           @unique // ORD-20260822-001
   branchId         String
   cashierId        String
@@ -194,6 +195,7 @@ model Payment {
 }
 
 model Shift {
+  terminalId           String          @default("cloud")
   id                   String          @id @default(cuid())
   branchId             String
   cashierId            String
@@ -219,6 +221,7 @@ model Shift {
 }
 
 model CashMovement {
+  expenseId      String?         @unique
   id             String          @id @default(cuid())
   shiftId        String
   branchId       String
@@ -279,4 +282,38 @@ model StockAudit {
 
   branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
   stockItem      StockItem       @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+}
+
+// Snapshot fields intentionally retain the audit trail after staff/catalog changes.
+model ActivityLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorName  String
+  actorRole  String
+  branchId   String?
+  shiftId    String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+  @@index([branchId, createdAt])
+  @@index([shiftId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model StockMovement {
+  id                 String   @id @default(cuid())
+  stockItemId        String
+  stockItemName      String
+  branchId           String
+  orderId            String?
+  shiftId            String?
+  actorId            String
+  quantity           Float
+  reason             String
+  reversesMovementId String?  @unique
+  createdAt          DateTime @default(now())
+  @@index([orderId, reason])
+  @@index([branchId, createdAt])
 }

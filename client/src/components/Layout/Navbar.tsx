@@ -17,6 +17,7 @@ import { api } from '../../services/api';
 import { offlineSync, OfflineOrder } from '../../services/offlineSync';
 import { Shift } from '../../types';
 import naniLogo from '../../assets/logo.jpg';
+import { ShopStatus } from './ShopStatus';
 
 interface NavbarProps {
   onOpenShiftModal: () => void;
@@ -61,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const updateOfflineStatus = () => {
     setIsOnline(navigator.onLine);
-    setOfflineQueue(offlineSync.getQueue());
+    try { setOfflineQueue(offlineSync.getQueue()); } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
@@ -90,6 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         alert(`Successfully synced ${res.synced} offline orders!`);
       }
       updateOfflineStatus();
+    } catch (e: any) {
+      alert(e.message);
     } finally {
       setIsSyncing(false);
     }
@@ -97,6 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="bg-zinc-900 border-b border-zinc-800 text-zinc-100 px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
+      <ShopStatus />
       {/* Brand & Logo + Mobile Menu Button */}
       <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
         {onOpenMobileMenu && (

@@ -1,0 +1,282 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Branch {
+  id             String          @id @default(cuid())
+  name           String
+  code           String          @unique
+  address        String?
+  phone          String?
+  tillNumber     String?
+  paybillNumber  String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  users          User[]
+  stockItems     StockItem[]
+  orders         Order[]
+  payments       Payment[]
+  shifts         Shift[]
+  cashMovements  CashMovement[]
+  expenses       Expense[]
+  transfersOut   StockTransfer[] @relation("SourceBranch")
+  transfersIn    StockTransfer[] @relation("DestBranch")
+  stockAudits    StockAudit[]
+}
+
+model User {
+  id             String          @id @default(cuid())
+  branchId       String?
+  name           String
+  email          String          @unique
+  phone          String?
+  role           String          @default("CASHIER") // OWNER, MANAGER, CASHIER
+  pinCode        String          // 4-digit PIN for rapid cashier POS auth
+  passwordHash   String
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  branch         Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  orders         Order[]
+  shifts         Shift[]
+}
+
+model Category {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  code           String          @unique
+  sortOrder      Int             @default(0)
+  icon           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  menuItems      MenuItem[]
+}
+
+model MenuItem {
+  id             String            @id @default(cuid())
+  categoryId     String
+  name           String
+  description    String?
+  basePrice      Float
+  costPrice      Float             @default(0)
+  imageUrl       String?
+  isAvailable    Boolean           @default(true)
+  hasVariants    Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  category       Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  variants       MenuItemVariant[]
+  recipes        MenuItemRecipe[]
+  orderItems     OrderItem[]
+}
+
+model MenuItemVariant {
+  id             String            @id @default(cuid())
+  menuItemId     String
+  name           String            // e.g. "1/4 Kuku Choma", "Plain", "Large 500ml"
+  price          Float
+  costPrice      Float             @default(0)
+  isAvailable    Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  menuItem       MenuItem          @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  recipes        MenuItemRecipe[]
+  orderItems     OrderItem[]
+}
+
+model StockItem {
+  id             String            @id @default(cuid())
+  branchId       String
+  name           String            // "Potatoes", "Raw Chicken", "Coca-Cola 300ml"
+  sku            String?
+  type           String            @default("RAW_INGREDIENT") // PACKAGED_UNIT, RAW_INGREDIENT
+  unit           String            @default("kg") // kg, litre, piece, crate, portion, bottle
+  currentStock   Float             @default(0)
+  minStockAlert  Float             @default(5)
+  unitCost       Float             @default(0)
+  supplierName   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  recipes        MenuItemRecipe[]
+  transfers      StockTransfer[]
+  audits         StockAudit[]
+}
+
+model MenuItemRecipe {
+  id               String           @id @default(cuid())
+  menuItemId       String
+  variantId        String?
+  stockItemId      String
+  quantityRequired Float            // e.g. 0.35 kg for chips, 1 for bottled soda
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  menuItem         MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  variant          MenuItemVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  stockItem        StockItem        @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id               String           @id @default(cuid())
+  orderNumber      String           @unique // ORD-20260822-001
+  branchId         String
+  cashierId        String
+  shiftId          String?
+  orderType        String           @default("DINE_IN") // DINE_IN, TAKEAWAY, DELIVERY
+  tableNumber      String?
+  customerName     String?
+  customerPhone    String?
+  status           String           @default("COMPLETED") // COMPLETED, HELD, CANCELLED
+  subtotal         Float            @default(0)
+  discountAmount   Float            @default(0)
+  discountReason   String?
+  taxAmount        Float            @default(0)
+  totalAmount      Float            @default(0)
+  notes            String?
+  isOfflineSynced  Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  branch           Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  cashier          User             @relation(fields: [cashierId], references: [id])
+  shift            Shift?           @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+  payments         Payment[]
+}
+
+model OrderItem {
+  id             String            @id @default(cuid())
+  orderId        String
+  menuItemId     String
+  variantId      String?
+  itemName       String
+  variantName    String?
+  quantity       Int               @default(1)
+  unitPrice      Float
+  unitCost       Float             @default(0)
+  totalPrice     Float
+  notes          String?
+  createdAt      DateTime          @default(now())
+
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem       MenuItem          @relation(fields: [menuItemId], references: [id])
+  variant        MenuItemVariant?  @relation(fields: [variantId], references: [id])
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  orderId        String
+  branchId       String
+  amount         Float
+  paymentMethod  String          @default("CASH") // CASH, MPESA, CARD, SPLIT
+  mpesaCode      String?         // e.g. QHK4928XLA
+  cardRef        String?
+  cashTendered   Float?
+  changeAmount   Float?
+  status         String          @default("COMPLETED")
+  createdAt      DateTime        @default(now())
+
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Shift {
+  id                   String          @id @default(cuid())
+  branchId             String
+  cashierId            String
+  openingFloat         Float           @default(0)
+  closingCashActual    Float?
+  closingCashExpected  Float?
+  variance             Float?
+  totalCashSales       Float           @default(0)
+  totalMpesaSales      Float           @default(0)
+  totalCardSales       Float           @default(0)
+  totalExpensesPaid    Float           @default(0)
+  status               String          @default("OPEN") // OPEN, CLOSED
+  openedAt             DateTime        @default(now())
+  closedAt             DateTime?
+  notes                String?
+  createdAt            DateTime        @default(now())
+
+  branch               Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  cashier              User            @relation(fields: [cashierId], references: [id])
+  orders               Order[]
+  cashMovements        CashMovement[]
+  expenses             Expense[]
+}
+
+model CashMovement {
+  id             String          @id @default(cuid())
+  shiftId        String
+  branchId       String
+  type           String          // FLOAT_IN, CASH_DROP, PAYOUT
+  amount         Float
+  reason         String
+  authorizedBy   String?
+  createdAt      DateTime        @default(now())
+
+  shift          Shift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id             String          @id @default(cuid())
+  branchId       String
+  shiftId        String?
+  category       String          // MARKET_PRODUCE, GAS_CHARCOAL, COOKING_OIL, DAILY_WAGES, UTILITIES, REPAIRS, TRANSPORT_BODA, OTHER
+  amount         Float
+  description    String
+  paidTo         String?
+  paymentSource  String          @default("CASH_DRAWER") // CASH_DRAWER, BANK_MPESA
+  receiptNumber  String?
+  createdAt      DateTime        @default(now())
+
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  shift          Shift?          @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+}
+
+model StockTransfer {
+  id               String          @id @default(cuid())
+  sourceBranchId   String
+  destBranchId     String
+  stockItemId      String
+  quantity         Float
+  status           String          @default("PENDING") // PENDING, DISPATCHED, RECEIVED
+  requestedBy      String?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  sourceBranch     Branch          @relation("SourceBranch", fields: [sourceBranchId], references: [id], onDelete: Cascade)
+  destBranch       Branch          @relation("DestBranch", fields: [destBranchId], references: [id], onDelete: Cascade)
+  stockItem        StockItem       @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+}
+
+model StockAudit {
+  id             String          @id @default(cuid())
+  branchId       String
+  stockItemId    String
+  systemStock    Float
+  countedStock   Float
+  variance       Float
+  reason         String          @default("RECONCILIATION") // SPOILAGE, WASTAGE, THEFT, RECIPE_ADJUSTMENT, OTHER
+  auditedBy      String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  stockItem      StockItem       @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+}

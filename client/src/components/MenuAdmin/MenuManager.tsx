@@ -31,7 +31,7 @@ export const MenuManager: React.FC = () => {
   const [description, setDescription] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('');
   const [hasVariants, setHasVariants] = useState<boolean>(false);
-  const [variantsList, setVariantsList] = useState<Array<{ name: string; price: string; costPrice: string }>>([
+  const [variantsList, setVariantsList] = useState<Array<{ id?: string; name: string; price: string; costPrice: string }>>([
     { name: 'Regular Portion', price: '', costPrice: '' },
   ]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -80,6 +80,7 @@ export const MenuManager: React.FC = () => {
     if (item.variants && item.variants.length > 0) {
       setVariantsList(
         item.variants.map(v => ({
+          id: v.id,
           name: v.name,
           price: v.price.toString(),
           costPrice: v.costPrice.toString(),
@@ -126,6 +127,7 @@ export const MenuManager: React.FC = () => {
           ? variantsList
               .filter(v => v.name && v.price)
               .map(v => ({
+                id: v.id,
                 name: v.name,
                 price: parseFloat(v.price),
                 costPrice: parseFloat(v.costPrice) || 0,

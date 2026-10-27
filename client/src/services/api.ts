@@ -8,6 +8,14 @@ export function isGitHubPages(): boolean {
   return typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
 }
 
+export function isLocalMode(): boolean {
+  return localStorage.getItem('nanifrys_mode') === 'local';
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('nanifrys_custom_api_url');
@@ -15,11 +23,13 @@ export function getApiBaseUrl(): string {
 
     if (window.location && window.location.hostname) {
       const { protocol, hostname } = window.location;
+      if (['5000','5050'].includes(window.location.port)) return `${window.location.origin}/api`;
       // GitHub Pages has no backend on port 5000
       if (hostname.endsWith('github.io')) {
         return '';
       }
-      return `${protocol}//${hostname}:5000/api`;
+      return hostname === 'localhost' || hostname === '127.0.0.1' || /^192\.168\.|^10\./.test(hostname)
+        ? `${protocol}//${hostname}:5000/api` : `${window.location.origin}/api`;
     }
   }
   return 'http://localhost:5000/api';
@@ -33,24 +43,13 @@ function getSelectedBranch(): string | null {
   return localStorage.getItem('nanifrys_pos_branch_id');
 }
 
-import { mockStore } from './mockStore';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const custom = typeof window !== 'undefined' ? localStorage.getItem('nanifrys_custom_api_url') : null;
-  const isGh = isGitHubPages();
-
-  // If on GitHub Pages without custom remote backend, seamlessly run standalone in-browser store
-  if (isGh && !custom) {
-    return handleMockFallback<T>(endpoint, options);
-  }
-
+  if (isLocalMode()) throw new ApiError('Export any legacy browser records, then choose the synchronized POS.', 409);
   const token = getAuthToken();
   const branchId = getSelectedBranch();
   const apiBase = getApiBaseUrl();
-
-  if (!apiBase) {
-    return handleMockFallback<T>(endpoint, options);
-  }
+  if (!apiBase) throw new ApiError('Configure your live API address or open the shop server at http://127.0.0.1:5050/.', 503);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -68,95 +67,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   try {
     const response = await fetch(`${apiBase}${endpoint}`, {
       ...options,
+      signal: options.signal || AbortSignal.timeout(15000),
       headers,
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => { throw new ApiError('The central server returned an invalid response.', response.ok ? 502 : response.status); });
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
+      throw new ApiError(data.error || data.message || `Request failed with status ${response.status}`, response.status);
     }
 
     return data as T;
   } catch (error: any) {
-    // If running standalone or backend is unreachable, gracefully fallback to in-browser mockStore
-    console.warn(`[POS Standalone] Backend unavailable for ${endpoint} (${error.message}). Falling back to in-browser store.`);
-    return handleMockFallback<T>(endpoint, options);
+    if (error instanceof ApiError) throw error;
+    throw new ApiError('The central server could not be reached. Please retry; pending sales remain on this device.', 0);
   }
-}
-
-// Router for mock fallback
-async function handleMockFallback<T>(endpoint: string, options: RequestInit): Promise<T> {
-  const method = (options.method || 'GET').toUpperCase();
-  const body = options.body ? JSON.parse(options.body as string) : {};
-  const [path, queryString] = endpoint.split('?');
-  const params: Record<string, any> = {};
-  if (queryString) {
-    new URLSearchParams(queryString).forEach((val, key) => {
-      params[key] = val;
-    });
-  }
-
-  if (path === '/auth/login') return mockStore.login(body) as any;
-  if (path === '/auth/me') return mockStore.getMe() as any;
-  if (path === '/auth/users' && method === 'GET') return mockStore.getUsers() as any;
-  if (path === '/auth/users' && method === 'POST') return mockStore.createUser(body) as any;
-  if (path.startsWith('/auth/users/') && (method === 'PUT' || method === 'PATCH')) {
-    const id = path.split('/')[3];
-    return mockStore.updateUser(id, body) as any;
-  }
-  if (path === '/branches' && method === 'GET') return mockStore.getBranches() as any;
-  if (path === '/categories' && method === 'GET') return mockStore.getCategories() as any;
-  if (path === '/categories' && method === 'POST') return mockStore.createCategory(body) as any;
-  if (path === '/menu' && method === 'GET') return mockStore.getMenu(params) as any;
-  if (path === '/menu' && method === 'POST') return mockStore.createMenuItem(body) as any;
-  if (path.startsWith('/menu/') && path.endsWith('/toggle-stock')) {
-    const id = path.split('/')[2];
-    return mockStore.toggleStock(id) as any;
-  }
-  if (path.startsWith('/menu/') && method === 'PUT') {
-    const id = path.split('/')[2];
-    return mockStore.updateMenuItem(id, body) as any;
-  }
-  if (path.startsWith('/menu/') && method === 'DELETE') {
-    const id = path.split('/')[2];
-    return mockStore.deleteMenuItem(id) as any;
-  }
-  if (path === '/inventory' && method === 'GET') return mockStore.getInventory(params) as any;
-  if (path === '/inventory' && method === 'POST') return mockStore.createStockItem(body) as any;
-  if (path.startsWith('/inventory/') && method === 'PUT') {
-    const id = path.split('/')[2];
-    return mockStore.updateStockItem(id, body) as any;
-  }
-  if (path.startsWith('/inventory/') && method === 'DELETE') {
-    const id = path.split('/')[2];
-    return mockStore.deleteStockItem(id) as any;
-  }
-  if (path === '/inventory/restock') return mockStore.restock(body) as any;
-  if (path === '/inventory/transfer') return mockStore.transferStock(body) as any;
-  if (path === '/inventory/audit') return mockStore.auditStock(body) as any;
-  if (path === '/orders' && method === 'GET') return mockStore.getOrders(params) as any;
-  if (path === '/orders' && method === 'POST') return mockStore.createOrder(body) as any;
-  if (path === '/orders/held') return mockStore.getHeldOrders(params) as any;
-  if (path === '/shifts/current') return mockStore.getCurrentShift(params) as any;
-  if (path === '/shifts/open') return mockStore.openShift(body) as any;
-  if (path === '/shifts/close') return mockStore.closeShift(body) as any;
-  if (path.startsWith('/shifts/history')) return mockStore.getShiftHistory(params) as any;
-  if (path.startsWith('/shifts/cash-movement')) return mockStore.addCashMovement(body) as any;
-  if (path === '/expenses' && method === 'GET') return mockStore.getExpenses(params) as any;
-  if (path === '/expenses' && method === 'POST') return mockStore.createExpense(body) as any;
-  if (path === '/reports/summary') return mockStore.getDashboardSummary(params) as any;
-  if (path === '/reports/sales-by-category') return mockStore.getSalesByCategory(params) as any;
-  if (path === '/reports/top-items') return mockStore.getTopItems() as any;
-  if (path === '/reports/hourly') return mockStore.getHourlySales() as any;
-  if (path === '/reports/branch-comparison') return mockStore.getBranchComparison() as any;
-  if (path === '/reports/cashier-performance') return mockStore.getCashierPerformance() as any;
-  if (path === '/reports/profit-loss') return mockStore.getProfitLoss() as any;
-
-  return [] as any;
 }
 
 export const api = {
+  getSystemStatus: () => request<any>('/system/status'),
+  recordLogout: () => request<any>('/auth/logout', { method: 'POST' }),
+  getActivity: (params: Record<string, string> = {}) => request<any>(`/activity?${new URLSearchParams(params)}`),
   // ── Auth ──────────────────────────────────────────────────
   login: (credentials: { email?: string; password?: string; pinCode?: string; branchId?: string }) =>
     request<{ token: string; user: any; message: string }>('/auth/login', {

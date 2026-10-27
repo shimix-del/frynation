@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { createRequestId } from '../../utils/id';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Banknote,
@@ -13,12 +14,13 @@ import {
 import { usePosCart } from '../../context/PosCartContext';
 import { useBranch } from '../../context/BranchContext';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { ApiError, api } from '../../services/api';
 import { offlineSync } from '../../services/offlineSync';
 import { formatKES } from '../../utils/currency';
 import { Order } from '../../types';
 
 interface PaymentModalProps {
+  shiftId: string;
   isOpen: boolean;
   onClose: () => void;
   onOrderCompleted: (order: Order, warnings: string[]) => void;
@@ -26,13 +28,15 @@ interface PaymentModalProps {
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
+  shiftId,
   onClose,
   onOrderCompleted,
 }) => {
-  if (!isOpen) return null;
+
 
   const {
     cartItems,
+    heldOrderId,
     orderType,
     tableNumber,
     customerName,
@@ -49,10 +53,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const { user } = useAuth();
 
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MPESA' | 'SPLIT' | 'CARD'>('CASH');
-  
+
+  const requestId = useRef(createRequestId());
+  const submitted = useRef(false);
+  const [mpesaCode, setMpesaCode] = useState('');
+  useEffect(() => {
+    if (isOpen) { requestId.current = createRequestId(); submitted.current = false; setCashTendered(totalAmount); setSplitCash(Math.floor(totalAmount / 2)); setSplitMpesa(totalAmount - Math.floor(totalAmount / 2)); setMpesaCode(''); setError(null); }
+  }, [isOpen, totalAmount]);
   // Cash details
   const [cashTendered, setCashTendered] = useState<number>(totalAmount);
-  
+
   // Split details
   const [splitCash, setSplitCash] = useState<number>(Math.floor(totalAmount / 2));
   const [splitMpesa, setSplitMpesa] = useState<number>(totalAmount - Math.floor(totalAmount / 2));
@@ -70,7 +80,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const splitRemaining = totalAmount - (splitCash + splitMpesa);
 
   const handleProcessCheckout = async () => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || submitted.current) return;
+    if ((paymentMethod === 'MPESA' || (paymentMethod === 'SPLIT' && splitMpesa > 0)) && !/^[A-Z0-9]{8,20}$/.test(mpesaCode.trim().toUpperCase())) { setError('Enter the actual M-Pesa transaction reference after confirming receipt.'); return; }
+    if (paymentMethod === 'CARD' && !cardRef.trim()) { setError('Enter the card slip reference.'); return; }
+    if (splitCash < 0 || splitMpesa < 0) { setError('Split amounts cannot be negative.'); return; }
     setIsSubmitting(true);
     setError(null);
 
@@ -90,15 +103,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         changeAmount,
       });
     } else if (paymentMethod === 'MPESA') {
-      const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-      const randLetters = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
-      const randNums = Math.floor(1000 + Math.random() * 9000);
-      const autoCode = `QHK${randNums}${randLetters.slice(0, 3)}`;
 
       paymentsPayload.push({
         amount: totalAmount,
         paymentMethod: 'MPESA',
-        mpesaCode: autoCode,
+        mpesaCode: mpesaCode.trim().toUpperCase(),
       });
     } else if (paymentMethod === 'SPLIT') {
       if (splitRemaining !== 0) {
@@ -115,26 +124,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         });
       }
       if (splitMpesa > 0) {
-        const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-        const randLetters = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
-        const randNums = Math.floor(1000 + Math.random() * 9000);
-        const autoCode = `QHK${randNums}${randLetters.slice(0, 3)}`;
 
         paymentsPayload.push({
           amount: splitMpesa,
           paymentMethod: 'MPESA',
-          mpesaCode: autoCode,
+          mpesaCode: mpesaCode.trim().toUpperCase(),
         });
       }
     } else if (paymentMethod === 'CARD') {
       paymentsPayload.push({
         amount: totalAmount,
         paymentMethod: 'CARD',
-        cardRef: cardRef || `POS-${Math.floor(1000 + Math.random() * 9000)}`,
+        cardRef: cardRef.trim(),
       });
     }
 
     const orderPayload = {
+      clientRequestId: requestId.current,
+      cashierId: user?.id,
+      shiftId,
+      heldOrderId,
       branchId: currentBranchId,
       orderType,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : null,
@@ -160,17 +169,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     try {
-      const res = await api.createOrder(orderPayload);
+      submitted.current = true;
+      const res = heldOrderId ? await api.resumeOrder(heldOrderId, orderPayload) : await api.createOrder(orderPayload);
       clearCart();
       onClose();
       onOrderCompleted(res.order, res.warnings || []);
     } catch (err: any) {
-      console.warn('Backend order submission failed, falling back to local offline queue:', err);
+      if (!(err instanceof ApiError) || err.status !== 0) { setError(err.message || 'Payment could not be saved'); return; }
+      // Keep the same request ID so an uncertain network response cannot duplicate a sale.
       // Offline mode: enqueue locally so it syncs when backend is reachable
-      const offlineItem = offlineSync.enqueueOrder(orderPayload);
+      let offlineItem;
+      try { offlineItem = offlineSync.enqueueOrder(orderPayload); }
+      catch (storageError: any) { setError(storageError.message || 'Could not save this ticket. Keep the cart open and retry.'); return; }
       const mockCompletedOrder: any = {
         id: offlineItem.id,
-        orderNumber: `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        orderNumber: `PENDING-${offlineItem.id}`,
         branchId: currentBranchId || '',
         branch: currentBranch || undefined,
         cashierId: user?.id || '',
@@ -193,10 +206,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       onClose();
       onOrderCompleted(mockCompletedOrder, ['Order saved locally in offline queue and will sync to central server.']);
     } finally {
+      submitted.current = false;
       setIsSubmitting(false);
     }
   };
 
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150 flex flex-col max-h-[92vh]">
@@ -307,6 +322,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         </div>
 
+        {(paymentMethod === 'MPESA' || paymentMethod === 'SPLIT') && <label className="px-4 pt-3 text-xs text-zinc-300">M-Pesa transaction reference (confirm receipt first)
+          <input aria-label="M-Pesa transaction reference" value={mpesaCode} onChange={e => setMpesaCode(e.target.value.toUpperCase())} className="block w-full mt-1 p-3 bg-zinc-800 rounded-xl" placeholder="Actual transaction code" />
+        </label>}
         {/* Modal Body / Method Specific Inputs */}
         <div className="p-4 overflow-y-auto space-y-4 flex-1">
           {error && (

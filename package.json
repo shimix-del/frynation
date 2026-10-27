@@ -4,13 +4,15 @@
   "description": "Multi-Branch Restaurant & Eatery Point of Sale and Inventory Management System",
   "scripts": {
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
-    "start": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "start": "npm --prefix server start",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build:server": "npm --prefix server run build",
     "build:client": "npm --prefix client run build && powershell -Command \"Copy-Item -Path 'client\\dist\\*' -Destination '.' -Recurse -Force\"",
     "db:seed": "npm --prefix server run db:seed",
-    "db:push": "npm --prefix server run db:push"
+    "db:push": "npm --prefix server run db:push",
+    "test": "node --test tests/client.test.mjs tests/server.test.mjs",
+    "test:integration": "node tests/two-way-mysql.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

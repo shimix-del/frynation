@@ -28,6 +28,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
           orderBy: { price: 'asc' },
         },
         recipes: {
+          where: req.branchScopeId ? { stockItem: { branchId: req.branchScopeId } } : {},
           include: {
             stockItem: true,
           },
@@ -55,6 +56,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
         category: true,
         variants: true,
         recipes: {
+          where: req.branchScopeId ? { stockItem: { branchId: req.branchScopeId } } : {},
           include: {
             stockItem: true,
           },
@@ -162,17 +164,16 @@ router.put('/:id', authenticateToken, requireManagerOrOwner, async (req: Authent
     } = req.body;
 
     if (variants && Array.isArray(variants)) {
-      await prisma.menuItemVariant.deleteMany({ where: { menuItemId: id } });
-      if (variants.length > 0) {
-        await prisma.menuItemVariant.createMany({
-          data: variants.map((v: any) => ({
-            menuItemId: id,
-            name: v.name,
-            price: parseFloat(v.price),
-            costPrice: v.costPrice ? parseFloat(v.costPrice) : 0,
-          })),
-        });
+      const retainedIds: string[] = [];
+      for (const v of variants) {
+        if (v.id) {
+          const previous = await prisma.menuItemVariant.findFirst({ where: { id: v.id, menuItemId: id } });
+          if (!previous) { res.status(400).json({ error: 'Variant does not belong to this item' }); return; }
+          retainedIds.push(v.id);
+          await prisma.menuItemVariant.update({ where: { id: v.id }, data: { name: v.name, price: Number(v.price), costPrice: Number(v.costPrice || 0), isAvailable: v.isAvailable !== false } });
+        } else { const created = await prisma.menuItemVariant.create({ data: { menuItemId: id, name: v.name, price: Number(v.price), costPrice: Number(v.costPrice || 0) } }); retainedIds.push(created.id); }
       }
+      await prisma.menuItemVariant.updateMany({ where: { menuItemId: id, id: { notIn: retainedIds } }, data: { isAvailable: false } });
     }
 
     const updated = await prisma.menuItem.update({

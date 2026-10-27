@@ -1,404 +1,93 @@
 import { Router, Response } from 'express';
 import prisma from '../prisma.js';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.js';
-
+import { amount, money, terminalId } from '../security.js';
+import { transaction, lockBranch } from '../services/transactionService.js';
+import { summarizeShift, shiftInclude } from '../services/shiftService.js';
+import { logActivity } from '../services/activityService.js';
 const router = Router();
-
-// Get active shift for current user and branch
-router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const branchId = req.user?.role === 'OWNER' && req.query.branchId && req.query.branchId !== 'all'
-      ? (req.query.branchId as string)
-      : (req.user?.branchId || undefined);
-
-    let shift = await prisma.shift.findFirst({
-      where: {
-        ...(branchId ? { branchId } : {}),
-        status: 'OPEN',
-      },
-      include: {
-        cashier: { select: { id: true, name: true, role: true } },
-        branch: true,
-        cashMovements: { orderBy: { createdAt: 'desc' } },
-        expenses: { orderBy: { createdAt: 'desc' } },
-        orders: {
-          where: { status: 'COMPLETED' },
-          include: { items: true, payments: true },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-      orderBy: { openedAt: 'desc' },
-    });
-
-    if (!shift) {
-      res.json({ activeShift: null });
-      return;
+router.get('/current', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const shift = await prisma.shift.findFirst({ where: { ...(req.branchScopeId ? { branchId: req.branchScopeId } : {}), status: 'OPEN', terminalId }, include: shiftInclude, orderBy: { openedAt: 'desc' } });
+        res.json({ activeShift: shift ? summarizeShift(shift) : null });
     }
-
-    // Auto-link any orphan completed orders from this branch during the shift duration
-    await prisma.order.updateMany({
-      where: {
-        branchId: shift.branchId,
-        shiftId: null,
-        status: 'COMPLETED',
-        createdAt: { gte: shift.openedAt },
-      },
-      data: {
-        shiftId: shift.id,
-      },
-    });
-
-    // Re-fetch shift orders to ensure all linked orders are included
-    const allShiftOrders = await prisma.order.findMany({
-      where: { shiftId: shift.id, status: 'COMPLETED' },
-      include: { items: true, payments: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Compute food items sold aggregation
-    const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
-    let actualCash = 0;
-    let actualMpesa = 0;
-    let actualCard = 0;
-
-    allShiftOrders.forEach(order => {
-      order.items.forEach(item => {
-        const key = `${item.itemName}___${item.variantName || ''}`;
-        const existing = itemMap.get(key);
-        if (existing) {
-          existing.quantity += item.quantity;
-          existing.totalPrice += item.totalPrice;
-        } else {
-          itemMap.set(key, {
-            itemName: item.itemName,
-            variantName: item.variantName || null,
-            quantity: item.quantity,
-            totalPrice: item.totalPrice,
-          });
-        }
-      });
-
-      order.payments.forEach(p => {
-        if (p.paymentMethod === 'CASH') actualCash += p.amount;
-        else if (p.paymentMethod === 'MPESA') actualMpesa += p.amount;
-        else if (p.paymentMethod === 'CARD') actualCard += p.amount;
-        else if (p.paymentMethod === 'SPLIT') {
-          if (p.mpesaCode) actualMpesa += p.amount;
-          else actualCash += p.amount;
-        }
-      });
-    });
-
-    const itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
-
-    // Compute expected cash in drawer in real-time
-    const cashDrops = shift.cashMovements
-      .filter(m => m.type === 'CASH_DROP' || m.type === 'PAYOUT')
-      .reduce((sum, m) => sum + m.amount, 0);
-
-    const cashAdditions = shift.cashMovements
-      .filter(m => m.type === 'FLOAT_IN')
-      .reduce((sum, m) => sum + m.amount, 0);
-
-    const totalCash = Math.max(shift.totalCashSales, actualCash);
-    const totalMpesa = Math.max(shift.totalMpesaSales, actualMpesa);
-    const totalCard = Math.max(shift.totalCardSales, actualCard);
-
-    const expectedCash = shift.openingFloat + totalCash + cashAdditions - cashDrops;
-
-    res.json({
-      activeShift: {
-        ...shift,
-        totalCashSales: totalCash,
-        totalMpesaSales: totalMpesa,
-        totalCardSales: totalCard,
-        orders: allShiftOrders,
-        itemsSold,
-        cashDrops,
-        cashAdditions,
-        expectedCash,
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+    catch {
+        res.status(500).json({ error: 'Could not load shift' });
+    }
 });
-
-// Open Shift
-router.post('/open', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { branchId, openingFloat, notes } = req.body;
-    const targetBranchId = branchId || req.user?.branchId;
-
-    if (!targetBranchId) {
-      res.status(400).json({ error: 'Branch is required to open a shift' });
-      return;
-    }
-
-    // Check if there is already an open shift for this branch
-    const existing = await prisma.shift.findFirst({
-      where: {
-        branchId: targetBranchId,
-        status: 'OPEN',
-      },
-    });
-
-    if (existing) {
-      res.status(400).json({
-        error: 'There is already an open shift at this branch. Please close it first.',
-        activeShift: existing,
-      });
-      return;
-    }
-
-    const floatAmt = openingFloat !== undefined ? parseFloat(openingFloat) : 0;
-
-    const newShift = await prisma.shift.create({
-      data: {
-        branchId: targetBranchId,
-        cashierId: req.user!.id,
-        openingFloat: floatAmt,
-        status: 'OPEN',
-        notes: notes || null,
-      },
-      include: {
-        branch: true,
-        cashier: { select: { id: true, name: true } },
-      },
-    });
-
-    res.status(201).json({
-      message: `Shift opened successfully with KES ${floatAmt.toLocaleString()} opening float`,
-      shift: newShift,
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Record Cash Movement (Cash drop to safe, extra float in, emergency payout)
-router.post('/cash-movement', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { shiftId, type, amount, reason } = req.body;
-
-    if (!shiftId || !type || !amount || !reason) {
-      res.status(400).json({ error: 'Shift, movement type, amount, and reason are required' });
-      return;
-    }
-
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
-    if (!shift || shift.status !== 'OPEN') {
-      res.status(400).json({ error: 'Active open shift required' });
-      return;
-    }
-
-    const movement = await prisma.cashMovement.create({
-      data: {
-        shiftId,
-        branchId: shift.branchId,
-        type, // FLOAT_IN, CASH_DROP, PAYOUT
-        amount: parseFloat(amount),
-        reason,
-        authorizedBy: req.user?.name,
-      },
-    });
-
-    res.status(201).json({
-      message: 'Cash movement logged',
-      movement,
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Close Shift & Generate Z-Report
-router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { shiftId, closingCashActual, notes } = req.body;
-
-    if (!shiftId || closingCashActual === undefined) {
-      res.status(400).json({ error: 'Shift ID and counted closing cash are required' });
-      return;
-    }
-
-    const shift = await prisma.shift.findUnique({
-      where: { id: shiftId },
-      include: {
-        cashMovements: { orderBy: { createdAt: 'desc' } },
-        orders: { where: { status: 'COMPLETED' }, include: { payments: true, items: true } },
-        expenses: true,
-        branch: true,
-        cashier: { select: { id: true, name: true, role: true } },
-      },
-    });
-
-    if (!shift || shift.status !== 'OPEN') {
-      res.status(400).json({ error: 'Open shift not found or already closed' });
-      return;
-    }
-
-    const actualCount = parseFloat(closingCashActual);
-
-    // Calculate payouts and float movements
-    const cashDrops = shift.cashMovements
-      .filter(m => m.type === 'CASH_DROP' || m.type === 'PAYOUT')
-      .reduce((sum, m) => sum + m.amount, 0);
-
-    const cashAdditions = shift.cashMovements
-      .filter(m => m.type === 'FLOAT_IN')
-      .reduce((sum, m) => sum + m.amount, 0);
-
-    const expectedCash = shift.openingFloat + shift.totalCashSales + cashAdditions - cashDrops;
-    const variance = actualCount - expectedCash; // Negative = Shortage, Positive = Overage
-
-    // Aggregate food items sold
-    const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
-    shift.orders?.forEach(order => {
-      order.items?.forEach(item => {
-        const key = `${item.itemName}___${item.variantName || ''}`;
-        const existing = itemMap.get(key);
-        if (existing) {
-          existing.quantity += item.quantity;
-          existing.totalPrice += item.totalPrice;
-        } else {
-          itemMap.set(key, {
-            itemName: item.itemName,
-            variantName: item.variantName || null,
-            quantity: item.quantity,
-            totalPrice: item.totalPrice,
-          });
-        }
-      });
-    });
-    const itemsSold = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
-
-    const closedShift = await prisma.shift.update({
-      where: { id: shiftId },
-      data: {
-        status: 'CLOSED',
-        closedAt: new Date(),
-        closingCashActual: actualCount,
-        closingCashExpected: expectedCash,
-        variance,
-        notes: notes || shift.notes,
-      },
-      include: {
-        branch: true,
-        cashier: { select: { id: true, name: true } },
-        cashMovements: { orderBy: { createdAt: 'desc' } },
-      },
-    });
-
-    // Detailed Z-Report payload
-    const zReport = {
-      zReportNumber: `Z-${closedShift.branch.code}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${closedShift.id.slice(-4).toUpperCase()}`,
-      branchName: closedShift.branch.name,
-      branchCode: closedShift.branch.code,
-      tillNumber: closedShift.branch.tillNumber,
-      cashierName: closedShift.cashier.name,
-      openedAt: closedShift.openedAt,
-      closedAt: closedShift.closedAt,
-      openingFloat: closedShift.openingFloat,
-      totalCashSales: closedShift.totalCashSales,
-      totalMpesaSales: closedShift.totalMpesaSales,
-      totalCardSales: closedShift.totalCardSales,
-      totalGrossSales: closedShift.totalCashSales + closedShift.totalMpesaSales + closedShift.totalCardSales,
-      cashMovements: shift.cashMovements,
-      itemsSold,
-      totalCashDrops: cashDrops,
-      totalCashAdditions: cashAdditions,
-      expectedCashInDrawer: expectedCash,
-      actualCountedCash: actualCount,
-      variance,
-      isBalanced: Math.abs(variance) < 0.01,
-      totalOrdersCount: shift.orders.length,
-      notes: closedShift.notes,
-    };
-
-    res.json({
-      message: 'Shift closed successfully. Z-Report generated.',
-      shift: closedShift,
-      zReport,
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// List past shifts
-router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { branchId, limit = 50 } = req.query;
-    const targetBranchId = req.user?.role === 'OWNER' && branchId && branchId !== 'all'
-      ? (branchId as string)
-      : (req.user?.role === 'OWNER' && (!branchId || branchId === 'all') ? undefined : req.user?.branchId || undefined);
-
-    const where: any = targetBranchId ? { branchId: targetBranchId } : {};
-
-    let shifts = await prisma.shift.findMany({
-      where,
-      include: {
-        branch: true,
-        cashier: { select: { id: true, name: true } },
-        cashMovements: { orderBy: { createdAt: 'desc' } },
-        orders: {
-          where: { status: 'COMPLETED' },
-          include: { items: true },
-        },
-        _count: { select: { orders: true } },
-      },
-      orderBy: { openedAt: 'desc' },
-      take: parseInt(limit as string, 10) || 50,
-    });
-
-    // Fallback: If user filtered by a specific branch and 0 shifts found, fall back to querying all shifts so past records are never hidden
-    if (shifts.length === 0 && targetBranchId) {
-      shifts = await prisma.shift.findMany({
-        include: {
-          branch: true,
-          cashier: { select: { id: true, name: true } },
-          cashMovements: { orderBy: { createdAt: 'desc' } },
-          orders: {
-            where: { status: 'COMPLETED' },
-            include: { items: true },
-          },
-          _count: { select: { orders: true } },
-        },
-        orderBy: { openedAt: 'desc' },
-        take: parseInt(limit as string, 10) || 50,
-      });
-    }
-
-    const enrichedShifts = shifts.map(s => {
-      const itemMap = new Map<string, { itemName: string; variantName: string | null; quantity: number; totalPrice: number }>();
-      s.orders?.forEach(order => {
-        order.items?.forEach(item => {
-          const key = `${item.itemName}___${item.variantName || ''}`;
-          const existing = itemMap.get(key);
-          if (existing) {
-            existing.quantity += item.quantity;
-            existing.totalPrice += item.totalPrice;
-          } else {
-            itemMap.set(key, {
-              itemName: item.itemName,
-              variantName: item.variantName || null,
-              quantity: item.quantity,
-              totalPrice: item.totalPrice,
-            });
-          }
+router.post('/open', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const shift = await transaction(async (tx) => {
+            const branchId = req.body.branchId || req.user!.branchId;
+            if (!branchId)
+                throw new Error('Choose a branch');
+            await lockBranch(tx, branchId);
+            if (await tx.shift.findFirst({ where: { branchId, status: 'OPEN', terminalId } }))
+                throw new Error('There is already an open shift at this branch');
+            const shift = await tx.shift.create({ data: { branchId, terminalId, cashierId: req.user!.id, openingFloat: amount(req.body.openingFloat ?? 0, 'Opening float', true), notes: req.body.notes || null }, include: shiftInclude });
+            await logActivity(tx, req.user!, 'SHIFT_OPENED', 'SHIFT', shift.id, branchId, shift.id, { openingFloat: shift.openingFloat });
+            return shift;
         });
-      });
-      return {
-        ...s,
-        itemsSold: Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity),
-      };
-    });
-
-    res.json(enrichedShifts);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+        res.status(201).json({ message: 'Shift opened', shift });
+    }
+    catch (e: any) {
+        res.status(400).json({ error: e.message });
+    }
 });
-
+router.post('/cash-movement', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const movement = await transaction(async (tx) => {
+            const found = await tx.shift.findUniqueOrThrow({ where: { id: req.body.shiftId } });
+            await lockBranch(tx, found.branchId);
+            const shift = await tx.shift.findUniqueOrThrow({ where: { id: found.id } });
+            if (shift.status !== 'OPEN')
+                throw new Error('An open shift is required');
+            const { type, reason } = req.body;
+            if (!['FLOAT_IN', 'CASH_DROP', 'PAYOUT'].includes(type) || !String(reason || '').trim())
+                throw new Error('Valid movement type and reason required');
+            const movement = await tx.cashMovement.create({ data: { shiftId: shift.id, branchId: shift.branchId, type, amount: amount(req.body.amount), reason, authorizedBy: req.user!.name } });
+            await logActivity(tx, req.user!, 'CASH_' + type, 'CASH_MOVEMENT', movement.id, shift.branchId, shift.id, { amount: movement.amount, reason });
+            return movement;
+        });
+        res.status(201).json({ movement, message: 'Cash movement logged' });
+    }
+    catch (e: any) {
+        res.status(400).json({ error: e.message });
+    }
+});
+router.post('/close', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const result = await transaction(async (tx) => {
+            const found = await tx.shift.findUniqueOrThrow({ where: { id: req.body.shiftId } });
+            await lockBranch(tx, found.branchId);
+            const shift = await tx.shift.findUniqueOrThrow({ where: { id: found.id }, include: shiftInclude });
+            if (shift.status !== 'OPEN')
+                throw new Error('Shift is already closed');
+            const totals = summarizeShift(shift);
+            const actual = amount(req.body.closingCashActual, 'Closing cash', true);
+            const variance = money(actual - totals.expectedCash);
+            const closed = await tx.shift.update({ where: { id: shift.id }, data: { status: 'CLOSED', closedAt: new Date(), closingCashActual: actual, closingCashExpected: totals.expectedCash, variance,
+                    totalCashSales: totals.totalCashSales, totalMpesaSales: totals.totalMpesaSales, totalCardSales: totals.totalCardSales, notes: req.body.notes || shift.notes }, include: shiftInclude });
+            await logActivity(tx, req.user!, 'SHIFT_CLOSED', 'SHIFT', shift.id, shift.branchId, shift.id, { expectedCash: totals.expectedCash, actualCash: actual, variance });
+            return { shift: { ...totals, ...closed, itemsSold: totals.itemsSold }, zReport: { zReportNumber: 'Z-' + shift.branch.code + '-' + shift.id,
+                    branchName: shift.branch.name, branchCode: shift.branch.code, tillNumber: shift.branch.tillNumber, cashierName: shift.cashier.name,
+                    openedAt: shift.openedAt, closedAt: closed.closedAt, openingFloat: shift.openingFloat, totalCashSales: totals.totalCashSales, totalMpesaSales: totals.totalMpesaSales, totalCardSales: totals.totalCardSales,
+                    totalGrossSales: money(totals.totalCashSales + totals.totalMpesaSales + totals.totalCardSales), cashMovements: shift.cashMovements, itemsSold: totals.itemsSold, totalCashDrops: totals.cashDrops, totalCashAdditions: totals.cashAdditions,
+                    expectedCashInDrawer: totals.expectedCash, actualCountedCash: actual, variance, isBalanced: Math.abs(variance) < 0.01, totalOrdersCount: totals.orders.length, notes: closed.notes } };
+        });
+        res.json({ ...result, message: 'Shift closed' });
+    }
+    catch (e: any) {
+        res.status(400).json({ error: e.message });
+    }
+});
+router.get('/history', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const shifts = await prisma.shift.findMany({ where: req.branchScopeId ? { branchId: req.branchScopeId } : {}, include: shiftInclude, orderBy: { openedAt: 'desc' }, take: Math.min(200, Math.max(1, Number(req.query.limit) || 50)) });
+        res.json(shifts.map(s => ({ ...summarizeShift(s), _count: { orders: s.orders.filter(o => o.status === 'COMPLETED').length } })));
+    }
+    catch {
+        res.status(500).json({ error: 'Could not load shift history' });
+    }
+});
 export default router;

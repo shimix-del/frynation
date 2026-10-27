@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import naniLogo from '../../assets/logo.jpg';
 
-export type NavTab = 'pos' | 'inventory' | 'menu' | 'shifts' | 'expenses' | 'analytics' | 'staff';
+export type NavTab = 'pos' | 'inventory' | 'menu' | 'shifts' | 'expenses' | 'analytics' | 'staff' | 'activity';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -26,6 +26,7 @@ interface SidebarProps {
 }
 
 export const navItems = [
+  { id: 'activity' as NavTab, label: 'Activity Log', shortLabel: 'Activity', icon: Users, desc: 'Users, Cash & Stock Movements', roles: ['OWNER'] },
   {
     id: 'pos' as NavTab,
     label: 'Touch POS',

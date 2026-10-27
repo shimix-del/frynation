@@ -1,119 +1,68 @@
-# 🍟 NANI FRYS - Multi-Branch Hotel, Fast Food & Restaurant Management POS
+# Nani Frys POS
 
-A responsive, ultra-fast, multi-branch web Point of Sale (POS) and inventory management system designed specifically for Kenyan food eateries/restaurants ("hotels" selling Chips, Kuku, Sausages, Pilau, Biryani, Sodas, and fresh Juices).
+Restaurant sales, stock, shifts, expenses, staff, and branch reporting for Nani Frys.
 
----
+React, TypeScript, Vite, and Tailwind form the frontend. Express, Prisma, and **MySQL** form the backend. The hosted database is **`mombasam_nanifrys`** on the cPanel account for **nanifrys.com**.
 
-## 🌟 Key Capabilities & Merged Business Features
+## Live mode
 
-1. **Multi-Branch Architecture & Scoping**
-   - **Central Owner Roll-Up Dashboard**: Real-time sales, profitability, and stock levels aggregated across all branches (e.g. Migadini Main Shop, Branch 2) with single-branch filtering.
-   - **Inter-Branch Stock Transfers**: Track inventory dispatched, in transit, and received between branches with full audit trails.
-   - **Branch Isolation**: Cashiers and Branch Managers operate scoped to their assigned `branch_id`.
+Live mode uses the hosted backend. Rejected requests remain errors; the application never silently switches to browser storage. Checkout validates menu prices and payments, requires an authorized open shift, and saves payments, stock movements, shift counters, and activity in one transaction. Request IDs prevent duplicate checkout submissions.
 
-2. **Dual Access Roles & Rapid Cashier PIN Switch**
-   - **Owner / Admin**: Full financial P&L access, all branches, menu creation, recipe Bill of Materials (BOM), staff management.
-   - **Branch Manager**: Branch reports, stock intake, daily expense logging, discounts approval, and cashier shift audits.
-   - **Cashier / Waiter**: Touchscreen-optimized POS terminal, order parking/holding, M-Pesa / Cash payments, split payments, and 4-digit PIN fast login.
+M-Pesa and card entries record payments confirmed by staff. Enter the actual transaction or slip reference. Automatic provider verification and STK integration are not implemented.
 
-3. **Touch POS Cashier Screen**
-   - **Kenyan Food Categorization**: Fast Foods (Chips, Sausages), Kuku & Meat (Choma, Fry, Kienyeji), Swahili Meals (Pilau, Biryani, Mukimo), Drinks (Sodas, Water, Fresh Juices), Pasua Snacks (Smokie Pasua, Mayai).
-   - **Portion & Variant Sizing**: 1/4 Kuku, 1/2 Kuku, Full Kuku; Plain Pilau vs Beef Pilau vs Kuku Pilau.
-   - **Order Types**: Dine-In (with Table #), Takeaway, and Delivery.
-   - **Park / Hold Orders**: 1-click park current cart to attend to next customer, and resume later.
-   - **Discounts**: KES fixed amount or percentage discount with mandatory reason logging.
-   - **Multi-Payment Checkout**:
-     - Cash with quick bill buttons (+100, +200, +500, +1000, +2000, exact) and automatic change computation.
-     - M-Pesa Buy Goods Till & Paybill reference, customer phone, transaction code verification, and STK push prompt simulator.
-     - Split Payment (e.g. KES 400 M-Pesa + KES 150 Cash).
-     - Card / Bank slip.
-   - **Thermal Receipt Engine**: Standard 58mm & 80mm ESC/POS layout with instant thermal print and 1-click WhatsApp receipt sharing.
+The owner's **Activity Log** filters actions by user, shift, branch, date, and action. It records logins, logouts, orders, cancellations, cash movements, expenses, stock movements, and staff changes from this update onward. Historical actions cannot be reconstructed.
 
-4. **Dual-Tier Inventory Engine & Automated Stock Deduction**
-   - **Direct Unit Counting**: Packaged beverages (Coca-Cola, Sprite, Fanta, Dasani Water) auto-deducted per unit.
-   - **Recipe Bill of Materials (BOM) Auto-Deduction**: Raw stock auto-deducted on each sale (e.g. 1 Plate Chips = 0.35kg Potatoes + 0.05L Oil; 1 Plate Pilau = 0.2kg Rice + 0.15kg Beef + 0.03L Oil).
-   - **Restock Intake**: Record supplier name, delivery invoice, unit purchase cost, and quantity added.
-   - **Stock Reconciliation & Audit Tool**: Compare physical counted stock against system expected stock, calculate shrinkage variance, and log reasons (Theft, Spoilage, Wastage).
+## Local mode
 
-5. **Shift & Cash Float Management (Z-Reports)**
-   - Opening cash float input.
-   - Mid-shift cash drops to safe and emergency payouts.
-   - Shift closing with cash drawer count verification -> Cash Over/Short variance calculation -> printable Z-Report.
+Open the shop server at **http://127.0.0.1:5050/**. **Local mode** uses the shop MySQL database and works without internet. It requires a running, paired shop backend; it does not create a separate browser owner or sample records.
 
-6. **Daily Expense Tracker & Real Net Profit (P&L)**
-   - Log market produce (Wakulima tomatoes/onions), gas cylinder refills, cooking oil jerrycans, casual wages, boda boda transport.
-   - Real Net Operating Profit calculation: `Net Profit = Gross Sales - COGS (Recipe costs) - Total Expenses`.
+Both Local mode and nanifrys.com accept sales. The shop exchanges changes with the live site at **00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 Africa/Nairobi time**, retrying failed exchanges every five minutes. The PC must remain awake. Each installation has its own cash drawer and shift. See [synchronization and recovery](docs/SYNCHRONIZATION.md) for pairing, backups and conflict handling.
 
-7. **Offline Reliability & Local Storage Queue**
-   - LocalStorage / IndexedDB queue allows order processing during internet dips with automatic central synchronization upon reconnection.
+Older browser-only data is preserved for export through `backup-local-data.html`. Trading in the retired browser store is disabled; review and reconcile exported records before clearing them.
 
----
+## Pending central sales
 
-## 🚀 Quick Start Guide
+A connection failure during central checkout saves a pending ticket with its original cashier, shift, and request ID. Explicit server rejections do not create offline sales. Automatic retry runs while the POS screen is open and online. The original cashier must sign in; closed-shift tickets require owner review. Repeated failures never discard tickets.
 
-### Prerequisites
-- Node.js (v18+ or v20+)
-- npm (v9+)
+The Activity Log shows pending tickets on the current device and can export them for review. Confirmed tickets are removed individually after a successful response from their configured backend.
 
-### Installation & Database Setup
-```bash
-# 1. Install server dependencies & seed database
-cd "d:/pos sys/server"
-npm install
-npx prisma db push
-npm run db:seed
+## Setup
 
-# 2. Install client dependencies
-cd "d:/pos sys/client"
-npm install
+Use Node.js 22 or newer. Install dependencies:
+
+```sh
+npm ci
+npm --prefix server ci
+npm --prefix client ci
 ```
 
-### Running the Application
+Copy `server/.env.example` to a private `server/.env`. Supply the cPanel database user, password, host, and a long random JWT secret. Never put credentials in the frontend.
 
-In terminal 1 (Backend Server):
-```bash
-cd "d:/pos sys/server"
+**For existing data, follow [the database upgrade guide](docs/DATABASE-UPGRADE.md) before starting the updated server.** Restore and verify both backups in staging first. The deployment script makes a private backup and applies only the reviewed additive changes; it never imports the empty-database SQL over business data.
+
+Development:
+
+```sh
 npm run dev
-# Server running at http://localhost:5000
 ```
 
-In terminal 2 (Frontend Client):
-```bash
-cd "d:/pos sys/client"
-npm run dev
-# Web POS running at http://localhost:3000
+Built installation:
+
+```sh
+npm run build:server
+npm run build:client
+npm start
 ```
 
----
+The backend serves the built client at `http://localhost:5000/`. On nanifrys.com the client uses `/api` on the same HTTPS origin. A separate API address can be configured on the sign-in screen.
 
-## 🔑 Demo Logins & Fast 4-Digit PINs
+## Verification
 
-| Role | Name | Email | Password | 4-Digit PIN | Branch Scope |
-|---|---|---|---|---|---|
-| **Owner** | Robina | `admin@nanifrys.co.ke` | `admin123` | `9999` | All Branches (Central HQ) |
-| **Manager** | Manager | `manager@nanifrys.co.ke` | `manager123` | `1111` | Migadini Main Shop |
-| **Cashier** | Cashier 1 | `cashier1@nanifrys.co.ke` | `cashier123` | `1234` | Migadini Main Shop |
-| **Cashier** | Cashier 2 | `cashier2@nanifrys.co.ke` | `cashier123` | `2345` | Migadini Main Shop |
-| **Cashier** | Cashier 3 | `cashier3@nanifrys.co.ke` | `cashier123` | `3456` | Migadini Main Shop |
-| **Cashier** | Cashier 4 | `cashier4@nanifrys.co.ke` | `cashier123` | `4567` | Migadini Main Shop |
+```sh
+npm test
+npm run build:server
+npm --prefix client run build
+npm run test:integration
+```
 
----
-
-## 🛠️ Tech Stack & Architecture
-
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts, Custom Thermal Print CSS, Offline Sync Queue.
-- **Backend**: Node.js, Express, TypeScript, Prisma ORM, JWT, bcryptjs.
-- **Database**: SQLite (default local zero-config) with 1-line connection switch to PostgreSQL / Supabase for cloud production.
-- **Localization**: Kenyan Shillings (KES / Ksh), M-Pesa integration points, 58mm/80mm receipt templates, WhatsApp web share.
-
----
-
-## 📦 Deployment Options
-
-### Option A: Local Restaurant POS Appliance (Zero Hosting Cost)
-Run the server and client locally on a touchscreen PC, mini-PC, or laptop behind the counter. Other cashier tablets/phones connect via the restaurant's local Wi-Fi router IP (e.g. `http://192.168.1.100:3000`).
-
-### Option B: Cloud Deployment (Multi-Branch Rollup)
-1. **Database**: Create a free PostgreSQL database on [Supabase](https://supabase.com) or [Neon](https://neon.tech). Set `DATABASE_URL="postgresql://..."` in server `.env`.
-2. **Backend**: Deploy `server/` to [Railway](https://railway.app) or [Render](https://render.com).
-3. **Frontend**: Deploy `client/` to [Vercel](https://vercel.com) or [Netlify](https://netlify.com) pointing API requests to your backend URL.
+Regression tests exercise authorization, checkout rollback, duplicate submissions, exact stock reversals, held orders, expense reconciliation and durable pending tickets. The integration check creates two isolated local MySQL databases, verifies simultaneous shop/live sales and interrupted two-way synchronization, then removes those verification databases. It never connects to the hosted database.

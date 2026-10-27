@@ -19,6 +19,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { usePosCart } from '../../context/PosCartContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatKES } from '../../utils/currency';
 
 interface CartSidebarProps {
@@ -34,6 +35,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
   onOpenPastOrders,
   onClose,
 }) => {
+  const { user } = useAuth();
   const {
     cartItems,
     orderType,
@@ -65,8 +67,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
 
   const handleApplyDiscount = (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role === 'CASHIER' || !discountReasonInput.trim()) return;
     const val = parseFloat(discountVal) || 0;
-    setDiscount(discountInputType, val, discountReasonInput || 'Manager approved discount');
+    setDiscount(discountInputType, val, discountReasonInput.trim());
     setShowDiscountModal(false);
   };
 
@@ -339,7 +342,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
           <button
             type="button"
             onClick={() => setShowDiscountModal(true)}
-            disabled={cartItems.length === 0}
+            disabled={cartItems.length === 0 || user?.role === 'CASHIER'}
             className={`p-2.5 rounded-xl border transition flex items-center justify-center ${
               discountAmount > 0
                 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'

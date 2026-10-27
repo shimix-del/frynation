@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_SAMPLE_SEED !== 'true') throw new Error('Sample seeding erases data. It is disabled in production and requires ALLOW_SAMPLE_SEED=true in a disposable test database.');
+  await prisma.stockMovement.deleteMany();
+  await prisma.activityLog.deleteMany();
   console.log('🌱 Seeding NANI FRYS database with restaurant data...');
 
   // Clean existing data
@@ -62,7 +65,7 @@ async function main() {
       email: 'admin@nanifrys.co.ke',
       phone: '+254 700 000 001',
       role: 'OWNER',
-      pinCode: '9878',
+      pinCode: await bcrypt.hash('9878', 10),
       passwordHash: adminPasswordHash,
       branchId: null, // Owner oversees all branches
     },
@@ -74,7 +77,7 @@ async function main() {
       email: 'manager@nanifrys.co.ke',
       phone: '+254 711 111 222',
       role: 'MANAGER',
-      pinCode: '5609',
+      pinCode: await bcrypt.hash('5609', 10),
       passwordHash: managerPasswordHash,
       branchId: migadini.id,
     },
@@ -86,7 +89,7 @@ async function main() {
       email: 'cashier1@nanifrys.co.ke',
       phone: '+254 722 222 331',
       role: 'CASHIER',
-      pinCode: '1298',
+      pinCode: await bcrypt.hash('1298', 10),
       passwordHash: cashierPasswordHash,
       branchId: migadini.id,
     },
@@ -98,7 +101,7 @@ async function main() {
       email: 'cashier2@nanifrys.co.ke',
       phone: '+254 722 222 332',
       role: 'CASHIER',
-      pinCode: '1349',
+      pinCode: await bcrypt.hash('1349', 10),
       passwordHash: cashierPasswordHash,
       branchId: migadini.id,
     },
@@ -110,7 +113,7 @@ async function main() {
       email: 'cashier3@nanifrys.co.ke',
       phone: '+254 722 222 333',
       role: 'CASHIER',
-      pinCode: '3456',
+      pinCode: await bcrypt.hash('3456', 10),
       passwordHash: cashierPasswordHash,
       branchId: migadini.id,
     },
@@ -122,7 +125,7 @@ async function main() {
       email: 'cashier4@nanifrys.co.ke',
       phone: '+254 722 222 334',
       role: 'CASHIER',
-      pinCode: '4567',
+      pinCode: await bcrypt.hash('4567', 10),
       passwordHash: cashierPasswordHash,
       branchId: migadini.id,
     },

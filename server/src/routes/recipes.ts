@@ -11,7 +11,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     const where = menuItemId ? { menuItemId: menuItemId as string } : {};
 
     const recipes = await prisma.menuItemRecipe.findMany({
-      where,
+      where: { ...where, ...(req.branchScopeId ? { stockItem: { branchId: req.branchScopeId } } : {}) },
       include: {
         menuItem: { select: { id: true, name: true } },
         variant: { select: { id: true, name: true } },

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, Delete } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getApiBaseUrl } from '../../services/api';
+import { getApiBaseUrl, isLocalMode } from '../../services/api';
 
 import naniLogo from '../../assets/logo.jpg';
 
 export const LoginScreen: React.FC = () => {
   const { loginWithPin, logoutReason } = useAuth();
+  const [setupError,setSetupError] = useState('');
+  const [apiAddress, setApiAddress] = useState(localStorage.getItem('nanifrys_custom_api_url') || '');
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -74,6 +76,7 @@ export const LoginScreen: React.FC = () => {
   React.useEffect(() => {
     const checkServer = async () => {
       try {
+        if (isLocalMode()) { setServerOnline(null); return; }
         const apiBase = getApiBaseUrl();
         if (!apiBase) {
           setServerOnline(true);
@@ -149,8 +152,8 @@ export const LoginScreen: React.FC = () => {
     } catch (err: any) {
       if (err.message?.includes('Shift in Progress') || err.message?.includes('Access Denied')) {
         setError(err.message);
-      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
-        setError('⚠️ POS Backend Server (Port 5000) or MySQL is offline. Please double-click "run_pos.bat" in the folder to start.');
+      } else if (err.status === 0 || err.status >= 500 || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError('The central server is unavailable. Check the server connection and retry.');
       } else {
         recordFailedAttempt();
       }
@@ -162,6 +165,15 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-3 sm:p-4 relative overflow-y-auto">
+      <div className="relative z-10 w-full max-w-md mb-3 p-3 bg-zinc-900 rounded-xl border border-zinc-700 text-xs text-zinc-200">
+        <p className="font-bold mb-2">{isLocalHost ? 'Local mode — shop database with two-way synchronization' : 'Live mode — shared POS database'}</p>
+        {isLocalMode() && <div className="space-y-2 text-amber-300"><p>Browser-only trading has been retired. Export any old browser records before switching to the synchronized POS.</p><a className="underline block" href="./backup-local-data.html" target="_blank">Export legacy browser records</a><button className="p-2 bg-zinc-800 rounded" onClick={()=>{localStorage.removeItem('nanifrys_mode');window.location.reload();}}>Use synchronized POS</button></div>}
+        {!isLocalMode() && <form className="mt-3 space-y-2" onSubmit={e=>{e.preventDefault();try{const value=apiAddress.trim();if(value){const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Use an HTTP or HTTPS API address without credentials.');if(window.location.protocol==='https:'&&url.protocol!=='https:')throw new Error('Use an HTTPS API address.');localStorage.setItem('nanifrys_custom_api_url',value.replace(/\/+$/,''));}else localStorage.removeItem('nanifrys_custom_api_url');window.location.reload();}catch(err:any){setSetupError(err.message);}}}>
+          <label>POS server API address<input aria-label="POS server API address" type="url" value={apiAddress} onChange={e=>setApiAddress(e.target.value)} placeholder="Default: this site's /api" className="block w-full mt-1 p-2 bg-zinc-800 rounded" /></label>
+          <button className="p-2 bg-zinc-800 rounded">Save connection</button><p role="alert">{setupError}</p>
+        </form>}
+
+      </div>
       {/* Background glow */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/20 rounded-full blur-3xl pointer-events-none" />
@@ -189,23 +201,23 @@ export const LoginScreen: React.FC = () => {
 
 
 
-        {!isLocalHost && (
+        {!isLocalMode() && serverOnline === true && (
           <div className="mb-4 p-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-bold">Live Cloud POS (Offline-Ready)</span>
+              <span className="font-bold">POS server connected</span>
             </div>
             <span className="text-[11px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-medium">Online</span>
           </div>
         )}
 
-        {isLocalHost && serverOnline === false && (
+        {!isLocalMode() && serverOnline === false && (
           <div className="mb-4 p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-700 text-xs font-bold flex items-start space-x-2">
             <span className="text-base shrink-0">⚠️</span>
             <div>
-              <div className="font-extrabold text-amber-800">Local POS Backend (Port 5000) is Offline</div>
+              <div className="font-extrabold text-amber-300">POS server unavailable</div>
               <div className="text-[11px] font-medium text-amber-700 mt-0.5">
-                Double-click <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono font-bold text-amber-900">run_pos.bat</code> in the project folder to start the database &amp; server.
+                Check the server address and connection, then retry.
               </div>
             </div>
           </div>

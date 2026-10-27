@@ -15,6 +15,7 @@ import { ExpenseTracker } from './components/Expenses/ExpenseTracker';
 import { AnalyticsDashboard } from './components/Dashboard/AnalyticsDashboard';
 import { StaffManager } from './components/Staff/StaffManager';
 import naniLogo from './assets/logo.jpg';
+import { ActivityLog } from './components/Activity/ActivityLog';
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ const AuthenticatedApp: React.FC = () => {
   React.useEffect(() => {
     if (user?.role === 'CASHIER' && activeTab !== 'pos' && activeTab !== 'shifts') {
       setActiveTab('pos');
-    } else if (user?.role === 'MANAGER' && (activeTab === 'analytics' || activeTab === 'staff')) {
+    } else if (user?.role === 'MANAGER' && (activeTab === 'analytics' || activeTab === 'staff' || activeTab === 'activity')) {
       setActiveTab('pos');
     }
   }, [activeTab, user?.role]);
@@ -62,6 +63,7 @@ const AuthenticatedApp: React.FC = () => {
           {activeTab === 'expenses' && user?.role !== 'CASHIER' && <ExpenseTracker />}
           {activeTab === 'analytics' && user?.role === 'OWNER' && <AnalyticsDashboard />}
           {activeTab === 'staff' && user?.role === 'OWNER' && <StaffManager />}
+          {activeTab === 'activity' && user?.role === 'OWNER' && <ActivityLog />}
         </main>
       </div>
 

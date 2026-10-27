@@ -36,3 +36,8 @@ server/prisma/dev.db-journal
 *.sw?
 .DS_Store
 Thumbs.db
+.private/
+*.sql.partial
+*.sql.gz
+*.sql.sha256
+ops/local-state/

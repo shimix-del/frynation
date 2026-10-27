@@ -1,9 +1,11 @@
+import { createRequestId } from '../utils/id';
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { CartItem, MenuItem, MenuItemVariant, Order } from '../types';
 import { api } from '../services/api';
 import { useBranch } from './BranchContext';
 
 interface PosCartContextType {
+  heldOrderId: string | null;
   cartItems: CartItem[];
   orderType: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
   tableNumber: string;
@@ -36,6 +38,7 @@ const PosCartContext = createContext<PosCartContextType | undefined>(undefined);
 
 export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentBranchId } = useBranch();
+  const [heldOrderId, setHeldOrderId] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'>('DINE_IN');
   const [tableNumber, setTableNumber] = useState<string>('T-01');
@@ -75,7 +78,7 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
 
       if (existingIdx > -1) {
-        const updated = [...prev];
+        const updated = prev.map(item => ({ ...item }));
         updated[existingIdx].quantity += qty;
         if (itemNotes) {
           updated[existingIdx].notes = (updated[existingIdx].notes ? `${updated[existingIdx].notes}, ` : '') + itemNotes;
@@ -103,7 +106,7 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
     setCartItems(prev => {
-      const updated = [...prev];
+      const updated = prev.map(item => ({ ...item }));
       updated[index].quantity = newQty;
       return updated;
     });
@@ -115,7 +118,7 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const setItemNotes = (index: number, lineNote: string) => {
     setCartItems(prev => {
-      const updated = [...prev];
+      const updated = prev.map(item => ({ ...item }));
       updated[index].notes = lineNote;
       return updated;
     });
@@ -133,6 +136,7 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const clearCart = () => {
+    setHeldOrderId(null);
     setCartItems([]);
     setCustomerName('');
     setCustomerPhone('');
@@ -149,19 +153,20 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const discountAmount = useMemo(() => {
     if (discountValue <= 0) return 0;
     if (discountType === 'PERCENT') {
-      return (subtotal * discountValue) / 100;
+      return Math.min(subtotal, Math.round(subtotal * discountValue) / 100);
     }
     return Math.min(subtotal, discountValue);
   }, [subtotal, discountType, discountValue]);
 
   const totalAmount = useMemo(() => {
-    return Math.max(0, subtotal - discountAmount);
+    return Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
   }, [subtotal, discountAmount]);
 
   const holdCurrentCart = async (): Promise<boolean> => {
     if (cartItems.length === 0) return false;
 
     const payload = {
+      clientRequestId: createRequestId(),
       branchId: currentBranchId,
       orderType,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : null,
@@ -184,6 +189,7 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     try {
+      if (heldOrderId) return false;
       await api.createOrder(payload);
       clearCart();
       await fetchHeldOrders();
@@ -219,23 +225,19 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTableNumber(heldOrder.tableNumber || 'T-01');
     setCustomerName(heldOrder.customerName || '');
     setCustomerPhone(heldOrder.customerPhone || '');
+    setHeldOrderId(heldOrder.id);
+    setDiscountType('AMOUNT');
+    setNotes(heldOrder.notes || '');
     setDiscountValue(heldOrder.discountAmount || 0);
     setDiscountReason(heldOrder.discountReason || '');
 
-    // Delete the held order record once loaded into active cart
-    try {
-      await api.cancelOrder(heldOrder.id);
-      await fetchHeldOrders();
-      return true;
-    } catch (err) {
-      console.error('Failed to remove resumed held order:', err);
-      return true;
-    }
+    return true;
   };
 
   return (
     <PosCartContext.Provider
       value={{
+        heldOrderId,
         cartItems,
         orderType,
         tableNumber,

@@ -401,7 +401,7 @@ export const StaffManager: React.FC = () => {
                   </label>
                   <input
                     type="password"
-                    maxLength={6}
+                    maxLength={4}
                     value={editPinCode}
                     onChange={e => setEditPinCode(e.target.value)}
                     placeholder="Leave blank to keep"
@@ -522,7 +522,7 @@ export const StaffManager: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    maxLength={6}
+                    maxLength={4}
                     value={pinCode}
                     onChange={e => setPinCode(e.target.value)}
                     placeholder="e.g. 5678"

@@ -140,6 +140,7 @@ export interface Order {
 }
 
 export interface CashMovement {
+  expenseId?: string | null;
   id: string;
   shiftId: string;
   branchId: string;

@@ -160,7 +160,7 @@ export async function getTopSellingItems(branchId?: string | null, limit = 20, d
         profit: 0,
       };
     }
-    const unitCost = item.unitCost && item.unitCost > 0 ? item.unitCost : Math.round(item.unitPrice * 0.42);
+    const unitCost = item.unitCost || 0;
     const itemCost = Math.round(unitCost * item.quantity);
     const itemProfit = Math.round(item.totalPrice - itemCost);
 

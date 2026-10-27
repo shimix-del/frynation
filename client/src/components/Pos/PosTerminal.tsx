@@ -313,6 +313,7 @@ export const PosTerminal: React.FC = () => {
       />
 
       <PaymentModal
+        shiftId={activeShift?.id || ''}
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onOrderCompleted={handleOrderCompleted}

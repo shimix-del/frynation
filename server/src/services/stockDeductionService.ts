@@ -1,187 +1,68 @@
-import prisma from '../prisma.js';
-
-export interface StockDeductionResult {
-  success: boolean;
-  deductedItems: Array<{
-    stockItemId: string;
-    stockItemName: string;
-    quantityDeducted: number;
-    remainingStock: number;
-    unit: string;
-    isLowStock: boolean;
-  }>;
-  warnings: string[];
-}
-
-/**
- * Automatically deducts stock for an order based on direct unit items and recipe BOM
- */
-export async function deductStockForOrder(
-  branchId: string,
-  items: Array<{
+import { Prisma } from '@prisma/client';
+import { AuthUser } from '../middleware/auth.js';
+import { logActivity } from './activityService.js';
+type SaleItem = {
     menuItemId: string;
     variantId?: string | null;
     quantity: number;
     itemName: string;
-  }>
-): Promise<StockDeductionResult> {
-  const deductedItems: StockDeductionResult['deductedItems'] = [];
-  const warnings: string[] = [];
-
-  for (const item of items) {
-    // 1. Check for recipe entries for this menu item or specific variant
-    const recipes = await prisma.menuItemRecipe.findMany({
-      where: {
-        menuItemId: item.menuItemId,
-        OR: [
-          { variantId: item.variantId || undefined },
-          { variantId: null },
-        ],
-      },
-      include: {
-        stockItem: true,
-      },
-    });
-
-    if (recipes.length > 0) {
-      for (const recipe of recipes) {
-        // Look up branch-specific stock item if recipe stockItem was a template or match by name
-        let targetStockItem = recipe.stockItem;
-        if (targetStockItem.branchId !== branchId) {
-          const branchItem = await prisma.stockItem.findFirst({
-            where: {
-              branchId: branchId,
-              name: targetStockItem.name,
-            },
-          });
-          if (branchItem) {
-            targetStockItem = branchItem;
-          }
+};
+export async function deductStockForOrder(tx: Prisma.TransactionClient, branchId: string, items: SaleItem[], orderId: string, shiftId: string, user: AuthUser) {
+    const needed = new Map<string, {
+        stock: any;
+        quantity: number;
+    }>();
+    const warnings: string[] = [];
+    for (const item of items) {
+        const mappings = await tx.menuItemRecipe.findMany({ where: { menuItemId: item.menuItemId,
+                OR: [{ variantId: null }, ...(item.variantId ? [{ variantId: item.variantId }] : [])] },
+            include: { stockItem: true }, orderBy: { id: 'asc' } });
+        // Prefer branch-specific recipes; otherwise use one template branch, never every branch's copy.
+        const local = mappings.filter(r => r.stockItem.branchId === branchId);
+        const source = local.length ? local : mappings.filter(r => r.stockItem.branchId === mappings[0]?.stockItem.branchId);
+        const specific = source.filter(r => item.variantId && r.variantId === item.variantId);
+        const recipes = specific.length ? specific : source.filter(r => !r.variantId);
+        for (const recipe of recipes) {
+            const template = recipe.stockItem;
+            const stock = template.branchId === branchId ? template : await tx.stockItem.findFirst({ where: {
+                    branchId, unit: template.unit, ...(template.sku ? { sku: template.sku } : { name: template.name })
+                } });
+            if (!stock)
+                throw new Error('Missing branch stock mapping for ' + template.name);
+            const quantity = recipe.quantityRequired * item.quantity;
+            if (!Number.isFinite(quantity) || quantity <= 0)
+                throw new Error('Invalid recipe quantity for ' + item.itemName);
+            const existing = needed.get(stock.id);
+            needed.set(stock.id, { stock, quantity: quantity + (existing?.quantity || 0) });
         }
-
-        const deductQty = recipe.quantityRequired * item.quantity;
-        const newStock = Math.max(0, targetStockItem.currentStock - deductQty);
-
-        const updated = await prisma.stockItem.update({
-          where: { id: targetStockItem.id },
-          data: { currentStock: newStock },
-        });
-
-        deductedItems.push({
-          stockItemId: updated.id,
-          stockItemName: updated.name,
-          quantityDeducted: deductQty,
-          remainingStock: updated.currentStock,
-          unit: updated.unit,
-          isLowStock: updated.currentStock <= updated.minStockAlert,
-        });
-
-        if (updated.currentStock <= updated.minStockAlert) {
-          warnings.push(`Low stock warning: ${updated.name} has only ${updated.currentStock} ${updated.unit} left at branch!`);
+        if (!recipes.length) {
+            const stock = await tx.stockItem.findFirst({ where: { branchId, type: 'PACKAGED_UNIT', name: item.itemName } });
+            if (stock) {
+                const existing = needed.get(stock.id);
+                needed.set(stock.id, { stock, quantity: item.quantity + (existing?.quantity || 0) });
+            }
+            else
+                warnings.push('No inventory mapping for ' + item.itemName + '; stock was not deducted for this item.');
         }
-      }
-    } else {
-      // 2. Direct unit item matching (e.g. packaged drinks like "Coca-Cola 300ml", "Dasani 500ml")
-      const directStockItem = await prisma.stockItem.findFirst({
-        where: {
-          branchId: branchId,
-          name: {
-            contains: item.itemName,
-          },
-        },
-      });
-
-      if (directStockItem) {
-        const deductQty = item.quantity;
-        const newStock = Math.max(0, directStockItem.currentStock - deductQty);
-
-        const updated = await prisma.stockItem.update({
-          where: { id: directStockItem.id },
-          data: { currentStock: newStock },
-        });
-
-        deductedItems.push({
-          stockItemId: updated.id,
-          stockItemName: updated.name,
-          quantityDeducted: deductQty,
-          remainingStock: updated.currentStock,
-          unit: updated.unit,
-          isLowStock: updated.currentStock <= updated.minStockAlert,
-        });
-
-        if (updated.currentStock <= updated.minStockAlert) {
-          warnings.push(`Low stock alert: ${updated.name} has only ${updated.currentStock} ${updated.unit} left!`);
-        }
-      }
     }
-  }
-
-  return {
-    success: true,
-    deductedItems,
-    warnings,
-  };
+    for (const [id, { stock, quantity }] of [...needed.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+        const result = await tx.stockItem.updateMany({ where: { id, branchId, currentStock: { gte: quantity } }, data: { currentStock: { decrement: quantity } } });
+        if (result.count !== 1)
+            throw new Error('Insufficient stock: ' + stock.name);
+        await tx.stockMovement.create({ data: { stockItemId: id, stockItemName: stock.name, branchId, orderId, shiftId, actorId: user.id, quantity: -quantity, reason: 'SALE' } });
+        await logActivity(tx, user, 'STOCK_DEDUCTED', 'STOCK', id, branchId, shiftId, { orderId, name: stock.name, quantity: -quantity, unit: stock.unit });
+        if (stock.currentStock - quantity <= stock.minStockAlert)
+            warnings.push('Low stock: ' + stock.name);
+    }
+    return { warnings };
 }
-
-/**
- * Restores stock if an order is cancelled
- */
-export async function restoreStockForOrder(
-  branchId: string,
-  items: Array<{
-    menuItemId: string;
-    variantId?: string | null;
-    quantity: number;
-    itemName: string;
-  }>
-): Promise<void> {
-  for (const item of items) {
-    const recipes = await prisma.menuItemRecipe.findMany({
-      where: {
-        menuItemId: item.menuItemId,
-        OR: [
-          { variantId: item.variantId || undefined },
-          { variantId: null },
-        ],
-      },
-      include: {
-        stockItem: true,
-      },
-    });
-
-    if (recipes.length > 0) {
-      for (const recipe of recipes) {
-        let targetStockItem = recipe.stockItem;
-        if (targetStockItem.branchId !== branchId) {
-          const branchItem = await prisma.stockItem.findFirst({
-            where: {
-              branchId: branchId,
-              name: targetStockItem.name,
-            },
-          });
-          if (branchItem) targetStockItem = branchItem;
-        }
-
-        const restoreQty = recipe.quantityRequired * item.quantity;
-        await prisma.stockItem.update({
-          where: { id: targetStockItem.id },
-          data: { currentStock: { increment: restoreQty } },
-        });
-      }
-    } else {
-      const directStockItem = await prisma.stockItem.findFirst({
-        where: {
-          branchId: branchId,
-          name: { contains: item.itemName },
-        },
-      });
-
-      if (directStockItem) {
-        await prisma.stockItem.update({
-          where: { id: directStockItem.id },
-          data: { currentStock: { increment: item.quantity } },
-        });
-      }
+export async function restoreStockForOrder(tx: Prisma.TransactionClient, orderId: string, branchId: string, shiftId: string | null, user: AuthUser) {
+    const movements = await tx.stockMovement.findMany({ where: { orderId, reason: 'SALE' }, orderBy: { stockItemId: 'asc' } });
+    for (const movement of movements) {
+        if (await tx.stockMovement.findUnique({ where: { reversesMovementId: movement.id } }))
+            continue;
+        await tx.stockItem.update({ where: { id: movement.stockItemId }, data: { currentStock: { increment: -movement.quantity } } });
+        await tx.stockMovement.create({ data: { id: 'reverse_' + movement.id, stockItemId: movement.stockItemId, stockItemName: movement.stockItemName, branchId, orderId, shiftId, actorId: user.id, quantity: -movement.quantity, reason: 'CANCELLATION', reversesMovementId: movement.id } });
+        await logActivity(tx, user, 'STOCK_RESTORED', 'STOCK', movement.stockItemId, branchId, shiftId, { orderId, quantity: -movement.quantity });
     }
-  }
 }
