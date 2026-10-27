@@ -6,12 +6,12 @@ export NODE_OPTIONS="--disable-wasm-trap-handler --max-old-space-size=1024 --v8-
 export GOMAXPROCS=2 UV_THREADPOOL_SIZE=2 TOKIO_WORKER_THREADS=2 RAYON_NUM_THREADS=2
 commit="$(git rev-parse HEAD)"
 release_root="/home/mombasam/nanifrys-releases/$commit"
-npm ci --prefix client --include=dev --ignore-scripts
+node ops/frontend-artifacts.cjs verify
 npm ci --prefix server --include=dev --ignore-scripts
 npm --prefix server run db:generate
 npm --prefix server run build
-npm --prefix client run build
-npm test
+node --test --test-concurrency=1 tests/client.test.mjs tests/server.test.mjs
+node ops/frontend-artifacts.cjs stage client/dist
 mkdir -p "$release_root/server" "$release_root/client" /home/mombasam/nanifrys-runtime
 cp -R server/dist server/prisma server/node_modules "$release_root/server/"
 cp server/package.json server/package-lock.json "$release_root/server/"

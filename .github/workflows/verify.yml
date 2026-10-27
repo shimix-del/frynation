@@ -24,5 +24,6 @@ jobs:
       - run: npx prisma validate
         working-directory: server
       - run: npm test
+      - run: node ops/frontend-artifacts.cjs verify
       - run: npm run build:server
       - run: npm --prefix client run build

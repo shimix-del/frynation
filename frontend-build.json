@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "sourceFingerprint": "9eb9afc0a79e65731ab0ffc9c64a9ac1f0d12ee72ae60fa7c23064b10ad6fc44",
+  "files": [
+    {
+      "path": "assets/index-BwYkGz7v.css",
+      "sha256": "5230a645ecc6ba7a9ef2c28d25774615c32c7728e346dc4705240bf1396227ae"
+    },
+    {
+      "path": "assets/index-CsEuJNzx.js",
+      "sha256": "7d19be7ea97e1d4e84da3d2b4e0ab18683e0240a99caef8b7b5a1f3aa73f7db5"
+    },
+    {
+      "path": "assets/logo-ClnNbPHU.jpg",
+      "sha256": "607e84ccbbf3892c306ecc08f3402d39110212c6ddfe9683a4650c777fcc6d2e"
+    },
+    {
+      "path": "backup-local-data.html",
+      "sha256": "3c74baa4aba380f6e442ea4b3fff94dc62cd3432054c08997685c1bff2df5da7"
+    },
+    {
+      "path": "images/chips-mayai.jpg",
+      "sha256": "171eab0ee67cbc6b9f6a5f696a9642825b6a91c590cb5264783c499e562084aa"
+    },
+    {
+      "path": "images/chips.jpg",
+      "sha256": "d75d1149adc70bba6ef569912641516a5c757f9c76289dde99d5318d19e3614f"
+    },
+    {
+      "path": "images/energy-drink.jpg",
+      "sha256": "5315e8c9bd27343f5073a5a347a652b4db97adb70b61c3a2a0a4c5201258e3e0"
+    },
+    {
+      "path": "images/krest.jpg",
+      "sha256": "8d5272bab7f5213839fc19f1f54d1cc6e95fc40721245ad0a9533249ac85f92a"
+    },
+    {
+      "path": "images/stoney.jpg",
+      "sha256": "1aed47949141820e140b903fbd2dd2565a7e48dc0502344ed2dbd42a76bbe5bd"
+    },
+    {
+      "path": "images/viazi-karai.jpg",
+      "sha256": "983321fce32d010398933147fe64e7ccaaff54e43b6c86e43e89c883406a1147"
+    },
+    {
+      "path": "images/water-big.jpg",
+      "sha256": "27ef12d8b77f28686ee370283c8a4db14b4c531af63a5ec2972b409a073df095"
+    },
+    {
+      "path": "images/water-small.jpg",
+      "sha256": "e0039e7ac26a6ce76b034c38c712263e42a9b26dd80a2e61bfdfd8af2f5c1523"
+    },
+    {
+      "path": "index.html",
+      "sha256": "9c8ec48e490f9934dbfe01609709d8def1e634970b2f31ce32dc0f9933cc12ea"
+    },
+    {
+      "path": "nani-logo.jpg",
+      "sha256": "607e84ccbbf3892c306ecc08f3402d39110212c6ddfe9683a4650c777fcc6d2e"
+    }
+  ]
+}

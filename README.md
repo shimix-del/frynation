@@ -58,6 +58,8 @@ The backend serves the built client at `http://localhost:5000/`. On nanifrys.com
 
 ## Verification
 
+The cPanel deployment builds and tests the backend, then verifies and publishes the committed frontend artifacts. It avoids running Vite under the hosting account's memory limit. After any frontend source change, run `npm run build:client` and commit the generated public files together with `frontend-build.json`. A source or artifact mismatch stops deployment before changing the active release. The hosting-managed routing and certificate challenge path are retained.
+
 ```sh
 npm test
 npm run build:server
