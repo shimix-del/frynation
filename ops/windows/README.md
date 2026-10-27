@@ -8,6 +8,8 @@ Do not run the fresh installer against an existing database. Export and restore 
 
 Private settings and backups stay under `C:\ProgramData\NaniFrys`, outside the web directory and Git. The paired backends share a private synchronization key; their database accounts and login token keys remain separate. New hosted credentials must be entered by the account owner.
 
+If the shared XAMPP instance is damaged, an explicitly approved isolated recovery can use `isolated-database.cjs prepare <checksummed-backup.sql>`, followed by starting its private configuration and running `isolated-database.cjs finish`. It creates fresh system tables under `C:\ProgramData\NaniFrys\mysql-data` on loopback port 3307. It never replaces shared XAMPP tables. Shop settings change only after restored business rows match the reviewed fingerprint. The supervisor reads the database port and `MYSQL_DEFAULTS_FILE` from the private shop settings; it does not restart the damaged shared instance in this configuration.
+
 ## Fresh empty computer
 
 Build the installer package before running `Install Nani Frys.cmd`. The installer refuses an existing application directory, private configuration or database. Never delete these safeguards to force an installation. A staged data-only SQL export must have a verified checksum. Do not seed sample data.

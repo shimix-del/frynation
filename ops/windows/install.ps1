@@ -95,7 +95,7 @@ if ($BaseDataFile) {
   $importOutput = & $mysql "--defaults-extra-file=$defaults" --abort-source-on-error mombasam_nanifrys --execute="source $basePath" 2>&1
   if ($LASTEXITCODE -ne 0 -or $importOutput -match '^ERROR') { throw 'Base data import failed; no sync was enabled. Keep the database for review.' }
 }
-$action = New-ScheduledTaskAction -Execute $nodePath -Argument ('"' + "$InstallRoot\ops\windows\supervisor.cjs" + '"') -WorkingDirectory $InstallRoot
+$action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + "$InstallRoot\ops\windows\run-supervisor.ps1" + '"') -WorkingDirectory $InstallRoot
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User ([Security.Principal.WindowsIdentity]::GetCurrent().Name)
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName 'Nani Frys Shop Server' -Action $action -Trigger $trigger -Settings $settings -Description 'Starts the local POS, database checks, hourly backups and two-way synchronization six times daily.' | Out-Null
