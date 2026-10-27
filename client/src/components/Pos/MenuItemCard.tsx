@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Layers, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { MenuItem } from '../../types';
 import { formatKES } from '../../utils/currency';
+import { menuPricing } from '../../utils/menuPricing';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -11,6 +12,8 @@ interface MenuItemCardProps {
 
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onToggleStock }) => {
   const isAvailable = item.isAvailable;
+  const pricing = menuPricing(item.name);
+  const priceLabel = pricing === 'soda' ? 'KSh 50 / 70' : pricing === 'manual' ? 'Enter amount' : formatKES(item.basePrice);
 
   return (
     <div
@@ -38,10 +41,10 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
 
         {/* High-Contrast Price Badge Overlay */}
         <div className="absolute bottom-2 left-2 bg-zinc-950/90 dark:bg-black/85 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl border border-zinc-700/70 text-white font-black text-[11px] sm:text-xs shadow-lg tracking-tight">
-          {item.hasVariants ? (
+          {pricing === 'fixed' && item.hasVariants ? (
             <span>From {formatKES(item.basePrice)}</span>
           ) : (
-            <span>{formatKES(item.basePrice)}</span>
+            <span>{priceLabel}</span>
           )}
         </div>
 
@@ -95,7 +98,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, onTog
               {item.category?.name || 'Dish'}
             </span>
             <span className="text-xs font-black text-brand-500 dark:text-brand-400">
-              {formatKES(item.basePrice)}
+              {priceLabel}
             </span>
           </div>
           <div

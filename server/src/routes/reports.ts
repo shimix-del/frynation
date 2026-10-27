@@ -9,8 +9,12 @@ import {
   getCashierPerformance,
 } from '../services/reportService.js';
 import prisma from '../prisma.js';
+import { unlockAnalytics, requireAnalyticsUnlock } from '../middleware/analyticsAccess.js';
 
 const router = Router();
+router.use(authenticateToken);
+router.post('/unlock', unlockAnalytics);
+router.use(requireAnalyticsUnlock);
 
 // Overview Dashboard Summary
 router.get('/summary', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {

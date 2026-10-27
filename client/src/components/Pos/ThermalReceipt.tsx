@@ -22,57 +22,6 @@ const formatReceiptTime = (dateString?: string | Date) => {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
-// Deterministic SVG Barcode generator for clean thermal printing
-const BarcodeDisplay: React.FC<{ value: string }> = ({ value }) => {
-  const bars: { width: number; isSpace: boolean }[] = [];
-  bars.push({ width: 2, isSpace: false });
-  bars.push({ width: 1, isSpace: true });
-  bars.push({ width: 2, isSpace: false });
-
-  for (let i = 0; i < value.length; i++) {
-    const code = value.charCodeAt(i);
-    const b1 = (code % 3) + 1;
-    const s1 = ((code >> 2) % 2) + 1;
-    const b2 = ((code >> 4) % 3) + 1;
-    const s2 = ((code >> 1) % 2) + 1;
-    bars.push({ width: b1, isSpace: false });
-    bars.push({ width: s1, isSpace: true });
-    bars.push({ width: b2, isSpace: false });
-    bars.push({ width: s2, isSpace: true });
-  }
-
-  bars.push({ width: 2, isSpace: false });
-  bars.push({ width: 1, isSpace: true });
-  bars.push({ width: 3, isSpace: false });
-
-  let currentX = 0;
-  const rects: { x: number; width: number }[] = [];
-  bars.forEach(bar => {
-    if (!bar.isSpace) {
-      rects.push({ x: currentX, width: bar.width });
-    }
-    currentX += bar.width;
-  });
-
-  return (
-    <div className="flex flex-col items-center justify-center my-1.5 w-full">
-      <svg
-        viewBox={`0 0 ${currentX} 36`}
-        className="h-8 w-44 max-w-full"
-        preserveAspectRatio="none"
-        shapeRendering="crispEdges"
-      >
-        {rects.map((r, idx) => (
-          <rect key={idx} x={r.x} y="0" width={r.width} height="36" fill="#000000" />
-        ))}
-      </svg>
-      <div className="text-[9px] tracking-widest font-mono text-black mt-0.5 font-bold">
-        *{value}*
-      </div>
-    </div>
-  );
-};
-
 export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   order,
   warnings = [],
@@ -96,7 +45,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     : 0;
 
   const mpesaRef = order.payments?.find(p => p.mpesaCode)?.mpesaCode
-    || (order.payments?.some(p => p.paymentMethod === 'MPESA') ? 'MPESA' : 'CASH');
+    || '';
 
   const handlePrint = () => {
     printReceiptElement('thermal-receipt', paperWidth);
@@ -126,7 +75,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       `*TOTAL: KES ${totalAmount.toFixed(1)}*\n` +
       `AMOUNT PAID: KES ${totalPaid.toFixed(1)}\n` +
       `CHANGE: KES ${changeAmount.toFixed(1)}\n` +
-      `MPESA CODE: ${mpesaRef}\n` +
+      (mpesaRef ? `MPESA CODE: ${mpesaRef}\n` : '') +
       `---------------------------\n` +
       `Asante Sana • Karibu Tena\n` +
       `Cashier: ${cashierName}`;
@@ -216,9 +165,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               </div>
             </div>
 
-            {/* Barcode block */}
-            <BarcodeDisplay value={order.orderNumber} />
-
             {/* Meta Section */}
             <div className="border-t border-dashed border-black py-1.5 space-y-0.5 text-[10px] text-black">
               <div className="flex justify-between">
@@ -304,8 +250,8 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 <span className="font-mono">{changeAmount.toFixed(1)}</span>
               </div>
               <div className="flex justify-between font-medium text-[10px]">
-                <span>MPESA CODE:</span>
-                <span className="font-mono font-bold uppercase">{mpesaRef}</span>
+                <span>{mpesaRef ? 'MPESA CODE:' : 'PAYMENT:'}</span>
+                <span className="font-mono font-bold uppercase">{mpesaRef || order.payments?.map(p => p.paymentMethod).filter((value, index, all) => all.indexOf(value) === index).join(' / ')}</span>
               </div>
             </div>
 

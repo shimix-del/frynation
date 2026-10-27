@@ -15,6 +15,7 @@ import { useBranch } from '../../context/BranchContext';
 import { api } from '../../services/api';
 import { Category, MenuItem, MenuItemVariant, Order } from '../../types';
 import { formatKES } from '../../utils/currency';
+import { menuPricing } from '../../utils/menuPricing';
 
 export const PosTerminal: React.FC = () => {
   const { currentBranchId } = useBranch();
@@ -96,7 +97,7 @@ export const PosTerminal: React.FC = () => {
   };
 
   const handleCardClick = (item: MenuItem) => {
-    if (item.hasVariants && item.variants && item.variants.length > 0) {
+    if (menuPricing(item.name) !== 'fixed' || (item.hasVariants && item.variants && item.variants.length > 0)) {
       setSelectedItemForVariant(item);
       setIsVariantModalOpen(true);
     } else {
@@ -118,9 +119,10 @@ export const PosTerminal: React.FC = () => {
     item: MenuItem,
     variant: MenuItemVariant | null,
     qty: number,
-    lineNote: string
+    lineNote: string,
+    sellingPrice?: number
   ) => {
-    addToCart(item, variant, qty, lineNote);
+    addToCart(item, variant, qty, lineNote, sellingPrice);
   };
 
   const handleOrderCompleted = (order: Order, warnings: string[]) => {

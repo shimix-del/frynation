@@ -59,6 +59,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  if (analyticsToken && endpoint.startsWith('/reports/') && endpoint !== '/reports/unlock') {
+    headers['x-analytics-token'] = analyticsToken;
+  }
 
   if (branchId) {
     headers['x-branch-id'] = branchId;
@@ -84,7 +87,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+let analyticsToken = '';
+export function setAnalyticsToken(value: string) { analyticsToken = value; }
 export const api = {
+  unlockAnalytics: (pin: string) => request<{ token: string; expiresIn: number }>('/reports/unlock', { method: 'POST', body: JSON.stringify({ pin }) }),
   getSystemStatus: () => request<any>('/system/status'),
   recordLogout: () => request<any>('/auth/logout', { method: 'POST' }),
   getActivity: (params: Record<string, string> = {}) => request<any>(`/activity?${new URLSearchParams(params)}`),

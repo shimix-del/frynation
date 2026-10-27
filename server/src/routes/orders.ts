@@ -1,4 +1,5 @@
-import { randomUUID } from 'crypto';
+import { randomBytes } from 'crypto';
+import { menuPricing } from '../services/menuPricing.js';
 import { amount, money, terminalId } from '../security.js';
 import { transaction, lockBranch } from '../services/transactionService.js';
 import { logActivity } from '../services/activityService.js';
@@ -119,12 +120,15 @@ async function pricedItems(tx: any, items: any[]) {
         const variant = input.variantId ? menu.variants.find((v: any) => v.id === input.variantId) : null;
         if (input.variantId && (!variant || !variant.isAvailable))
             throw new Error('Invalid or unavailable variant');
-        if (menu.hasVariants && !variant)
+        const pricing = menuPricing(menu.name);
+        if (menu.hasVariants && !variant && pricing === 'fixed')
             throw new Error('Choose an item variant');
-        const unitPrice = amount(variant?.price ?? menu.basePrice, 'Price', true);
-        if (input.unitPrice !== undefined && amount(input.unitPrice, 'Price', true) !== unitPrice)
+        const unitPrice = pricing === 'fixed' ? amount(variant?.price ?? menu.basePrice, 'Price', true) : amount(input.unitPrice, 'Selling price');
+        if (pricing !== 'fixed' && unitPrice <= 0) throw new Error('Selling price must be at least KSh 0.01');
+        if (pricing === 'soda' && ![50, 70].includes(unitPrice)) throw new Error('Choose KSh 50 or KSh 70 for this soda');
+        if (pricing === 'fixed' && input.unitPrice !== undefined && amount(input.unitPrice, 'Price', true) !== unitPrice)
             throw new Error('Menu price changed. Review this order before payment');
-        return { menuItemId: menu.id, variantId: variant?.id || null, itemName: menu.name, variantName: variant?.name || null,
+        return { menuItemId: menu.id, variantId: variant?.id || null, itemName: menu.name, variantName: pricing === 'soda' ? `KSh ${unitPrice}` : variant?.name || null,
             quantity, unitPrice, unitCost: amount(variant?.costPrice ?? menu.costPrice, 'Cost', true), totalPrice: money(quantity * unitPrice), notes: input.notes || null };
     }));
 }
@@ -138,14 +142,15 @@ function validatedPayments(input: any, total: number) {
         if (!['CASH', 'MPESA', 'CARD'].includes(p.paymentMethod))
             throw new Error('Invalid payment method');
         const paid = amount(p.amount);
-        if (p.paymentMethod === 'MPESA' && !/^[A-Z0-9]{8,20}$/.test(String(p.mpesaCode || '').trim().toUpperCase()))
+        const mpesaCode = String(p.mpesaCode || '').trim().toUpperCase();
+        if (p.paymentMethod === 'MPESA' && mpesaCode && !/^[A-Z0-9]{8,20}$/.test(mpesaCode))
             throw new Error('Enter the actual M-Pesa transaction reference');
         if (p.paymentMethod === 'CARD' && !String(p.cardRef || '').trim())
             throw new Error('Card payment reference is required');
         const tendered = p.paymentMethod === 'CASH' ? amount(p.cashTendered ?? paid, 'Cash tendered', true) : null;
         if (tendered !== null && tendered < paid)
             throw new Error('Cash tendered is insufficient');
-        return { amount: paid, paymentMethod: p.paymentMethod, mpesaCode: p.paymentMethod === 'MPESA' ? p.mpesaCode.trim().toUpperCase() : null,
+        return { amount: paid, paymentMethod: p.paymentMethod, mpesaCode: p.paymentMethod === 'MPESA' ? mpesaCode || null : null,
             cardRef: p.paymentMethod === 'CARD' ? String(p.cardRef).trim() : null, cashTendered: tendered, changeAmount: tendered === null ? null : money(tendered - paid), status: 'COMPLETED' };
     });
     if (money(result.reduce((sum: number, p: any) => sum + p.amount, 0)) !== total)
@@ -201,7 +206,7 @@ async function checkout(req: AuthenticatedRequest, res: Response, heldId?: strin
             if (!['DINE_IN', 'TAKEAWAY', 'DELIVERY'].includes(data.orderType))
                 throw new Error('Invalid order type');
             const order = heldId ? await tx.order.update({ where: { id: heldId }, data: { ...data, items: { deleteMany: {}, create: items } } })
-                : await tx.order.create({ data: { ...data, orderNumber: 'ORD-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + randomUUID(), items: { create: items } } });
+                : await tx.order.create({ data: { ...data, orderNumber: 'NF-' + randomBytes(8).toString('hex').toUpperCase(), items: { create: items } } });
             let warnings: string[] = [];
             if (!held) {
                 for (const p of payments) {

@@ -12,7 +12,7 @@ import { MenuManager } from './components/MenuAdmin/MenuManager';
 import { ShiftManager } from './components/Shifts/ShiftManager';
 import { OpenShiftModal } from './components/Shifts/OpenShiftModal';
 import { ExpenseTracker } from './components/Expenses/ExpenseTracker';
-import { AnalyticsDashboard } from './components/Dashboard/AnalyticsDashboard';
+import { OwnerAnalyticsGate } from './components/Dashboard/OwnerAnalyticsGate';
 import { StaffManager } from './components/Staff/StaffManager';
 import naniLogo from './assets/logo.jpg';
 import { ActivityLog } from './components/Activity/ActivityLog';
@@ -61,7 +61,7 @@ const AuthenticatedApp: React.FC = () => {
           {activeTab === 'inventory' && user?.role !== 'CASHIER' && <InventoryManager />}
           {activeTab === 'menu' && user?.role !== 'CASHIER' && <MenuManager />}
           {activeTab === 'expenses' && user?.role !== 'CASHIER' && <ExpenseTracker />}
-          {activeTab === 'analytics' && user?.role === 'OWNER' && <AnalyticsDashboard />}
+          {activeTab === 'analytics' && user?.role === 'OWNER' && <OwnerAnalyticsGate key={user.id} />}
           {activeTab === 'staff' && user?.role === 'OWNER' && <StaffManager />}
           {activeTab === 'activity' && user?.role === 'OWNER' && <ActivityLog />}
         </main>

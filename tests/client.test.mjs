@@ -7,7 +7,21 @@ globalThis.localStorage = { getItem: k => memory.get(k) ?? null, setItem: (k,v) 
 globalThis.window = { location: { hostname: 'nanifrys.com', origin: 'https://nanifrys.com', protocol: 'https:' }, dispatchEvent: () => {} };
 Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 const ids = await loadSource('client/src/utils/id.ts');
-const { api, ApiError, isLocalMode, getApiBaseUrl } = await loadSource('client/src/services/api.ts');
+const { api, ApiError, isLocalMode, getApiBaseUrl, setAnalyticsToken } = await loadSource('client/src/services/api.ts');
+await test('frontend and server agree on precisely which menu prices cashiers may select', async () => {
+  const client = await loadSource('client/src/utils/menuPricing.ts');
+  const server = await loadSource('server/src/services/menuPricing.ts');
+  for(const [name,expected] of [['Coca-Cola','soda'],['Fanta Orange','soda'],['Krest','soda'],['Stoney','soda'],['Sprite','soda'],['Spirit','soda'],['Viazi Karai','manual'],['Chips','fixed'],['Water','fixed']]){
+    assert.equal(client.menuPricing(name),expected);assert.equal(server.menuPricing(name),expected);
+  }
+});
+await test('analytics unlock token is sent only to reports and cleared when the section locks', async () => {
+  const seen=[];
+  globalThis.fetch=async (url,options)=>{seen.push(options.headers);return {ok:true,json:async()=>({})};};
+  setAnalyticsToken('section-token');await api.getDashboardSummary();await api.getCategories();await api.unlockAnalytics('1199');
+  assert.equal(seen[0]['x-analytics-token'],'section-token');assert.equal(seen[1]['x-analytics-token'],undefined);assert.equal(seen[2]['x-analytics-token'],undefined);
+  setAnalyticsToken('');await api.getDashboardSummary();assert.equal(seen[3]['x-analytics-token'],undefined);
+});
 
 await test('hosted API uses same HTTPS origin', () => assert.equal(getApiBaseUrl(), 'https://nanifrys.com/api'));
 await test('HTTP rejection never switches to Local mode or authenticates locally', async () => {

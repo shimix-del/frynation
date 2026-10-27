@@ -37,7 +37,7 @@ app.use(cors({
   },
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-branch-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-branch-id', 'x-analytics-token'],
 }));
 app.use(express.json({limit:'8mb'}));
 app.use('/api/replica',replicaRoutes);

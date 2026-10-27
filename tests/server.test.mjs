@@ -92,7 +92,9 @@ const activity = await loadSource('server/src/services/activityService.ts', { '@
 const tx = await loadSource('server/src/services/transactionService.ts', { '../prisma.js': prisma, '@prisma/client': {} });
 const stock = await loadSource('server/src/services/stockDeductionService.ts', { '@prisma/client': {}, '../middleware/auth.js': {}, './activityService.js': activity });
 const auth = await loadSource('server/src/middleware/auth.ts', { express: {}, jsonwebtoken: jwt, '../prisma.js': prisma, '../security.js': security });
-const { default: orders } = await loadSource('server/src/routes/orders.ts', { crypto: await import('node:crypto'), '../security.js': security, '../services/transactionService.js': tx, '../services/activityService.js': activity, express, '../prisma.js': prisma, '../middleware/auth.js': auth, '../services/stockDeductionService.js': stock });
+const pricing = await loadSource('server/src/services/menuPricing.ts', {});
+const analyticsAccess = await loadSource('server/src/middleware/analyticsAccess.ts', { express: {}, bcryptjs: bcrypt, jsonwebtoken: jwt, './auth.js': {}, '../security.js': security });
+const { default: orders } = await loadSource('server/src/routes/orders.ts', { crypto: await import('node:crypto'), '../services/menuPricing.js': pricing, '../security.js': security, '../services/transactionService.js': tx, '../services/activityService.js': activity, express, '../prisma.js': prisma, '../middleware/auth.js': auth, '../services/stockDeductionService.js': stock });
 const { default: authRoutes } = await loadSource('server/src/routes/auth.ts', { express, bcryptjs: bcrypt, jsonwebtoken: jwt, '../prisma.js': prisma, '../middleware/auth.js': auth, '../security.js': security, '../services/activityService.js': activity, '../replica/state.js': {readState:async()=>null} });
 const { default: expenseRoutes } = await loadSource('server/src/routes/expenses.ts', { express, '../prisma.js': prisma, '../middleware/auth.js': auth, '../security.js': security, '../services/transactionService.js': tx, '../services/activityService.js': activity });
 const { summarizeShift } = await loadSource('server/src/services/shiftService.ts', { '../security.js': security });
@@ -101,6 +103,8 @@ const { default: shiftRoutes } = await loadSource('server/src/routes/shifts.ts',
 const { default: inventoryRoutes } = await loadSource('server/src/routes/inventory.ts', { express, '../prisma.js': prisma, '../middleware/auth.js': auth, '../security.js': security, '../services/transactionService.js': tx, '../services/activityService.js': activity });
 const { default: activityRoutes } = await loadSource('server/src/routes/activity.ts', { express, '../prisma.js': prisma, '../middleware/auth.js': auth });
 const app = express(); app.use(express.json()); app.use('/api/orders',orders); app.use('/api/auth',authRoutes); app.use('/api/expenses',expenseRoutes); app.use('/api/shifts',shiftRoutes); app.use('/api/inventory',inventoryRoutes); app.use('/api/activity',activityRoutes);
+app.post('/api/reports/unlock',auth.authenticateToken,analyticsAccess.unlockAnalytics);
+app.get('/api/reports/check',auth.authenticateToken,analyticsAccess.requireAnalyticsUnlock,(_req,res)=>res.json({ok:true}));
 const server = await new Promise(resolve => { const instance = app.listen(0,'127.0.0.1', () => resolve(instance)); });
 const base = `http://127.0.0.1:${server.address().port}/api`;
 async function call(path, body, user = 'cashier', method = 'POST') {
@@ -110,6 +114,43 @@ async function call(path, body, user = 'cashier', method = 'POST') {
 const sale = () => ({ branchId:'A',shiftId:'shift-A',cashierId:'cashier',clientRequestId:crypto.randomUUID(),items:[{menuItemId:'chips',itemName:'Chips',quantity:1,unitPrice:100}],payments:[{paymentMethod:'CASH',amount:100,cashTendered:100}] });
 
 try {
+  await test('owner analytics requires its separate PIN and a scoped owner token', async () => {
+    reset();
+    assert.equal((await call('/reports/check',null,'owner','GET')).status,403);
+    assert.equal((await call('/reports/unlock',{pin:'1199'},'cashier')).status,403);
+    assert.equal((await call('/reports/unlock',{pin:'5678'},'owner')).status,401);
+    const unlocked=await call('/reports/unlock',{pin:'1199'},'owner');assert.equal(unlocked.status,200);
+    const response=await fetch(base+'/reports/check',{headers:{Authorization:'Bearer '+jwt.sign({id:'owner'},security.JWT_SECRET),'x-analytics-token':unlocked.body.token}});
+    assert.equal(response.status,200);
+    const cashier=await fetch(base+'/reports/check',{headers:{Authorization:'Bearer '+jwt.sign({id:'cashier'},security.JWT_SECRET),'x-analytics-token':unlocked.body.token}});
+    assert.equal(cashier.status,403);
+    const expires=jwt.decode(unlocked.body.token);assert.equal(expires.exp-expires.iat,600);
+    for(let i=0;i<3;i++)assert.equal((await call('/reports/unlock',{pin:'0000'},'owner')).status,401);
+    assert.equal((await call('/reports/unlock',{pin:'1199'},'owner')).status,429);
+  });
+  await test('soda choices and manual Viazi Karai prices are enforced without opening other menu prices', async () => {
+    for(const name of ['Coca-Cola','Fanta Orange','Krest','Stoney','Sprite','Spirit','Viazi Karai']){
+      for(const value of name==='Viazi Karai'?[30,40,70]:[50,70]){
+        reset();db.menuItem[0].name=name;db.menuItem[0].hasVariants=true;
+        const body=sale();body.items[0].unitPrice=value;body.payments[0].amount=value;body.payments[0].cashTendered=value;
+        const saved=await call('/orders',body);assert.equal(saved.status,201,JSON.stringify(saved.body));assert.equal(saved.body.order.items[0].unitPrice,value);
+        assert.match(saved.body.order.orderNumber,/^NF-[A-F0-9]{16}$/);
+      }
+    }
+    for(const [name,value] of [['Fanta',60],['Viazi Karai',0],['Viazi Karai',-20],['Chips',50]]){
+      reset();db.menuItem[0].name=name;const body=sale();body.items[0].unitPrice=value;
+      assert.equal((await call('/orders',body)).status,400);assert.equal(db.order.length,0);
+    }
+  });
+  await test('M-Pesa and split payments allow no code and preserve supplied code checks', async () => {
+    for(const payments of [[{paymentMethod:'MPESA',amount:100}],[{paymentMethod:'MPESA',amount:100,mpesaCode:'   '}],[{paymentMethod:'CASH',amount:40,cashTendered:50},{paymentMethod:'MPESA',amount:60}]]){
+      reset();const saved=await call('/orders',{...sale(),payments});assert.equal(saved.status,201,JSON.stringify(saved.body));assert.equal(db.payment.find(p=>p.paymentMethod==='MPESA').mpesaCode,null);
+    }
+    reset();const withCode={...sale(),payments:[{paymentMethod:'MPESA',amount:100,mpesaCode:' abc1234567 '}]};
+    assert.equal((await call('/orders',withCode)).status,201);assert.equal(db.payment[0].mpesaCode,'ABC1234567');
+    assert.equal((await call('/orders',{...withCode,clientRequestId:crypto.randomUUID()})).status,400);
+    reset();assert.equal((await call('/orders',{...sale(),payments:[{paymentMethod:'MPESA',amount:100,mpesaCode:'bad!'}]})).status,400);
+  });
   await test('branch isolation and owner-only staff administration are enforced by API', async () => {
     reset();
     assert.equal((await call('/orders',{...sale(),branchId:'B'})).status,403);

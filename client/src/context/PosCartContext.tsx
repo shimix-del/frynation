@@ -20,7 +20,7 @@ interface PosCartContextType {
   totalAmount: number;
   heldOrders: Order[];
   isLoadingHeld: boolean;
-  addToCart: (item: MenuItem, variant?: MenuItemVariant | null, qty?: number, itemNotes?: string) => void;
+  addToCart: (item: MenuItem, variant?: MenuItemVariant | null, qty?: number, itemNotes?: string, sellingPrice?: number) => void;
   updateQuantity: (index: number, newQty: number) => void;
   removeItem: (index: number) => void;
   setItemNotes: (index: number, lineNote: string) => void;
@@ -67,14 +67,14 @@ export const PosCartProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchHeldOrders();
   }, [currentBranchId]);
 
-  const addToCart = (item: MenuItem, variant?: MenuItemVariant | null, qty = 1, itemNotes = '') => {
+  const addToCart = (item: MenuItem, variant?: MenuItemVariant | null, qty = 1, itemNotes = '', sellingPrice?: number) => {
     setCartItems(prev => {
-      const price = variant ? variant.price : item.basePrice;
+      const price = sellingPrice ?? (variant ? variant.price : item.basePrice);
       const cost = variant ? variant.costPrice : item.costPrice;
 
       // Check if identical item with same variant already in cart
       const existingIdx = prev.findIndex(
-        ci => ci.menuItem.id === item.id && (variant ? ci.variant?.id === variant.id : !ci.variant)
+        ci => ci.menuItem.id === item.id && ci.unitPrice === price && (variant ? ci.variant?.id === variant.id : !ci.variant)
       );
 
       if (existingIdx > -1) {

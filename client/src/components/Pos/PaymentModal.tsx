@@ -81,7 +81,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleProcessCheckout = async () => {
     if (cartItems.length === 0 || submitted.current) return;
-    if ((paymentMethod === 'MPESA' || (paymentMethod === 'SPLIT' && splitMpesa > 0)) && !/^[A-Z0-9]{8,20}$/.test(mpesaCode.trim().toUpperCase())) { setError('Enter the actual M-Pesa transaction reference after confirming receipt.'); return; }
+    if ((paymentMethod === 'MPESA' || (paymentMethod === 'SPLIT' && splitMpesa > 0)) && mpesaCode.trim() && !/^[A-Z0-9]{8,20}$/.test(mpesaCode.trim().toUpperCase())) { setError('Check the M-Pesa code, or leave it blank after confirming payment.'); return; }
     if (paymentMethod === 'CARD' && !cardRef.trim()) { setError('Enter the card slip reference.'); return; }
     if (splitCash < 0 || splitMpesa < 0) { setError('Split amounts cannot be negative.'); return; }
     setIsSubmitting(true);
@@ -322,7 +322,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         </div>
 
-        {(paymentMethod === 'MPESA' || paymentMethod === 'SPLIT') && <label className="px-4 pt-3 text-xs text-zinc-300">M-Pesa transaction reference (confirm receipt first)
+        {(paymentMethod === 'MPESA' || paymentMethod === 'SPLIT') && <label className="px-4 pt-3 text-xs text-zinc-300">M-Pesa transaction code (optional — confirm payment first)
           <input aria-label="M-Pesa transaction reference" value={mpesaCode} onChange={e => setMpesaCode(e.target.value.toUpperCase())} className="block w-full mt-1 p-3 bg-zinc-800 rounded-xl" placeholder="Actual transaction code" />
         </label>}
         {/* Modal Body / Method Specific Inputs */}
