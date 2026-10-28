@@ -24,9 +24,9 @@ export function getApiBaseUrl(): string {
     if (window.location && window.location.hostname) {
       const { protocol, hostname } = window.location;
       if (['5000','5050'].includes(window.location.port)) return `${window.location.origin}/api`;
-      // GitHub Pages has no backend on port 5000
+      // GitHub Pages connects to live cloud server on TrueHost
       if (hostname.endsWith('github.io')) {
-        return '';
+        return 'https://nanifrys.com/api';
       }
       return hostname === 'localhost' || hostname === '127.0.0.1' || /^192\.168\.|^10\./.test(hostname)
         ? `${protocol}//${hostname}:5000/api` : `${window.location.origin}/api`;
