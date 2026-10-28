@@ -89,7 +89,7 @@ async function main() {
       email: 'cashier1@nanifrys.co.ke',
       phone: '+254 722 222 331',
       role: 'CASHIER',
-      pinCode: await bcrypt.hash('1298', 10),
+      pinCode: await bcrypt.hash('1234', 10),
       passwordHash: cashierPasswordHash,
       branchId: migadini.id,
     },

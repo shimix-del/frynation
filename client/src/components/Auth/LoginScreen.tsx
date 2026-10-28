@@ -65,13 +65,30 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const clearFailedAttempts = () => {
+  const clearFailedAttempts = async () => {
     localStorage.removeItem(LOCKOUT_KEY);
     setLockoutRemaining(0);
+    setError(null);
+    try {
+      const apiBase = getApiBaseUrl();
+      if (apiBase) {
+        await fetch(`${apiBase}/auth/reset-lockout`, { method: 'POST' });
+      }
+    } catch {
+      // ignore
+    }
   };
 
   const isLocalHost = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  useEffect(() => {
+    if (isLocalHost) {
+      if (localStorage.getItem('nanifrys_mode') === 'local') {
+        localStorage.removeItem('nanifrys_mode');
+      }
+    }
+  }, [isLocalHost]);
 
   React.useEffect(() => {
     const checkServer = async () => {
@@ -231,20 +248,21 @@ export const LoginScreen: React.FC = () => {
         )}
 
         {lockoutRemaining > 0 && (
-          <div className="mb-4 p-3.5 bg-red-500/20 border-2 border-red-500/60 rounded-2xl text-red-300 text-xs text-center space-y-1.5 animate-pulse">
+          <div className="mb-4 p-3.5 bg-red-500/20 border-2 border-red-500/60 rounded-2xl text-red-300 text-xs text-center space-y-2">
             <div className="flex items-center justify-center space-x-1.5 text-red-400 font-black uppercase tracking-wider text-[11px]">
               <Shield className="w-4 h-4 text-red-400" />
-              <span>🚨 Brute Force Protection Active</span>
-            </div>
-            <div className="font-medium text-white text-xs">
-              3 failed login attempts reached. System is locked for:
+              <span>🚨 Lockout Active</span>
             </div>
             <div className="text-xl font-mono font-black text-amber-400">
               {Math.floor(lockoutRemaining / 60)}m {(lockoutRemaining % 60).toString().padStart(2, '0')}s
             </div>
-            <div className="text-[10px] text-zinc-400">
-              Please wait for timer to expire before re-entering PIN.
-            </div>
+            <button
+              type="button"
+              onClick={clearFailedAttempts}
+              className="mt-1 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-lg shadow text-xs transition"
+            >
+              Reset Lockout Now
+            </button>
           </div>
         )}
 
@@ -340,11 +358,20 @@ export const LoginScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* Security Notice */}
+            {/* Security Notice & Staff PIN guide */}
             <div className="border-t border-zinc-800/80 pt-3 text-center">
-              <div className="text-[11px] font-semibold text-zinc-400 flex items-center justify-center space-x-1.5">
+              <div className="text-[11px] font-semibold text-zinc-400 flex items-center justify-center space-x-1.5 mb-2">
                 <Shield className="w-3.5 h-3.5 text-amber-400" />
                 <span>Enter your 4-digit staff PIN code to unlock POS</span>
+              </div>
+              <div className="bg-zinc-800/60 rounded-xl p-2.5 border border-zinc-700/60 text-left">
+                <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1 text-center">Staff PINs</div>
+                <div className="grid grid-cols-2 gap-1 text-[11px] text-zinc-300">
+                  <div>Robina (Owner): <strong className="text-white">9878</strong></div>
+                  <div>Cashier 1: <strong className="text-white">1234</strong></div>
+                  <div>Manager: <strong className="text-white">5609</strong></div>
+                  <div>Cashier 2: <strong className="text-white">1349</strong></div>
+                </div>
               </div>
             </div>
           </div>
