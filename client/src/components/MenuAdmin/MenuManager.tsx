@@ -39,7 +39,7 @@ export const MenuManager: React.FC = () => {
   const fetchMenu = async () => {
     setIsLoading(true);
     try {
-      const [items, cats] = await Promise.all([api.getMenu(), api.getCategories()]);
+      const [items, cats] = await Promise.all([api.getMenu({ includeInactive: true }), api.getCategories()]);
       setMenuItems(items);
       setCategories(cats);
       if (cats.length > 0 && !categoryId) {

@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "sourceFingerprint": "5a18f54416f1fae6f66fe775f61c3b9f71f8e9e91821092c9e183861292d63d4",
+  "sourceFingerprint": "be18cae2f5292a461516d7deef6973ae5ca9cfa1151bf095324bfcd1f12c4e07",
   "files": [
     {
-      "path": "assets/index-CPfskoUA.js",
-      "sha256": "becab3bad923a13c3bc4b304fb66f7b63514eb6f06235ce53e54c9c1cbf76b21"
+      "path": "assets/index-BBcJk9Hl.js",
+      "sha256": "257db3d8d12c1ab2b53c5f940ed561e207dd09a265232b6611f55452a5208cde"
     },
     {
       "path": "assets/index-yGWAgxP8.css",
@@ -52,7 +52,7 @@
     },
     {
       "path": "index.html",
-      "sha256": "b9bc863a301a5fb49b1a5f46822f877c9185d31dd28a02e53e2ea46aefa85465"
+      "sha256": "9f36fda8514343ec105876b4e1163a8ae354fc3b436832ae80572d4601903921"
     },
     {
       "path": "nani-logo.jpg",

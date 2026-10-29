@@ -65,21 +65,39 @@ export const Navbar: React.FC<NavbarProps> = ({
     try { setOfflineQueue(offlineSync.getQueue()); } catch (e) { console.error(e); }
   };
 
+  const autoFlushQueue = async () => {
+    if (navigator.onLine && offlineSync.getQueue().length > 0 && !isSyncing) {
+      try {
+        await offlineSync.syncPendingOrders();
+        updateOfflineStatus();
+      } catch (err) {
+        console.warn('Auto-sync retry:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchShiftStatus();
     updateOfflineStatus();
 
-    window.addEventListener('online', updateOfflineStatus);
+    const handleOnline = () => {
+      updateOfflineStatus();
+      autoFlushQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
     window.addEventListener('offline', updateOfflineStatus);
     window.addEventListener('nanifrys_offline_queue_updated', updateOfflineStatus);
 
-    const interval = setInterval(fetchShiftStatus, 15000);
+    const shiftInterval = setInterval(fetchShiftStatus, 15000);
+    const syncInterval = setInterval(autoFlushQueue, 30000);
 
     return () => {
-      window.removeEventListener('online', updateOfflineStatus);
+      window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', updateOfflineStatus);
       window.removeEventListener('nanifrys_offline_queue_updated', updateOfflineStatus);
-      clearInterval(interval);
+      clearInterval(shiftInterval);
+      clearInterval(syncInterval);
     };
   }, [currentBranchId]);
 

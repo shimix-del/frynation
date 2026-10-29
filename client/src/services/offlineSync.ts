@@ -26,7 +26,7 @@ export const offlineSync = {
       const user=await api.getMe();
       for(const item of offlineSync.getQueue()){
         try{
-          if(!item.orderData.cashierId||item.orderData.cashierId!==user.id)throw new Error('Sign in as the original cashier; legacy tickets require owner review.');
+          if(!item.orderData.cashierId||(item.orderData.cashierId!==user.id && user.role!=='OWNER' && user.role!=='MANAGER'))throw new Error('Sign in as the original cashier or owner to sync tickets.');
           if(!item.orderData.shiftId)throw new Error('Original shift is missing; owner review required.');
           const payload={...item.orderData,clientRequestId:item.orderData.clientRequestId||item.id};
           const result=payload.heldOrderId?await api.resumeOrder(payload.heldOrderId,payload):await api.createOrder(payload);

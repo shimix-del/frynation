@@ -7,7 +7,7 @@ const router = Router();
 // List all menu items with category & variants
 router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { categoryId, search, availableOnly } = req.query;
+    const { categoryId, search, includeInactive } = req.query;
 
     const where: any = {};
     if (categoryId && categoryId !== 'all') {
@@ -16,7 +16,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     if (search) {
       where.name = { contains: search as string };
     }
-    if (availableOnly === 'true') {
+    if (includeInactive !== 'true') {
       where.isAvailable = true;
     }
 
@@ -200,10 +200,18 @@ router.put('/:id', authenticateToken, requireManagerOrOwner, async (req: Authent
   }
 });
 
-// Delete menu item
+// Delete or archive menu item
 router.delete('/:id', authenticateToken, requireManagerOrOwner, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
+    const orderItemsCount = await prisma.orderItem.count({ where: { menuItemId: id } });
+    if (orderItemsCount > 0) {
+      await prisma.menuItem.update({ where: { id }, data: { isAvailable: false } });
+      res.json({ message: 'Menu item archived and hidden from POS' });
+      return;
+    }
+    await prisma.menuItemRecipe.deleteMany({ where: { menuItemId: id } });
+    await prisma.menuItemVariant.deleteMany({ where: { menuItemId: id } });
     await prisma.menuItem.delete({ where: { id } });
     res.json({ message: 'Menu item deleted successfully' });
   } catch (error: any) {

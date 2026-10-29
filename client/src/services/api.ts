@@ -144,11 +144,12 @@ export const api = {
     }),
 
   // ── Menu & Variants ───────────────────────────────────────
-  getMenu: (params?: { categoryId?: string; search?: string; availableOnly?: boolean }) => {
+  getMenu: (params?: { categoryId?: string; search?: string; availableOnly?: boolean; includeInactive?: boolean }) => {
     const q = new URLSearchParams();
     if (params?.categoryId) q.append('categoryId', params.categoryId);
     if (params?.search) q.append('search', params.search);
     if (params?.availableOnly) q.append('availableOnly', 'true');
+    if (params?.includeInactive) q.append('includeInactive', 'true');
     return request<any[]>(`/menu?${q.toString()}`);
   },
 
