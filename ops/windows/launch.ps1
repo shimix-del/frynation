@@ -22,7 +22,7 @@ try {
     $mysqlExe = 'C:\xampp\mysql\bin\mysqld.exe'
     $mysqlIni = 'C:\xampp\mysql\bin\my.ini'
     if (Test-Path -LiteralPath $mysqlExe) {
-      Start-Process -FilePath $mysqlExe -ArgumentList "--defaults-file=`"$mysqlIni`" --standalone" -WindowStyle Hidden
+      Start-Process -FilePath $mysqlExe -ArgumentList "--defaults-file=`"$mysqlIni`" --standalone" -WorkingDirectory 'C:\xampp\mysql' -WindowStyle Hidden
     }
   }
 
@@ -33,7 +33,7 @@ try {
     [Windows.Forms.Application]::DoEvents()
     $apacheExe = 'C:\xampp\apache\bin\httpd.exe'
     if (Test-Path -LiteralPath $apacheExe) {
-      Start-Process -FilePath $apacheExe -WindowStyle Hidden
+      Start-Process -FilePath $apacheExe -WorkingDirectory 'C:\xampp\apache' -WindowStyle Hidden
     }
   }
 
